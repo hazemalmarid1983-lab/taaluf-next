@@ -4,6 +4,7 @@ import { redirect } from 'next/navigation';
 import AdminPreviewBar from '@/components/access/AdminPreviewBar';
 import SubscriberGate from '@/components/access/SubscriberGate';
 import MerhidChat from '@/components/merhid/MerhidChat';
+import { arePaymentsDisabled } from '@/lib/access';
 import { authOptions } from '@/lib/auth';
 import { BRAND } from '@/lib/content';
 
@@ -81,7 +82,7 @@ export default async function ParentLayout({
         {children}
       </div>
       <MerhidChat scope={isAdmin ? 'admin' : 'parent'} compact />
-      <SubscriberGate />
+      {!arePaymentsDisabled() && <SubscriberGate />}
     </div>
   );
 }

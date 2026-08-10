@@ -1,18 +1,27 @@
 'use client';
 
 import { FormEvent, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+
+const paymentsOff =
+  process.env.NEXT_PUBLIC_PAYMENTS_DISABLED === 'true' ||
+  process.env.NEXT_PUBLIC_TAALUF_PILOT_MODE === 'true';
 
 export default function SubscriberGate({
   onSuccess,
 }: {
   onSuccess?: () => void;
 }) {
+  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [code, setCode] = useState('');
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
+
+  // في الوضع التجريبي لا حاجة لزر «مشترك» — كل شيء مفتوح
+  if (paymentsOff) return null;
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
@@ -28,7 +37,10 @@ export default function SubscriberGate({
       if (!res.ok) throw new Error(data.message || 'رمز غير صالح');
       setMsg(data.message);
       onSuccess?.();
-      setTimeout(() => window.location.reload(), 600);
+      setTimeout(() => {
+        router.push('/dashboard/screening');
+        router.refresh();
+      }, 400);
     } catch (err) {
       setMsg(err instanceof Error ? err.message : 'فشل التفعيل');
     } finally {

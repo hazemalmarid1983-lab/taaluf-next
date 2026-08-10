@@ -8,17 +8,27 @@ import {
   getPrice,
 } from '@/lib/pricing';
 
+const paymentsOff =
+  process.env.NEXT_PUBLIC_PAYMENTS_DISABLED === 'true' ||
+  process.env.NEXT_PUBLIC_TAALUF_PILOT_MODE === 'true';
+
 const CARDS = [
-  { tier: PRICING_TIERS.free, href: '/dashboard/screening', cta: 'ابدأ مجاناً' },
+  {
+    tier: PRICING_TIERS.free,
+    href: '/dashboard/screening',
+    cta: 'ابدأ مجاناً',
+  },
   {
     tier: PRICING_TIERS.assessment,
-    href: '/parent/pay-assessment',
-    cta: 'ادفع وابدأ',
+    href: paymentsOff
+      ? '/dashboard/parent-assessment'
+      : '/parent/pay-assessment',
+    cta: paymentsOff ? 'ابدأ التقييم' : 'ادفع وابدأ',
   },
   {
     tier: PRICING_TIERS.monitoring,
-    href: '/parent/pay-assessment',
-    cta: 'اشترك شهرياً',
+    href: paymentsOff ? '/dashboard/goals' : '/parent/pay-assessment',
+    cta: paymentsOff ? 'افتح المتابعة' : 'اشترك شهرياً',
   },
 ] as const;
 
@@ -50,6 +60,11 @@ export default function ParentPricingCards() {
           ))}
         </select>
       </div>
+      {paymentsOff && (
+        <p className="rounded-2xl bg-emerald-50 px-4 py-3 text-sm text-emerald-900">
+          الوضع التجريبي: كل الباقات مفتوحة بدون دفع — اختر أي بطاقة للبدء.
+        </p>
+      )}
       <div className="grid gap-4 md:grid-cols-3">
         {priced.map(({ tier, href, cta, price }) => (
           <article
@@ -76,8 +91,10 @@ export default function ParentPricingCards() {
                   : 'mt-2 text-3xl font-bold text-[#2D8B5A]'
               }
             >
-              {price === 0 ? 'مجاني' : `${price} ${currency}`}
-              {tier.id === 'monitoring' && price > 0 ? (
+              {paymentsOff || price === 0
+                ? 'مفتوح للتجربة'
+                : `${price} ${currency}`}
+              {!paymentsOff && tier.id === 'monitoring' && price > 0 ? (
                 <span className="text-sm font-normal opacity-80"> /شهر</span>
               ) : null}
             </p>

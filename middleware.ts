@@ -18,23 +18,27 @@ export default withAuth(
       req.cookies.get(ENTITLEMENTS_COOKIE)?.value
     );
 
-    // صفحات الدفع معطّلة في الوضع التجريبي
-    if (
-      paymentsOff &&
-      (path.startsWith('/parent/pay-assessment') ||
-        path.startsWith('/parent/booking/pay') ||
-        path.startsWith('/specialist/pay') ||
-        path.startsWith('/payments/'))
-    ) {
-      const dest =
-        role === 'parent'
-          ? '/parent'
-          : role === 'admin'
-            ? '/admin'
-            : role
-              ? '/dashboard'
-              : '/login';
-      return NextResponse.redirect(new URL(dest, req.url));
+    // صفحات الدفع معطّلة في الوضع التجريبي → توجيه لمسار فعلي بدل إرجاع لنفس الصفحة
+    if (paymentsOff) {
+      if (path.startsWith('/parent/pay-assessment')) {
+        return NextResponse.redirect(
+          new URL('/dashboard/parent-assessment', req.url)
+        );
+      }
+      if (path.startsWith('/parent/booking/pay')) {
+        return NextResponse.redirect(new URL('/parent/booking', req.url));
+      }
+      if (path.startsWith('/specialist/pay') || path.startsWith('/payments/')) {
+        const dest =
+          role === 'parent'
+            ? '/parent'
+            : role === 'admin'
+              ? '/admin'
+              : role
+                ? '/dashboard'
+                : '/login?portal=specialist';
+        return NextResponse.redirect(new URL(dest, req.url));
+      }
     }
 
     if (path.startsWith('/admin') && role !== 'admin') {

@@ -170,8 +170,8 @@ export default function ParentHomeDashboard({
     if (!unlocked)
       return {
         title: 'ابدأ التقييم الشامل',
-        href: '/parent/pay-assessment',
-        cta: 'ادفع وابدأ',
+        href: '/dashboard/parent-assessment',
+        cta: 'ابدأ التقييم',
       };
     if (!hasParentQ)
       return {
@@ -277,7 +277,7 @@ export default function ParentHomeDashboard({
           },
           { href: '/dashboard/games', label: 'الألعاب', icon: '③' },
           {
-            href: unlocked ? '/parent/assessment' : '/parent/pay-assessment',
+            href: '/parent/assessment',
             label: 'التقرير',
             icon: '④',
           },
