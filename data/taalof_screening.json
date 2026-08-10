@@ -1,0 +1,103 @@
+{
+  "version": "1.0",
+  "platform": "تآلف",
+  "total_items": 12,
+  "dimensions": [
+    { "id": "linguistic", "label_ar": "لغوي" },
+    { "id": "behavioral", "label_ar": "سلوكي" },
+    { "id": "cognitive", "label_ar": "معرفي" },
+    { "id": "motor", "label_ar": "حركي" }
+  ],
+  "likert": [
+    { "value": 0, "label": "نادراً" },
+    { "value": 1, "label": "أحياناً" },
+    { "value": 2, "label": "غالباً" },
+    { "value": 3, "label": "دائماً" }
+  ],
+  "items": [
+    {
+      "id": "S1",
+      "text": "هل يعبر طفلك عن احتياجاته بكلمات أو إيماءات واضحة؟",
+      "dimension": "linguistic",
+      "weight": 1.0,
+      "reverse": true
+    },
+    {
+      "id": "S2",
+      "text": "هل يفهم طفلك التعليمات البسيطة الموجهة إليه؟",
+      "dimension": "linguistic",
+      "weight": 1.0,
+      "reverse": true
+    },
+    {
+      "id": "S3",
+      "text": "هل تأخر النطق أو الحوار ملحوظ مقارنة بأقرانه؟",
+      "dimension": "linguistic",
+      "weight": 1.0,
+      "reverse": false
+    },
+    {
+      "id": "S4",
+      "text": "هل يتجنب طفلك التواصل البصري عند الحديث معه؟",
+      "dimension": "behavioral",
+      "weight": 1.0,
+      "reverse": false
+    },
+    {
+      "id": "S5",
+      "text": "هل تلاحظ حركات متكررة أو نمطية (هز، رفرفة، دوران)؟",
+      "dimension": "behavioral",
+      "weight": 1.0,
+      "reverse": false
+    },
+    {
+      "id": "S6",
+      "text": "هل يقاوم طفلك التغيير في الروتين أو الانشطة؟",
+      "dimension": "behavioral",
+      "weight": 1.0,
+      "reverse": false
+    },
+    {
+      "id": "S7",
+      "text": "هل يتشتت انتباه طفلك بسهولة عن المهام؟",
+      "dimension": "cognitive",
+      "weight": 1.0,
+      "reverse": false
+    },
+    {
+      "id": "S8",
+      "text": "هل يعرف طفلك الأرقام والحروف والألوان المناسبة لعمره؟",
+      "dimension": "cognitive",
+      "weight": 1.0,
+      "reverse": true
+    },
+    {
+      "id": "S9",
+      "text": "هل يستطيع طفلك اتباع تعليمات متعددة الخطوات؟",
+      "dimension": "cognitive",
+      "weight": 1.0,
+      "reverse": true
+    },
+    {
+      "id": "S10",
+      "text": "هل يظهر طفلك حساسية مفرطة للأصوات أو اللمس أو الضوء؟",
+      "dimension": "motor",
+      "weight": 1.0,
+      "reverse": false
+    },
+    {
+      "id": "S11",
+      "text": "هل تظهر صعوبة في مهارات الحركة الدقيقة (الكتابة، القص، التلوين)؟",
+      "dimension": "motor",
+      "weight": 1.0,
+      "reverse": false
+    },
+    {
+      "id": "S12",
+      "text": "هل يستقر طفلك حركياً أثناء الجلوس أو اللعب؟",
+      "dimension": "motor",
+      "weight": 1.0,
+      "reverse": true
+    }
+  ]
+}

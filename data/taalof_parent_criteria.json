@@ -1,0 +1,174 @@
+{
+  "version": "1.0",
+  "platform": "تآلف",
+  "total_items": 20,
+  "scale": [
+    { "value": 0, "label": "أبداً" },
+    { "value": 1, "label": "نادراً" },
+    { "value": 2, "label": "أحياناً" },
+    { "value": 3, "label": "غالباً" },
+    { "value": 4, "label": "دائماً" }
+  ],
+  "items": [
+    {
+      "id": "P1",
+      "text": "هل ينظر طفلك في عينيك عندما تتحدث معه؟",
+      "mappedCriterion": "C15",
+      "domain": "التواصل الاجتماعي",
+      "scale": "0-4",
+      "reverse": true
+    },
+    {
+      "id": "P2",
+      "text": "هل يفهم طفلك عندما تطلب منه شيئاً بسيطاً؟",
+      "mappedCriterion": "C5",
+      "domain": "النطق والتخاطب",
+      "scale": "0-4",
+      "reverse": true
+    },
+    {
+      "id": "P3",
+      "text": "هل يعبر طفلك عن ما يريد بكلمات واضحة؟",
+      "mappedCriterion": "C6",
+      "domain": "النطق والتخاطب",
+      "scale": "0-4",
+      "reverse": true
+    },
+    {
+      "id": "P4",
+      "text": "هل يبادر طفلك باللعب مع الأطفال الآخرين؟",
+      "mappedCriterion": "C4",
+      "domain": "التواصل الاجتماعي",
+      "scale": "0-4",
+      "reverse": true
+    },
+    {
+      "id": "P5",
+      "text": "هل تلاحظ حركات متكررة لدى طفلك (هز، رفرفة يد)؟",
+      "mappedCriterion": "C3",
+      "domain": "السلوك المقيد",
+      "scale": "0-4",
+      "reverse": false
+    },
+    {
+      "id": "P6",
+      "text": "هل يستجيب طفلك عندما تطلب منه تنفيذ تعليمات؟",
+      "mappedCriterion": "C1",
+      "domain": "التربية الخاصة",
+      "scale": "0-4",
+      "reverse": true
+    },
+    {
+      "id": "P7",
+      "text": "هل ينتقل طفلك من نشاط لآخر دون انزعاج شديد؟",
+      "mappedCriterion": "C2",
+      "domain": "التربية الخاصة",
+      "scale": "0-4",
+      "reverse": true
+    },
+    {
+      "id": "P8",
+      "text": "هل يتحكم طفلك في غضبه أو انفعالاته بشكل مناسب لعمره؟",
+      "mappedCriterion": "C8",
+      "domain": "النفسية",
+      "scale": "0-4",
+      "reverse": true
+    },
+    {
+      "id": "P9",
+      "text": "هل يبقى طفلك منتبهاً لنشاط واحد لفترة معقولة؟",
+      "mappedCriterion": "C9",
+      "domain": "النفسية",
+      "scale": "0-4",
+      "reverse": true
+    },
+    {
+      "id": "P10",
+      "text": "هل يظهر طفلك قلقاً أو خوفاً من مواقف جديدة؟",
+      "mappedCriterion": "C10",
+      "domain": "النفسية",
+      "scale": "0-4",
+      "reverse": false
+    },
+    {
+      "id": "P11",
+      "text": "هل يلعب طفلك ألعاب تخيلية (كأنه يطبخ أو يسوق)؟",
+      "mappedCriterion": "C11",
+      "domain": "التواصل الاجتماعي",
+      "scale": "0-4",
+      "reverse": true
+    },
+    {
+      "id": "P12",
+      "text": "هل ينزعج طفلك من أصوات أو أضواء أو لمسات معينة؟",
+      "mappedCriterion": "C12",
+      "domain": "الوظيفية",
+      "scale": "0-4",
+      "reverse": false
+    },
+    {
+      "id": "P13",
+      "text": "هل يستطيع طفلك استخدام يديه بمهارة (أمساك قلم، قص)؟",
+      "mappedCriterion": "C13",
+      "domain": "الوظيفية",
+      "scale": "0-4",
+      "reverse": true
+    },
+    {
+      "id": "P14",
+      "text": "هل يتحرك طفلك بتناسق ورشاقة مناسبة لعمره؟",
+      "mappedCriterion": "C14",
+      "domain": "الوظيفية",
+      "scale": "0-4",
+      "reverse": true
+    },
+    {
+      "id": "P15",
+      "text": "هل يستجيب طفلك عندما تناديه باسمه؟",
+      "mappedCriterion": "C16",
+      "domain": "التواصل الاجتماعي",
+      "scale": "0-4",
+      "reverse": true
+    },
+    {
+      "id": "P16",
+      "text": "هل يظهر طفلك مشاعره (فرح، حزن) بشكل مفهوم؟",
+      "mappedCriterion": "C17",
+      "domain": "التواصل الاجتماعي",
+      "scale": "0-4",
+      "reverse": true
+    },
+    {
+      "id": "P17",
+      "text": "هل ينزعج طفلك بشدة عند تغيير الروتين؟",
+      "mappedCriterion": "C18",
+      "domain": "السلوك المقيد",
+      "scale": "0-4",
+      "reverse": false
+    },
+    {
+      "id": "P18",
+      "text": "هل ينشغل طفلك باهتمام واحد لفترات طويلة جداً؟",
+      "mappedCriterion": "C19",
+      "domain": "السلوك المقيد",
+      "scale": "0-4",
+      "reverse": false
+    },
+    {
+      "id": "P19",
+      "text": "هل يعتمد طفلك على نفسه في العناية اليومية (أكل، لبس)؟",
+      "mappedCriterion": "C23",
+      "domain": "التكيف",
+      "scale": "0-4",
+      "reverse": true
+    },
+    {
+      "id": "P20",
+      "text": "هل يتحرك طفلك كثيراً ويصعب عليه الجلوس بهدوء؟",
+      "mappedCriterion": "C25",
+      "domain": "التربية الخاصة",
+      "scale": "0-4",
+      "reverse": false
+    }
+  ]
+}

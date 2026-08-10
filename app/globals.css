@@ -1,0 +1,95 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --background: #f0f9f4;
+  --foreground: #0f172a;
+  --primary: #2d8b5a;
+  --primary-deep: #1f6b44;
+  --card: #ffffff;
+  --muted: #64748b;
+  --surface: #e8f5ee;
+  --ink: #0b1f14;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+  font-family: var(--font-cairo), 'Segoe UI', Tahoma, sans-serif;
+  min-height: 100vh;
+}
+
+@keyframes taaluf-rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes taaluf-fade {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes taaluf-drift {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(-2%, 3%, 0) scale(1.04);
+  }
+}
+
+.taaluf-rise {
+  animation: taaluf-rise 0.8s ease-out both;
+}
+
+.taaluf-rise-delay {
+  animation: taaluf-rise 0.9s ease-out 0.12s both;
+}
+
+.taaluf-rise-delay-2 {
+  animation: taaluf-rise 0.9s ease-out 0.24s both;
+}
+
+.taaluf-fade {
+  animation: taaluf-fade 1.1s ease-out both;
+}
+
+.taaluf-drift {
+  animation: taaluf-drift 16s ease-in-out infinite;
+}
+
+.taaluf-hero-bg {
+  background:
+    radial-gradient(ellipse 80% 60% at 15% 20%, rgba(45, 139, 90, 0.22), transparent 55%),
+    radial-gradient(ellipse 70% 50% at 85% 75%, rgba(31, 107, 68, 0.18), transparent 50%),
+    linear-gradient(160deg, #0b1f14 0%, #163d28 42%, #1f6b44 78%, #2d8b5a 100%);
+}
+
+.taaluf-mesh {
+  background-image:
+    linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
+  background-size: 48px 48px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .taaluf-rise,
+  .taaluf-rise-delay,
+  .taaluf-rise-delay-2,
+  .taaluf-fade,
+  .taaluf-drift {
+    animation: none !important;
+  }
+}
