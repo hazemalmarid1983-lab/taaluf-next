@@ -1,27 +1,27 @@
 import Airtable, { FieldSet, Records } from 'airtable';
+import { airtableCreds, cleanEnv } from '@/lib/env';
 
 /**
  * عميل Airtable — مخطط TaalofDB حسب دليل التنفيذ 2.0
  * الجداول: Students · Specialists · Assessments · AssessmentCriteria · Reports · ParentSurveys
  */
 
-const apiKey = process.env.AIRTABLE_API_KEY || '';
-const baseId = process.env.AIRTABLE_BASE_ID || '';
-
 export const TABLE_NAMES = {
-  students: process.env.AIRTABLE_STUDENTS_TABLE || 'Students',
-  specialists: process.env.AIRTABLE_SPECIALISTS_TABLE || 'Specialists',
-  assessments: process.env.AIRTABLE_ASSESSMENTS_TABLE || 'Assessments',
-  criteria: process.env.AIRTABLE_CRITERIA_TABLE || 'AssessmentCriteria',
-  reports: process.env.AIRTABLE_REPORTS_TABLE || 'Reports',
-  surveys: process.env.AIRTABLE_SURVEYS_TABLE || 'ParentSurveys',
+  students: cleanEnv(process.env.AIRTABLE_STUDENTS_TABLE) || 'Students',
+  specialists: cleanEnv(process.env.AIRTABLE_SPECIALISTS_TABLE) || 'Specialists',
+  assessments: cleanEnv(process.env.AIRTABLE_ASSESSMENTS_TABLE) || 'Assessments',
+  criteria: cleanEnv(process.env.AIRTABLE_CRITERIA_TABLE) || 'AssessmentCriteria',
+  reports: cleanEnv(process.env.AIRTABLE_REPORTS_TABLE) || 'Reports',
+  surveys: cleanEnv(process.env.AIRTABLE_SURVEYS_TABLE) || 'ParentSurveys',
 } as const;
 
 export function isAirtableConfigured() {
+  const { apiKey, baseId } = airtableCreds();
   return Boolean(apiKey && baseId);
 }
 
 function requireBase() {
+  const { apiKey, baseId } = airtableCreds();
   if (!apiKey || !baseId) {
     throw new Error('AIRTABLE_NOT_CONFIGURED: عيّن AIRTABLE_API_KEY و AIRTABLE_BASE_ID');
   }

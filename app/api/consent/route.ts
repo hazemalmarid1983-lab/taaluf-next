@@ -61,7 +61,12 @@ export async function POST(req: Request) {
     });
     return res;
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'CONSENT_FAILED';
+    const raw = err instanceof Error ? err.message : 'CONSENT_FAILED';
+    // لا نعرض أسرار/توكنات للمستخدم
+    const message =
+      /Bearer|pat[a-zA-Z0-9]|API[_ ]?KEY|illegal HTTP header/i.test(raw)
+        ? 'تعذّر حفظ الموافقة في قاعدة البيانات. حاول مرة أخرى.'
+        : raw;
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }

@@ -24,8 +24,8 @@ export async function logAction(params: {
   try {
     if (!isAirtableConfigured()) return;
 
-    const apiKey = process.env.AIRTABLE_API_KEY || '';
-    const baseId = process.env.AIRTABLE_BASE_ID || '';
+    const { airtableCreds } = await import('@/lib/env');
+    const { apiKey, baseId } = airtableCreds();
     if (!apiKey || !baseId) return;
 
     const Airtable = (await import('airtable')).default;
