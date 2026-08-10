@@ -22,11 +22,15 @@ export const EMPTY_ENTITLEMENTS: Entitlements = {
 
 /** وضع تجريبي/إطلاق بدون Tap — يفتح كل البوابات بدون دفع */
 export function arePaymentsDisabled() {
-  return (
+  if (
     process.env.NEXT_PUBLIC_PAYMENTS_DISABLED === 'true' ||
     process.env.PAYMENTS_DISABLED === 'true' ||
     process.env.TAALUF_PILOT_MODE === 'true'
-  );
+  ) {
+    return true;
+  }
+  // بدون مفتاح Tap (لا سجل تجاري بعد) — لا نوقف المنصة خلف بوابة دفع
+  return !String(process.env.TAP_SECRET_KEY || '').trim();
 }
 
 export const OPEN_ENTITLEMENTS: Entitlements = {

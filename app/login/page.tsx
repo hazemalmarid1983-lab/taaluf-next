@@ -44,8 +44,10 @@ function LoginForm() {
         ? 'parent@taaluf.local'
         : 'specialist@taaluf.local'
   );
+  // على العميل نعتمد العلم العام؛ السيرفر يعطّل الدفع أيضاً عند غياب Tap
   const paymentsOff =
-    process.env.NEXT_PUBLIC_PAYMENTS_DISABLED === 'true';
+    process.env.NEXT_PUBLIC_PAYMENTS_DISABLED === 'true' ||
+    process.env.NEXT_PUBLIC_TAALUF_PILOT_MODE === 'true';
   const [password, setPassword] = useState(paymentsOff ? 'taaluf123' : '');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);

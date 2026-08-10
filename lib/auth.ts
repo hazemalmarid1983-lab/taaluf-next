@@ -6,12 +6,13 @@ import { logAction } from '@/lib/auditLog';
 import { hashPasswordSync, verifyPassword } from '@/lib/password';
 
 // TODO: migrate existing users to bcrypt hashes on next login
-// حسابات تجريبية — متاحة محلياً، وفي الإنتاج عند ALLOW_DEMO_USERS أو وضع الطيّار
+// حسابات تجريبية — محلياً دائماً؛ وفي الإنتاج أثناء الطيّار أو عند غياب Tap
 const allowDemoUsers =
   process.env.NODE_ENV !== 'production' ||
   process.env.ALLOW_DEMO_USERS === 'true' ||
   process.env.TAALUF_PILOT_MODE === 'true' ||
-  process.env.NEXT_PUBLIC_PAYMENTS_DISABLED === 'true';
+  process.env.NEXT_PUBLIC_PAYMENTS_DISABLED === 'true' ||
+  !String(process.env.TAP_SECRET_KEY || '').trim();
 
 const DEV_USERS = allowDemoUsers
   ? [
