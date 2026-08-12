@@ -15,11 +15,15 @@ export interface Criterion {
   name: string;
   domain: string;
   domain_en: string;
+  /** نص السؤال الموحّد المعروض للمقيّم */
+  question?: string;
   description: string;
   levels: Record<'0' | '1' | '2' | '3', CriterionLevel>;
   recommendation: string;
   weight: number;
   ageBands?: string[];
+  is_reverse?: boolean;
+  domain_raw?: string;
 }
 
 export interface Classification {

@@ -16,7 +16,7 @@ export default function PayAssessmentPage() {
   const [ent, setEnt] = useState<Entitlements | null>(null);
   const [studentName, setStudentName] = useState('');
   const [childId, setChildId] = useState('');
-  const [currency, setCurrency] = useState('SAR');
+  const [currency, setCurrency] = useState('USD');
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
   const [code, setCode] = useState('');

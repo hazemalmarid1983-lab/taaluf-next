@@ -3,13 +3,16 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
+import OptionChoiceCards from '@/components/assessment/OptionChoiceCards';
+import { useStepNav } from '@/hooks/useStepNav';
+import { hasActiveParentQuestionnaire } from '@/lib/assessmentGate';
 import {
   PARENT_ITEMS,
   PARENT_SCALE,
   mapParentToCriteria,
 } from '@/lib/parentAssessment';
 
-const PAGE_SIZE = 4;
+const PAGE_SIZE = 2;
 
 export default function ParentAssessmentPage() {
   const router = useRouter();
@@ -17,6 +20,8 @@ export default function ParentAssessmentPage() {
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
+  const [toast, setToast] = useState('');
+  const { locked, go } = useStepNav(500);
 
   const totalPages = Math.ceil(PARENT_ITEMS.length / PAGE_SIZE);
   const pageItems = useMemo(
@@ -29,12 +34,30 @@ export default function ParentAssessmentPage() {
 
   useEffect(() => {
     try {
+      let childId = '';
+      const active = JSON.parse(
+        localStorage.getItem('taaluf.activeStudent') || 'null'
+      );
+      if (active?.id) childId = active.id;
+
+      const gate = hasActiveParentQuestionnaire(childId);
+      if (gate.active && gate.reason === 'completed') {
+        setToast(gate.message);
+        window.setTimeout(() => {
+          router.replace('/parent');
+        }, 1200);
+        return;
+      }
+
       const raw = localStorage.getItem('taaluf.parentAssessment.draft');
       if (raw) setAnswers(JSON.parse(raw));
+      if (gate.active && gate.reason === 'draft') {
+        setToast(gate.message);
+      }
     } catch {
       /* ignore */
     }
-  }, []);
+  }, [router]);
 
   useEffect(() => {
     localStorage.setItem(
@@ -101,6 +124,14 @@ export default function ParentAssessmentPage() {
 
   return (
     <section className="mx-auto max-w-2xl space-y-5">
+      {toast && (
+        <div
+          role="status"
+          className="fixed left-1/2 top-4 z-[60] w-[min(92vw,28rem)] -translate-x-1/2 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-center text-sm font-semibold text-amber-950 shadow-lg"
+        >
+          {toast}
+        </div>
+      )}
       <div
         role="alert"
         className="rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-semibold leading-7 text-amber-950"
@@ -115,6 +146,9 @@ export default function ParentAssessmentPage() {
         <h1 className="mt-1 text-2xl font-bold text-[#0b1f14]">
           ملاحظات يومية عن الطفل
         </h1>
+        <p className="mt-2 text-xs leading-6 text-slate-500">
+          اختر الوصف الأقرب لطبيعة طفلك (مستقر ← شديد جداً)
+        </p>
         <div className="mt-4 h-2 overflow-hidden rounded-full bg-emerald-50">
           <div
             className="h-full rounded-full bg-[#2D8B5A] transition-all"
@@ -125,53 +159,64 @@ export default function ParentAssessmentPage() {
       </div>
 
       <div className="space-y-4">
-        {pageItems.map((item) => (
-          <div
-            key={item.id}
-            className="rounded-3xl border border-emerald-100 bg-white p-5"
-          >
-            <p className="text-sm font-medium leading-7 text-slate-800">
-              {item.text}
-            </p>
-            <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-5">
-              {PARENT_SCALE.map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() =>
-                    setAnswers((prev) => ({ ...prev, [item.id]: opt.value }))
+        {pageItems.map((item) => {
+          const options =
+            item.options ||
+            PARENT_SCALE.map((l) => ({
+              score: l.value,
+              label: l.label,
+              description: l.label,
+            }));
+          return (
+            <div
+              key={item.id}
+              className="rounded-3xl border border-emerald-100 bg-white p-5"
+            >
+              <p className="text-[11px] font-medium text-[#2D8B5A]/80">
+                {item.id} · {item.domain}
+              </p>
+              <p className="mt-2 rounded-xl bg-[#F0F9F4] px-3 py-3 text-sm font-medium leading-7 text-[#0b1f14]">
+                {item.question || item.text}
+              </p>
+              <div className="mt-3">
+                <OptionChoiceCards
+                  options={options}
+                  value={answers[item.id]}
+                  onChange={(score) =>
+                    setAnswers((prev) => ({ ...prev, [item.id]: score }))
                   }
-                  className={
-                    answers[item.id] === opt.value
-                      ? 'rounded-xl bg-[#2D8B5A] px-2 py-2 text-xs font-semibold text-white'
-                      : 'rounded-xl border border-slate-200 px-2 py-2 text-xs text-slate-600 hover:border-[#2D8B5A]'
-                  }
-                >
-                  {opt.label}
-                </button>
-              ))}
+                />
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <div className="flex justify-between gap-3">
         <Button
           variant="ghost"
-          disabled={page === 0 || busy}
-          onClick={() => setPage((p) => Math.max(0, p - 1))}
+          disabled={page === 0 || busy || locked}
+          onClick={() => go(() => setPage((p) => Math.max(0, p - 1)))}
         >
           السابق
         </Button>
         {page >= totalPages - 1 ? (
           <Button
-            disabled={!pageComplete || answeredCount < PARENT_ITEMS.length || busy}
+            disabled={
+              !pageComplete ||
+              answeredCount < PARENT_ITEMS.length ||
+              busy ||
+              locked
+            }
             onClick={finish}
           >
             {busy ? 'جاري التحليل…' : 'إنهاء وحفظ'}
           </Button>
         ) : (
-          <Button disabled={!pageComplete || busy} onClick={() => setPage((p) => p + 1)}>
+          <Button
+            disabled={!pageComplete || busy || locked}
+            onClick={() => go(() => setPage((p) => p + 1))}
+          >
             التالي
           </Button>
         )}

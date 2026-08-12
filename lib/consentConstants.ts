@@ -1,18 +1,23 @@
+import {
+  ASSESSMENT_CONSENT_AR,
+  PLATFORM_TERMS_CHECKBOX_AR,
+} from '@/lib/legalContent';
+
 export const CONSENT_LAYERS = [
   {
     type: 'general_platform',
-    title: 'موافقة على استخدام منصة تآلف',
-    text: 'أوافق على استخدام منصة تآلف كأداة تقييم تربوي مساعدة. أفهم أن تآلف لا تقدم تشخيصاً طبياً، وأن النتائج هي مؤشرات تربوية تساعد الفريق المعني برعاية الطفل.',
+    title: PLATFORM_TERMS_CHECKBOX_AR.title,
+    text: PLATFORM_TERMS_CHECKBOX_AR.body,
   },
   {
     type: 'assessment',
-    title: 'موافقة على إجراء التقييم',
-    text: 'أوافق على إجراء التقييم التربوي لطفلي. أفهم أن التقييم يشمل استبياناً وألعاباً تفاعلية، وأن تحليل الذكاء الاصطناعي يُستخدم كأداة مساعدة لتوليد تقرير تربوي. التقرير لا يُعتبر تشخيصاً طبياً ولا يُغني عن استشارة الأخصائي.',
+    title: 'الموافقة على التقييم',
+    text: ASSESSMENT_CONSENT_AR.assessment,
   },
   {
     type: 'data_privacy',
-    title: 'موافقة على معالجة البيانات',
-    text: 'أوافق على جمع ومعالجة بيانات طفلي (المعلومات النمائية، نتائج الاستبيان، بيانات الألعاب) لأغراض التقييم والمتابعة. أفهم أن بياناتي محمية ومشفرة، وأنني أستطيع طلب حذفها في أي وقت.',
+    title: 'الموافقة على البيانات',
+    text: ASSESSMENT_CONSENT_AR.data,
   },
 ] as const;
 

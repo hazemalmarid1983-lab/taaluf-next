@@ -6,37 +6,29 @@ import {
 } from '../types/taalof';
 
 describe('criteria bank', () => {
-  it('has 36 criteria with required fields', () => {
+  it('has 36 unified criteria with question + option descriptions', () => {
     expect(CRITERIA_LIST).toHaveLength(36);
     for (const c of CRITERIA_LIST) {
       expect(c.id).toMatch(/^C\d+$/);
       expect(c.name).toBeTruthy();
+      expect(c.question || c.description).toBeTruthy();
       expect(c.domain).toBeTruthy();
       expect(c.recommendation).toBeTruthy();
       expect(c.ageBands?.length).toBeGreaterThan(0);
       for (const level of ['0', '1', '2', '3'] as const) {
         expect(c.levels[level]?.label).toBeTruthy();
-        expect(c.levels[level]?.description).toBeTruthy();
+        expect(c.levels[level]?.description.length).toBeGreaterThan(15);
       }
     }
   });
 
-  it('filters age band 3-4 excluding C20-C22', () => {
-    const active = getActiveCriteria('3-4');
-    const ids = active.map((c) => c.id);
-    expect(ids).not.toContain('C20');
-    expect(ids).not.toContain('C21');
-    expect(ids).not.toContain('C22');
-    expect(ids).toContain('C1');
-  });
-
-  it('filters age band 10-12 excluding C32-C34', () => {
-    const active = getActiveCriteria('10-12');
-    const ids = active.map((c) => c.id);
-    expect(ids).not.toContain('C32');
-    expect(ids).not.toContain('C33');
-    expect(ids).not.toContain('C34');
-    expect(ids).toContain('C20');
+  it('includes core items across age bands from unified source', () => {
+    for (const band of ['3-4', '5-6', '7-9', '10-12'] as const) {
+      const ids = getActiveCriteria(band).map((c) => c.id);
+      expect(ids).toContain('C1');
+      expect(ids).toContain('C15');
+      expect(ids).toContain('C36');
+    }
   });
 
   it('calculates known assessment result', () => {

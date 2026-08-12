@@ -30,10 +30,16 @@ export const SCREENING_ITEMS = screeningData.items;
 export const SCREENING_LIKERT = screeningData.likert;
 export const SCREENING_DIMENSIONS = screeningData.dimensions;
 
-/** Likert 0–3 كما هو (أعلى = مؤشر أعلى للحاجة حسب مقياس الفرز) */
+/** مقياس موحّد 0–3 (مستقر → شديد جداً؛ أعلى = حاجة دعم أكبر) */
 function concernValue(raw: number): number {
   return Math.min(3, Math.max(0, Number(raw) || 0));
 }
+
+export type ScreeningOption = {
+  score: number;
+  label: string;
+  description: string;
+};
 
 export function calculateScreening(answers: ScreeningAnswer[]): ScreeningResult {
   const byId = new Map(answers.map((a) => [a.id, a.value]));

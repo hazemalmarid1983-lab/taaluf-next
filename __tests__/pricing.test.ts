@@ -1,20 +1,26 @@
 import { getPrice } from '../lib/pricing';
 
-describe('pricing', () => {
-  it('SAR price equals base price', () => {
-    expect(getPrice('assessment', 'SAR')).toBe(149);
-    expect(getPrice('monitoring', 'SAR')).toBe(49);
+describe('pricing (USD base)', () => {
+  it('USD equals base USD prices', () => {
+    expect(getPrice('assessment', 'USD')).toBe(39);
+    expect(getPrice('monitoring', 'USD')).toBe(15);
+    expect(getPrice('specialist', 'USD')).toBe(49);
+    expect(getPrice('free', 'USD')).toBe(0);
   });
 
-  it('AED conversion', () => {
-    expect(getPrice('assessment', 'AED')).toBe(Math.round(149 * 0.98));
+  it('SAR conversion from USD', () => {
+    expect(getPrice('assessment', 'SAR')).toBe(Math.round(39 * 3.75));
   });
 
-  it('EGP conversion', () => {
-    expect(getPrice('assessment', 'EGP')).toBe(Math.round(149 * 13.2));
+  it('AED conversion from USD', () => {
+    expect(getPrice('assessment', 'AED')).toBe(Math.round(39 * 3.67));
+  });
+
+  it('EGP conversion from USD', () => {
+    expect(getPrice('assessment', 'EGP')).toBe(Math.round(39 * 48));
   });
 
   it('invalid tier → 0', () => {
-    expect(getPrice('unknown', 'SAR')).toBe(0);
+    expect(getPrice('unknown', 'USD')).toBe(0);
   });
 });

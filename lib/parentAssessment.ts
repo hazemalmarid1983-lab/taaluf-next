@@ -9,12 +9,29 @@ export type MappedParentScore = {
   parentItemId: string;
 };
 
-export const PARENT_ITEMS = parentData.items;
+export type ParentOption = {
+  score: number;
+  label: string;
+  description: string;
+};
+
+export type ParentItem = {
+  id: string;
+  question?: string;
+  text: string;
+  mappedCriterion: string;
+  domain: string;
+  is_reverse?: boolean;
+  reverse?: boolean;
+  options?: ParentOption[];
+};
+
+export const PARENT_ITEMS = parentData.items as ParentItem[];
 export const PARENT_SCALE = parentData.scale;
 
 /**
- * تحويل إجابات الأهل (0–4) إلى درجات معايير الأخصائي (0–3).
- * الأسئلة الإيجابية (reverse) تُعكس قبل التحويل حتى تبقى الدرجة الأعلى = حاجة دعم أكبر.
+ * تحويل إجابات الأهل (0–3 موحّد) إلى درجات معايير الأخصائي (0–3).
+ * الخيارات مكتوبة أصلاً من مستقر→شديد جداً؛ لا حاجة لعكس الدرجة.
  */
 export function mapParentToCriteria(
   parentAnswers: ParentAnswer[]
@@ -22,12 +39,10 @@ export function mapParentToCriteria(
   const byId = new Map(parentAnswers.map((a) => [a.id, a.value]));
 
   return PARENT_ITEMS.map((item) => {
-    const raw = Math.min(4, Math.max(0, Number(byId.get(item.id) ?? 0)));
-    const concern04 = item.reverse ? 4 - raw : raw;
-    const score = Math.min(3, Math.max(0, Math.round(concern04 * 0.75)));
+    const raw = Math.min(3, Math.max(0, Number(byId.get(item.id) ?? 0)));
     return {
       criterionId: item.mappedCriterion,
-      score,
+      score: raw,
       source: 'parent' as const,
       parentItemId: item.id,
     };

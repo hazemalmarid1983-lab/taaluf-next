@@ -3,13 +3,14 @@
 import { FormEvent, Suspense, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { signIn } from 'next-auth/react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useSearchParams } from 'next/navigation';
 import SubscriberGate from '@/components/access/SubscriberGate';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { homePathForRole } from '@/lib/access';
 import { BRAND } from '@/lib/content';
+import { PLATFORM_TERMS_CHECKBOX_AR } from '@/lib/legalContent';
 
 const PORTALS = [
   {
@@ -33,7 +34,6 @@ const PORTALS = [
 ];
 
 function LoginForm() {
-  const router = useRouter();
   const params = useSearchParams();
   const initial = (params.get('portal') as 'admin' | 'specialist' | 'parent') || 'specialist';
   const [portal, setPortal] = useState<'admin' | 'specialist' | 'parent'>(initial);
@@ -51,6 +51,7 @@ function LoginForm() {
   const [password, setPassword] = useState(paymentsOff ? 'taaluf123' : '');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
 
   const meta = useMemo(
     () => PORTALS.find((p) => p.id === portal) || PORTALS[1],
@@ -71,23 +72,30 @@ function LoginForm() {
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (!acceptedTerms) {
+      setError('يلزم الموافقة على الشروط والأحكام للمتابعة');
+      return;
+    }
     setLoading(true);
     setError('');
+    const roleGuess =
+      portal === 'admin' ? 'admin' : portal === 'parent' ? 'parent' : 'specialist';
+    const dest = homePathForRole(roleGuess);
     const res = await signIn('credentials', {
       email,
       password,
       portal,
       redirect: false,
+      callbackUrl: dest,
     });
     setLoading(false);
     if (res?.error) {
       setError('بيانات الدخول غير صحيحة لهذه البوابة');
       return;
     }
-    const roleGuess =
-      portal === 'admin' ? 'admin' : portal === 'parent' ? 'parent' : 'specialist';
-    router.push(homePathForRole(roleGuess));
-    router.refresh();
+    // انتقال كامل يتجنب روابط callback التالفة من NEXTAUTH_URL
+    // ويضمن إرسال كوكي الجلسة بعد تسجيل الدخول
+    window.location.assign(dest);
   };
 
   return (
@@ -141,8 +149,39 @@ function LoginForm() {
               required
             />
           </div>
+
+          <div className="rounded-2xl border border-emerald-100 bg-[#F0F9F4] p-4">
+            <p className="text-sm font-semibold text-[#0b1f14]">
+              {PLATFORM_TERMS_CHECKBOX_AR.title}
+            </p>
+            <p className="mt-2 text-xs leading-6 text-slate-600">
+              {PLATFORM_TERMS_CHECKBOX_AR.body}{' '}
+              <Link
+                href="/legal/terms"
+                className="font-semibold text-[#2D8B5A] underline"
+                target="_blank"
+              >
+                اقرأ الشروط
+              </Link>
+            </p>
+            <label className="mt-3 flex cursor-pointer items-center gap-2 text-sm font-medium text-[#2D8B5A]">
+              <input
+                type="checkbox"
+                required
+                checked={acceptedTerms}
+                onChange={(e) => setAcceptedTerms(e.target.checked)}
+                className="h-4 w-4 accent-[#2D8B5A]"
+              />
+              <span>{PLATFORM_TERMS_CHECKBOX_AR.label}</span>
+            </label>
+          </div>
+
           {error && <p className="text-sm text-rose-600">{error}</p>}
-          <Button type="submit" className="w-full" disabled={loading}>
+          <Button
+            type="submit"
+            className="w-full"
+            disabled={loading || !acceptedTerms}
+          >
             {loading ? 'جاري الدخول…' : `دخول ${meta.title}`}
           </Button>
         </form>

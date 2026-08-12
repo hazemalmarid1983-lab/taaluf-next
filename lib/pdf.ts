@@ -1,6 +1,7 @@
 import { ArabicShaper } from 'arabic-persian-reshaper';
 import { jsPDF } from 'jspdf';
 import { CLOSING_NEXT_STEP_AR, DISCLAIMER_AR } from '@/lib/content';
+import { PDF_FOOTER_LEGAL_AR } from '@/lib/legalContent';
 import { SOURCE_LABEL_AR } from '@/lib/fusion';
 import type { ProposedGoal } from '@/lib/goalsEngine';
 import type { AiAnalysisPayload } from '@/lib/openai';
@@ -94,8 +95,7 @@ export async function buildAssessmentPdf(input: {
   const charsPerLine = 58;
   let y = margin;
 
-  const PDF_DISCLAIMER =
-    '⚠️ هذا التقرير أداة تقييم تربوي مساعدة وليس تشخيصاً طبياً. يُنصح بمراجعة الأخصائي المؤهل للحصول على تقييم شامل.';
+  const PDF_DISCLAIMER = PDF_FOOTER_LEGAL_AR;
 
   const paintFooter = (pageNumber: number) => {
     ensureArabicFont(doc, fontBase64);

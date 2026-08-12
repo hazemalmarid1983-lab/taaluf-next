@@ -1,10 +1,16 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import { usePathname, useRouter } from 'next/navigation';
+import { Suspense, useEffect, useMemo, useState } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
 import CriteriaSlider from '@/components/assessment/CriteriaSlider';
 import ResultsScreen from '@/components/assessment/ResultsScreen';
 import { Button } from '@/components/ui/button';
+import {
+  clearAssessmentDraft,
+  hasActiveAssessment,
+  saveAssessmentDraft,
+  type AssessmentDraft,
+} from '@/lib/assessmentGate';
 import {
   compareWithPrevious,
   domainSourcesFromFusion,
@@ -16,6 +22,7 @@ import {
   suggestNextAssessmentDate,
   type StoredAssessment,
 } from '@/lib/assessmentHelpers';
+import { useStepNav } from '@/hooks/useStepNav';
 import { ASSESSMENT_UI } from '@/lib/content';
 import { buildProposedGoals } from '@/lib/goalsEngine';
 import type { AiAnalysisPayload } from '@/lib/openai';
@@ -38,16 +45,51 @@ type LocalStudent = {
 };
 type Phase = 'questionnaire' | 'results';
 
+function resultFromStored(
+  stored: StoredAssessment,
+  ageBand: ReturnType<typeof getAgeBand>
+) {
+  return calculateAssessmentResult(
+    stored.scores.map((s) => ({
+      criterionId: s.criterionId,
+      score: s.score,
+      specialistNotes: s.specialistNotes,
+      evidence: s.evidence,
+    })),
+    ageBand
+  );
+}
+
 export default function NewAssessmentPage() {
+  return (
+    <Suspense
+      fallback={
+        <p className="py-16 text-center text-sm text-slate-500">
+          جاري تحميل التقييم…
+        </p>
+      }
+    >
+      <NewAssessmentInner />
+    </Suspense>
+  );
+}
+
+function NewAssessmentInner() {
   const pathname = usePathname();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const isParentPortal = pathname?.startsWith('/parent');
+  const wantResults =
+    searchParams.get('view') === 'results' ||
+    searchParams.get('view') === 'report';
+
   const [student, setStudent] = useState<LocalStudent | null>(null);
-  const [scores, setScores] = useState<Record<string, number>>({});
+  const [scores, setScores] = useState<Record<string, number | null>>({});
   const [notes, setNotes] = useState<Record<string, string>>({});
   const [evidence, setEvidence] = useState<Record<string, string[]>>({});
   const [step, setStep] = useState(0);
   const [phase, setPhase] = useState<Phase>('questionnaire');
+  const { locked, go } = useStepNav(500);
   const [computed, setComputed] = useState<ReturnType<
     typeof calculateAssessmentResult
   > | null>(null);
@@ -57,10 +99,12 @@ export default function NewAssessmentPage() {
   const [busyAi, setBusyAi] = useState(false);
   const [busySave, setBusySave] = useState(false);
   const [msg, setMsg] = useState('');
+  const [toast, setToast] = useState('');
   const [bookingOpen, setBookingOpen] = useState(false);
   const [domainSources, setDomainSources] = useState<Record<string, string[]>>(
     {}
   );
+  const [gateReady, setGateReady] = useState(false);
 
   const ageBand = useMemo(() => {
     const birth = student?.dob || student?.birthdate;
@@ -74,6 +118,11 @@ export default function NewAssessmentPage() {
     [ageBand]
   );
 
+  const showToast = (text: string) => {
+    setToast(text);
+    window.setTimeout(() => setToast(''), 4500);
+  };
+
   useEffect(() => {
     try {
       if (localStorage.getItem('taaluf_consented') !== 'true') {
@@ -81,26 +130,128 @@ export default function NewAssessmentPage() {
         return;
       }
       const raw = localStorage.getItem('taaluf.activeStudent');
-      if (raw) {
-        const s = JSON.parse(raw) as LocalStudent;
-        setStudent(s);
-        setPrevious(getPreviousAssessment(s.id));
+      if (!raw) {
+        setGateReady(true);
+        return;
       }
+      const s = JSON.parse(raw) as LocalStudent;
+      setStudent(s);
+      const band =
+        s.dob || s.birthdate
+          ? getAgeBand(s.dob || s.birthdate || '')
+          : s.age != null
+            ? getAgeBandFromYears(s.age)
+            : '5-6';
+      const prev = getPreviousAssessment(s.id);
+      setPrevious(prev);
+
+      const gate = hasActiveAssessment(s.id);
+      const draft = gate.draft as AssessmentDraft | null | undefined;
+
+      if (wantResults && prev) {
+        const result = resultFromStored(prev, band);
+        setComputed(result);
+        setScores(
+          Object.fromEntries(prev.scores.map((x) => [x.criterionId, x.score]))
+        );
+        setNotes(
+          Object.fromEntries(
+            prev.scores
+              .filter((x) => x.specialistNotes)
+              .map((x) => [x.criterionId, x.specialistNotes || ''])
+          )
+        );
+        setNextDate(
+          prev.nextAssessmentDate ||
+            suggestNextAssessmentDate(prev.classification)
+        );
+        if (prev.aiAnalysis) setAi(prev.aiAnalysis as AiAnalysisPayload);
+        setPhase('results');
+        setMsg(`تقرير محفوظ · ${prev.percentage}% · ${prev.classification}`);
+        setGateReady(true);
+        return;
+      }
+
+      if (gate.active && isParentPortal) {
+        showToast(gate.message);
+        if (gate.reason === 'completed' && prev) {
+          const result = resultFromStored(prev, band);
+          setComputed(result);
+          setScores(
+            Object.fromEntries(prev.scores.map((x) => [x.criterionId, x.score]))
+          );
+          setNextDate(
+            prev.nextAssessmentDate ||
+              suggestNextAssessmentDate(prev.classification)
+          );
+          if (prev.aiAnalysis) setAi(prev.aiAnalysis as AiAnalysisPayload);
+          setPhase('results');
+          router.replace('/parent/assessment?view=results');
+        } else if (draft?.scores) {
+          setScores(draft.scores);
+          setNotes(draft.notes || {});
+          setStep(draft.step || 0);
+          setMsg('تم استئناف التقييم قيد المعالجة');
+        }
+        setGateReady(true);
+        return;
+      }
+
+      if (gate.active && !isParentPortal && gate.reason === 'completed' && !wantResults) {
+        showToast(gate.message);
+        if (prev) {
+          const result = resultFromStored(prev, band);
+          setComputed(result);
+          setScores(
+            Object.fromEntries(prev.scores.map((x) => [x.criterionId, x.score]))
+          );
+          setNextDate(
+            prev.nextAssessmentDate ||
+              suggestNextAssessmentDate(prev.classification)
+          );
+          if (prev.aiAnalysis) setAi(prev.aiAnalysis as AiAnalysisPayload);
+          setPhase('results');
+        }
+      } else if (draft?.childId === s.id && draft.scores) {
+        setScores(draft.scores);
+        setNotes(draft.notes || {});
+        setStep(draft.step || 0);
+      }
+
+      setGateReady(true);
     } catch {
-      /* ignore */
+      setGateReady(true);
     }
-  }, [router]);
+    // ageBand intentionally omitted: student drives band after hydrate
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router, wantResults, isParentPortal]);
 
   useEffect(() => {
     setScores((prev) => {
       const next = { ...prev };
       for (const c of activeCriteria) {
-        if (next[c.id] == null) next[c.id] = 0;
+        if (!(c.id in next)) next[c.id] = null;
       }
       return next;
     });
-    setStep(0);
   }, [activeCriteria]);
+
+  // حفظ مسودة أثناء التقدم
+  useEffect(() => {
+    if (!gateReady || !student?.id || phase !== 'questionnaire') return;
+    const answered = Object.entries(scores).filter(
+      ([, v]) => v != null
+    ) as Array<[string, number]>;
+    if (!answered.length) return;
+    saveAssessmentDraft({
+      childId: student.id,
+      scores: Object.fromEntries(answered),
+      notes,
+      step,
+      updatedAt: new Date().toISOString(),
+      status: 'in_progress',
+    });
+  }, [scores, notes, step, student?.id, phase, gateReady]);
 
   const scoreList: AssessmentScore[] = useMemo(
     () =>
@@ -129,8 +280,19 @@ export default function NewAssessmentPage() {
     ? Math.round(((step + 1) / activeCriteria.length) * 100)
     : 0;
   const domainIndex = DOMAINS.indexOf(criterion?.domain || '') + 1;
+  const currentAnswered = criterion
+    ? scores[criterion.id] != null
+    : false;
 
   const finishQuestionnaire = () => {
+    const unanswered = activeCriteria.filter((c) => scores[c.id] == null);
+    if (unanswered.length) {
+      showToast('يرجى الإجابة على جميع الأسئلة قبل عرض النتائج');
+      const idx = activeCriteria.findIndex((c) => scores[c.id] == null);
+      if (idx >= 0) setStep(idx);
+      return;
+    }
+
     const parentScores = loadStoredParentScores(student?.id);
     const gameScores = loadStoredGameScores(student?.id);
     const fused = fuseAssessmentSources({
@@ -160,6 +322,18 @@ export default function NewAssessmentPage() {
     setComputed(result);
     setNextDate(suggestNextAssessmentDate(result.classification));
     setPhase('results');
+    if (student?.id) {
+      saveAssessmentDraft({
+        childId: student.id,
+        scores: Object.fromEntries(
+          Object.entries(scores).filter(([, v]) => v != null)
+        ) as Record<string, number>,
+        notes,
+        step,
+        updatedAt: new Date().toISOString(),
+        status: 'completed_pending_report',
+      });
+    }
     setMsg(
       `اكتمل الاستبيان — النتيجة ${result.percentage}% · ${result.classification}`
     );
@@ -249,6 +423,7 @@ export default function NewAssessmentPage() {
         aiAnalysis: ai,
       };
       saveStoredAssessment(stored);
+      clearAssessmentDraft(student.id);
       setPrevious(stored);
       await fetch('/api/platform/events', {
         method: 'POST',
@@ -304,9 +479,25 @@ export default function NewAssessmentPage() {
     }
   };
 
+  if (!gateReady) {
+    return (
+      <p className="py-16 text-center text-sm text-slate-500">
+        جاري تحميل التقييم…
+      </p>
+    );
+  }
+
   if (phase === 'results' && computed) {
     return (
       <>
+        {toast && (
+          <div
+            role="status"
+            className="fixed left-1/2 top-4 z-[60] w-[min(92vw,28rem)] -translate-x-1/2 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-center text-sm font-semibold text-amber-950 shadow-lg"
+          >
+            {toast}
+          </div>
+        )}
         <ResultsScreen
           studentName={student?.name || 'طالب'}
           childAge={student?.age}
@@ -323,6 +514,12 @@ export default function NewAssessmentPage() {
           onExportPdf={exportPdf}
           domainSources={domainSources}
           onBackToQuestions={() => {
+            if (isParentPortal && previous) {
+              showToast(
+                'لديك تقييم قيد المعالجة، يرجى إكماله أو عرض تقريره أولاً.'
+              );
+              return;
+            }
             setPhase('questionnaire');
             setMsg('');
             setStep(Math.max(0, activeCriteria.length - 1));
@@ -369,6 +566,15 @@ export default function NewAssessmentPage() {
 
   return (
     <section className="mx-auto max-w-3xl space-y-5">
+      {toast && (
+        <div
+          role="status"
+          className="fixed left-1/2 top-4 z-[60] w-[min(92vw,28rem)] -translate-x-1/2 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-center text-sm font-semibold text-amber-950 shadow-lg"
+        >
+          {toast}
+        </div>
+      )}
+
       <div className="rounded-3xl border border-emerald-100 bg-white p-6 shadow-sm">
         <p className="text-sm font-semibold text-[#2D8B5A]">
           سؤال {step + 1} من {activeCriteria.length}
@@ -401,7 +607,7 @@ export default function NewAssessmentPage() {
         <div className="rounded-3xl border border-emerald-100 bg-white p-4 shadow-sm sm:p-6">
           <CriteriaSlider
             criterion={criterion}
-            value={scores[criterion.id] ?? 0}
+            value={scores[criterion.id] ?? null}
             notes={notes[criterion.id] || ''}
             evidence={evidence[criterion.id] || []}
             onChange={(value) => {
@@ -422,8 +628,8 @@ export default function NewAssessmentPage() {
       <div className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-emerald-100 bg-white p-4">
         <Button
           variant="ghost"
-          disabled={step === 0}
-          onClick={() => setStep((s) => Math.max(0, s - 1))}
+          disabled={step === 0 || locked}
+          onClick={() => go(() => setStep((s) => Math.max(0, s - 1)))}
         >
           السابق
         </Button>
@@ -431,9 +637,19 @@ export default function NewAssessmentPage() {
           بعد آخر سؤال تُغلق شاشة الاستبيان وتظهر النتائج والأهداف كاملة
         </p>
         {isLast ? (
-          <Button onClick={finishQuestionnaire}>إنهاء وعرض النتائج</Button>
+          <Button
+            disabled={locked || !currentAnswered}
+            onClick={finishQuestionnaire}
+          >
+            إنهاء وعرض النتائج
+          </Button>
         ) : (
-          <Button onClick={() => setStep((s) => s + 1)}>التالي</Button>
+          <Button
+            disabled={locked || !currentAnswered}
+            onClick={() => go(() => setStep((s) => s + 1))}
+          >
+            التالي
+          </Button>
         )}
       </div>
 

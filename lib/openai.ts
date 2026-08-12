@@ -1,7 +1,6 @@
 import OpenAI from 'openai';
 import {
-  REPORT_EDU_CLOSING_AR,
-  REPORT_SYSTEM_PERSONA_AR,
+  PARENT_REPORT_CONSTITUTION_AR,
   sanitizeAiPayload,
 } from '@/lib/reportLanguage';
 import {
@@ -59,11 +58,24 @@ export async function analyzeAssessment(input: {
     };
   });
 
-  const system = `أنت مساعد تربوي. لا تقدم تشخيصاً طبياً. استخدم لغة تربوية فقط. لا تستخدم كلمات: تشخيص، طبيب، مرض، علاج طبي. استخدم: تقييم تربوي، مؤشرات، دعم تعليمي، خطة تربوية.
-${REPORT_SYSTEM_PERSONA_AR}
-اكتب بالعربية الفصحى الواضحة.
+  const system = `${PARENT_REPORT_CONSTITUTION_AR}
+
 أرجع JSON فقط بالمفاتيح المطلوبة.
-اختتم التدخل المقترح بفكرة قريبة من: ${REPORT_EDU_CLOSING_AR}`;
+حقل analysis يجب أن يحتوي التقرير الكامل بهيكله الإلزامي.
+schema:
+{
+  "analysis": "التقرير التوجيهي الكامل",
+  "strengths": ["..."],
+  "weaknesses": ["..."],
+  "recommendations": {
+    "special_education": "...",
+    "speech": "...",
+    "psychological": "...",
+    "occupational": "..."
+  },
+  "intervention_plan": "...",
+  "confidence": 0.0
+}`;
 
   const user = JSON.stringify({
     studentName: input.studentName || 'الطفل',
@@ -74,20 +86,10 @@ ${REPORT_SYSTEM_PERSONA_AR}
         ? input.result.classification
         : input.result.classification.label,
     domainAverages: input.result.domainAverages,
+    mostAffectedDomains: Object.entries(input.result.domainAverages || {})
+      .sort((a, b) => Number(b[1]) - Number(a[1]))
+      .slice(0, 5),
     scores: scored,
-    schema: {
-      analysis: 'string',
-      strengths: 'string[]',
-      weaknesses: 'string[]',
-      recommendations: {
-        special_education: 'string',
-        speech: 'string',
-        psychological: 'string',
-        occupational: 'string',
-      },
-      intervention_plan: 'string',
-      confidence: 'number 0-1',
-    },
   });
 
   const completion = await client.chat.completions.create({

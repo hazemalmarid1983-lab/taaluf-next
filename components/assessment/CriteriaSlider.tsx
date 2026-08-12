@@ -1,14 +1,13 @@
 'use client';
 
 import { useRef } from 'react';
-import { Slider } from '@/components/ui/slider';
-import { LEVEL_THEME } from '@/lib/assessmentHelpers';
+import OptionChoiceCards from '@/components/assessment/OptionChoiceCards';
+import { recommendationForLevel } from '@/lib/assessmentGate';
 import type { Criterion } from '@/types/taalof';
-import { cn } from '@/lib/utils';
 
 type Props = {
   criterion: Criterion;
-  value: number;
+  value: number | null;
   notes?: string;
   evidence?: string[];
   onChange: (value: number) => void;
@@ -26,9 +25,17 @@ export default function CriteriaSlider({
   onEvidenceChange,
 }: Props) {
   const fileRef = useRef<HTMLInputElement>(null);
-  const levelKey = String(value) as '0' | '1' | '2' | '3';
-  const level = criterion.levels[levelKey];
-  const theme = LEVEL_THEME[value] || LEVEL_THEME[0];
+  const question = criterion.question || criterion.description;
+  const answered = value != null;
+  const level =
+    answered
+      ? criterion.levels[String(value) as '0' | '1' | '2' | '3']
+      : null;
+  const dynamicRec = recommendationForLevel(
+    criterion.recommendation,
+    value,
+    level?.label
+  );
 
   const onFiles = async (files: FileList | null) => {
     if (!files?.length) return;
@@ -60,7 +67,7 @@ export default function CriteriaSlider({
   };
 
   return (
-    <article className="space-y-3 rounded-2xl border border-emerald-100 bg-white p-4 shadow-sm">
+    <article className="space-y-4 rounded-2xl border border-emerald-100 bg-white p-4 shadow-sm">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <p className="text-[11px] font-medium text-[#2D8B5A]/80">
@@ -70,70 +77,42 @@ export default function CriteriaSlider({
             {criterion.name}
           </h3>
         </div>
-        <span
-          className={cn(
-            'rounded-full px-2.5 py-1 text-xs font-semibold',
-            theme.badge
-          )}
-        >
-          {value} · {level?.label}
-        </span>
       </div>
 
-      <p className="text-xs leading-6 text-slate-500">{criterion.description}</p>
+      <p className="rounded-xl bg-[#F0F9F4] px-3 py-3 text-sm font-medium leading-7 text-[#0b1f14]">
+        {question}
+      </p>
+
+      <OptionChoiceCards
+        options={[0, 1, 2, 3].map((n) => {
+          const lv = criterion.levels[String(n) as '0' | '1' | '2' | '3'];
+          return {
+            score: n,
+            label: lv?.label || String(n),
+            description: lv?.description || '',
+          };
+        })}
+        value={value}
+        onChange={onChange}
+      />
 
       <div
-        className={cn(
-          'rounded-xl p-3 transition-colors',
-          value === 0 && 'bg-emerald-50',
-          value === 1 && 'bg-sky-50',
-          value === 2 && 'bg-orange-50',
-          value === 3 && 'bg-rose-50'
-        )}
+        className={
+          answered
+            ? 'rounded-xl border border-amber-200 bg-amber-50 px-3 py-3 text-xs leading-6 text-slate-700'
+            : 'min-h-[3rem] rounded-xl border border-dashed border-slate-200 bg-slate-50 px-3 py-3 text-xs text-slate-400'
+        }
       >
-        <Slider
-          value={[value]}
-          min={0}
-          max={3}
-          step={1}
-          onValueChange={(vals) => onChange(vals[0] ?? 0)}
-          aria-label={criterion.name}
-          className={cn(
-            '[&_[role=slider]]:border-2 [&_[role=slider]]:bg-white',
-            theme.thumb,
-            value === 0 && '[&_span.absolute]:!bg-emerald-500',
-            value === 1 && '[&_span.absolute]:!bg-sky-500',
-            value === 2 && '[&_span.absolute]:!bg-orange-500',
-            value === 3 && '[&_span.absolute]:!bg-rose-600'
-          )}
-        />
-        <div className="relative mt-2 h-2 overflow-hidden rounded-full bg-slate-200">
-          <div
-            className={cn('h-full rounded-full transition-all', theme.track)}
-            style={{ width: `${(value / 3) * 100}%` }}
-          />
-        </div>
-        <div className="mt-2 grid grid-cols-4 gap-1 text-center text-[10px] text-slate-400">
-          {[0, 1, 2, 3].map((n) => (
-            <span
-              key={n}
-              className={n === value ? 'font-semibold text-slate-700' : ''}
-            >
-              {criterion.levels[String(n) as '0' | '1' | '2' | '3']?.label}
-            </span>
-          ))}
-        </div>
-      </div>
-
-      <div className="rounded-xl border border-slate-100 bg-[#F0F9F4] px-3 py-2 text-xs leading-6 text-slate-700">
-        <p>
-          <span className="font-semibold text-[#2D8B5A]">وصف المستوى:</span>{' '}
-          {level?.description}
-        </p>
-        <p className="mt-1.5">
-          <span className="font-semibold text-amber-700">التوصية:</span>{' '}
-          {criterion.recommendation}
-        </p>
+        {answered ? (
+          <>
+            <span className="font-semibold text-amber-800">
+              التوصية ({level?.label}):
+            </span>{' '}
+            {dynamicRec}
+          </>
+        ) : (
+          'اختر أحد الخيارات لعرض التوصية التربوية المناسبة.'
+        )}
       </div>
 
       <div className="space-y-2">

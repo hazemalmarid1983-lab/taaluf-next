@@ -91,7 +91,7 @@ const FAQ = [
   },
   {
     q: 'كم تكلفة المتابعة؟',
-    a: '49 ريال شهرياً للمتابعة المستمرة (أو ما يعادلها بعملتك).',
+    a: '15 دولاراً شهرياً للمتابعة المستمرة (أو ما يعادلها بعملتك المحلية عبر Tap).',
   },
 ];
 
@@ -117,6 +117,9 @@ export default function HomePage() {
               <a href="#pricing" className="rounded-xl px-3 py-2 text-emerald-100/80 hover:text-white">
                 الباقات
               </a>
+              <Link href="/scientific-basis" className="rounded-xl px-3 py-2 text-emerald-100/80 hover:text-white">
+                أساسنا العلمي
+              </Link>
               <Link href="/login?portal=specialist" className="rounded-xl px-3 py-2 text-emerald-100/80 hover:text-white">
                 للأخصائيين
               </Link>
@@ -269,9 +272,9 @@ export default function HomePage() {
             <a href="#how">كيف نعمل</a>
             <a href="#pricing">الباقات</a>
             <Link href="/login?portal=specialist">للأخصائيين</Link>
-            <Link href="/login?portal=parent">من نحن</Link>
-            <span>سياسة الخصوصية</span>
-            <span>شروط الاستخدام</span>
+            <Link href="/scientific-basis">أساسنا العلمي</Link>
+            <Link href="/legal/terms">الشروط والأحكام</Link>
+            <Link href="/legal/terms">سياسة الخصوصية</Link>
           </div>
           <div>
             <p className="text-sm font-semibold text-white">تواصل</p>

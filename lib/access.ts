@@ -48,9 +48,9 @@ export const SUBSCRIPTION_CODES = [
 ].map((c) => c.trim());
 
 export const PRICES = {
-  assessment: { amount: 149, currency: 'AED', label: 'رسوم تقييم تآلف' },
-  booking: { amount: 399, currency: 'AED', label: 'فحص شامل — فريق متعدد التخصصات' },
-  specialistAccess: { amount: 199, currency: 'AED', label: 'دخول بوابة المختص' },
+  assessment: { amount: 39, currency: 'USD', label: 'رسوم تقييم تآلف' },
+  booking: { amount: 99, currency: 'USD', label: 'فحص شامل — فريق متعدد التخصصات' },
+  specialistAccess: { amount: 49, currency: 'USD', label: 'دخول بوابة المختص' },
 } as const;
 
 export function normalizeCode(code: string) {

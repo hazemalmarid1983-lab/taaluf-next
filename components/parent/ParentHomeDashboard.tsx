@@ -7,6 +7,7 @@ import ParentPricingCards from '@/components/access/ParentPricingCards';
 import { Button } from '@/components/ui/button';
 import { loadStoredAssessments } from '@/lib/assessmentHelpers';
 import { loadGoalsLocal } from '@/lib/goalsStore';
+import { cn } from '@/lib/utils';
 
 type Child = {
   id: string;
@@ -14,46 +15,20 @@ type Child = {
   age?: number;
 };
 
-function CircularGauge({ value }: { value: number }) {
-  const pct = Math.min(100, Math.max(0, value));
-  const r = 42;
-  const c = 2 * Math.PI * r;
-  const offset = c - (pct / 100) * c;
-  return (
-    <svg viewBox="0 0 120 120" className="h-32 w-32">
-      <circle
-        cx="60"
-        cy="60"
-        r={r}
-        fill="none"
-        stroke="#E7F5EE"
-        strokeWidth="10"
-      />
-      <circle
-        cx="60"
-        cy="60"
-        r={r}
-        fill="none"
-        stroke="#2D8B5A"
-        strokeWidth="10"
-        strokeLinecap="round"
-        strokeDasharray={c}
-        strokeDashoffset={offset}
-        transform="rotate(-90 60 60)"
-      />
-      <text
-        x="60"
-        y="66"
-        textAnchor="middle"
-        className="fill-[#0b1f14] text-xl font-bold"
-        fontSize="22"
-        fontWeight="700"
-      >
-        {pct}%
-      </text>
-    </svg>
-  );
-}
+const PATH_STEPS = [
+  { id: 'screening', label: 'الفرز', href: '/dashboard/screening' },
+  {
+    id: 'questionnaire',
+    label: 'الاستبيان',
+    href: '/dashboard/parent-assessment',
+  },
+  { id: 'games', label: 'الألعاب', href: '/dashboard/games' },
+  {
+    id: 'report',
+    label: 'التقرير',
+    href: '/parent/assessment?view=results',
+  },
+] as const;
 
 export default function ParentHomeDashboard({
   unlocked,
@@ -67,10 +42,8 @@ export default function ParentHomeDashboard({
   const [consented, setConsented] = useState(true);
   const [hasScreening, setHasScreening] = useState(false);
   const [hasParentQ, setHasParentQ] = useState(false);
-  const [progress, setProgress] = useState(0);
-  const [events, setEvents] = useState<
-    Array<{ title: string; at: string }>
-  >([]);
+  const [hasGames, setHasGames] = useState(false);
+  const [hasReport, setHasReport] = useState(false);
   const [goalsCount, setGoalsCount] = useState(0);
 
   useEffect(() => {
@@ -101,232 +74,196 @@ export default function ParentHomeDashboard({
         Array.isArray(parentAssess) && parentAssess.length > 0;
       setHasParentQ(parentDone);
 
+      const games = JSON.parse(
+        localStorage.getItem('taaluf.gameSessions.v1') || '[]'
+      );
+      setHasGames(Array.isArray(games) && games.length > 0);
+
       const assessments = loadStoredAssessments();
       const childId = active?.id;
       const mine = childId
         ? assessments.filter((a) => a.studentId === childId)
         : assessments;
-      const hasAssessment = mine.length > 0;
-
-      let p = 10;
-      if (screening?.result) p += 20;
-      if (parentDone) p += 20;
-      if (hasAssessment) p += 35;
-      if (unlocked) p += 15;
-      setProgress(Math.min(100, p));
+      setHasReport(mine.length > 0 || parentDone);
 
       const goals = loadGoalsLocal(childId);
       setGoalsCount(goals.filter((g) => g.status === 'active').length);
-
-      const feed: Array<{ title: string; at: string }> = [];
-      if (screening?.savedAt)
-        feed.push({ title: 'اكتمل الفرز الأولي', at: screening.savedAt });
-      for (const a of mine.slice(0, 3)) {
-        feed.push({
-          title: `تقييم محفوظ · ${a.percentage}%`,
-          at: a.savedAt,
-        });
-      }
-      const games = JSON.parse(
-        localStorage.getItem('taaluf.gameSessions.v1') || '[]'
-      );
-      if (Array.isArray(games)) {
-        for (const g of games.slice(0, 2)) {
-          feed.push({
-            title: `جلسة لعبة · ${g.gameCode || 'game'}`,
-            at: g.endedAt || g.startedAt || new Date().toISOString(),
-          });
-        }
-      }
-      setEvents(
-        feed
-          .sort((a, b) => new Date(b.at).getTime() - new Date(a.at).getTime())
-          .slice(0, 5)
-      );
     } catch {
       /* ignore */
     }
   }, [studentNameFromEntitlements, unlocked]);
 
-  const statusLabel = useMemo(() => {
-    if (goalsCount > 0) return 'خطة نشطة';
-    if (unlocked && progress >= 70) return 'متابعة شهرية';
-    return 'قيد التقييم';
-  }, [goalsCount, unlocked, progress]);
+  const doneMap = useMemo(
+    () => ({
+      screening: hasScreening,
+      questionnaire: hasParentQ,
+      games: hasGames,
+      report: hasReport,
+    }),
+    [hasScreening, hasParentQ, hasGames, hasReport]
+  );
+
+  const completedCount = PATH_STEPS.filter((s) => doneMap[s.id]).length;
+  const progressPct = Math.round((completedCount / PATH_STEPS.length) * 100);
 
   const nextStep = useMemo(() => {
     if (!consented)
       return {
         title: 'أكمل الموافقة قبل البدء',
+        body: 'نحتاج موافقتك لحماية بيانات طفلك قبل أي تقييم.',
         href: '/consent',
-        cta: 'الموافقة',
+        cta: 'أوافق وأبدأ',
+      };
+    if (!child?.id || child.id === 'local')
+      return {
+        title: 'سجّل بيانات طفلك أولاً',
+        body: 'خطوة سريعة لتخصيص المسار حسب عمر الطفل.',
+        href: '/parent/register-child',
+        cta: 'تسجيل الطفل',
       };
     if (!hasScreening)
       return {
-        title: 'أكمل الفرز الأولي (5 دقائق)',
+        title: 'ابدأ الفرز الأولي الآن',
+        body: '12 سؤالاً فقط · حوالي 5 دقائق · مجاناً.',
         href: '/dashboard/screening',
-        cta: 'ابدأ الفرز',
-      };
-    if (!unlocked)
-      return {
-        title: 'ابدأ التقييم الشامل',
-        href: '/dashboard/parent-assessment',
-        cta: 'ابدأ التقييم',
+        cta: 'ابدأ الفرز الآن',
       };
     if (!hasParentQ)
       return {
         title: 'أكمل استبيان الأهل',
+        body: 'أسئلة يومية تساعدنا على فهم طفلك بدقة أكبر.',
         href: '/dashboard/parent-assessment',
-        cta: 'الاستبيان',
+        cta: 'ابدأ الاستبيان الآن',
+      };
+    if (!hasGames)
+      return {
+        title: 'جرّب الألعاب التفاعلية',
+        body: 'أنشطة قصيرة تدعم الصورة التربوية لطفلك.',
+        href: '/dashboard/games',
+        cta: 'افتح الألعاب',
+      };
+    if (hasReport)
+      return {
+        title: 'التقييم مكتمل',
+        body: 'راجع النتائج وخطة العمل المنزلية. لا حاجة لبدء تقييم جديد.',
+        href: '/parent/assessment?view=results',
+        cta: 'اطلع على التقرير',
       };
     if (goalsCount > 0)
       return {
-        title: 'سجّل ملاحظة اليوم',
+        title: 'تابع أهداف طفلك',
+        body: 'سجّل ملاحظة اليوم وواصل الخطة التربوية.',
         href: '/dashboard/goals',
-        cta: 'الأهداف',
+        cta: 'عرض الأهداف',
       };
     return {
-      title: 'راجع التقرير',
-      href: '/parent/assessment',
-      cta: 'التقرير',
+      title: 'اطّلع على التقرير',
+      body: 'راجع النتائج وخطة العمل المنزلية.',
+      href: '/parent/assessment?view=results',
+      cta: 'اطلع على التقرير',
     };
-  }, [consented, hasScreening, unlocked, hasParentQ, goalsCount]);
+  }, [
+    consented,
+    child,
+    hasScreening,
+    hasParentQ,
+    hasGames,
+    hasReport,
+    goalsCount,
+  ]);
 
   const parentName = session?.user?.name || 'ولي الأمر';
   const childName = child?.name || 'طفلك';
 
   return (
-    <section className="space-y-6">
-      {!consented && (
-        <Link
-          href="/consent"
-          className="block rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-950"
-        >
-          أكمل الموافقة قبل البدء →
-        </Link>
-      )}
-
-      <div className="rounded-3xl bg-white p-7 shadow-sm">
-        <h1 className="text-3xl font-bold text-[#0b1f14]">
-          أهلاً {parentName}، كيف حال {childName} اليوم؟
+    <section className="mx-auto max-w-2xl space-y-5">
+      <header className="rounded-3xl border border-slate-100 bg-white px-6 py-7 shadow-sm">
+        <p className="text-sm font-semibold text-[#2D8B5A]">لوحة ولي الأمر</p>
+        <h1 className="mt-2 text-3xl font-bold leading-tight text-[#0b1f14]">
+          أهلاً {parentName}
         </h1>
-        <p className="mt-2 text-sm text-slate-500">
-          الحالة الحالية:{' '}
-          <span className="font-semibold text-[#2D8B5A]">{statusLabel}</span>
+        <p className="mt-2 text-sm leading-7 text-slate-500">
+          مسار واحد واضح لـ <span className="font-semibold text-[#0b1f14]">{childName}</span>
+          . أكمل الخطوات بالترتيب.
+        </p>
+      </header>
+
+      {/* شريط التقدم الأفقي */}
+      <div className="rounded-3xl border border-slate-100 bg-white px-5 py-6 shadow-sm">
+        <div className="mb-4 flex items-center justify-between gap-3">
+          <h2 className="text-base font-bold text-[#0b1f14]">مسار التقييم</h2>
+          <span className="text-xs font-semibold text-[#2D8B5A]">
+            {progressPct}% مكتمل
+          </span>
+        </div>
+
+        <div className="mb-5 h-2 overflow-hidden rounded-full bg-slate-100">
+          <div
+            className="h-full rounded-full bg-[#2D8B5A] transition-all duration-500"
+            style={{ width: `${progressPct}%` }}
+          />
+        </div>
+
+        <ol className="grid grid-cols-4 gap-2">
+          {PATH_STEPS.map((step, idx) => {
+            const done = doneMap[step.id];
+            const current =
+              !done &&
+              PATH_STEPS.slice(0, idx).every((s) => doneMap[s.id]);
+            return (
+              <li key={step.id} className="text-center">
+                <div
+                  className={cn(
+                    'mx-auto flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold',
+                    done && 'bg-[#2D8B5A] text-white',
+                    current && 'bg-[#2D8B5A]/15 text-[#2D8B5A] ring-2 ring-[#2D8B5A]/30',
+                    !done && !current && 'bg-slate-100 text-slate-400'
+                  )}
+                >
+                  {done ? '✓' : idx + 1}
+                </div>
+                <p
+                  className={cn(
+                    'mt-2 text-[11px] font-semibold leading-4',
+                    done || current ? 'text-[#0b1f14]' : 'text-slate-400'
+                  )}
+                >
+                  {step.label}
+                </p>
+              </li>
+            );
+          })}
+        </ol>
+        <p className="mt-4 text-center text-xs text-slate-400">
+          الفرز → الاستبيان → الألعاب → التقرير
         </p>
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-        <div className="rounded-3xl border border-emerald-100 bg-white p-6">
-          <div className="flex flex-wrap items-center gap-6">
-            <CircularGauge value={progress} />
-            <div>
-              <h2 className="text-xl font-bold text-[#0b1f14]">تقدّم التقييم</h2>
-              <p className="mt-2 text-sm leading-7 text-slate-600">
-                أكمل الخطوات بالترتيب للحصول على تقرير مدمج من الأخصائي والأهل
-                والألعاب.
-              </p>
-              <Link href={nextStep.href} className="mt-4 inline-block">
-                <Button>{nextStep.cta}</Button>
-              </Link>
-            </div>
-          </div>
-        </div>
-
-        <div className="rounded-3xl border border-emerald-100 bg-white p-6">
-          <div className="flex items-center gap-4">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-50 text-2xl font-bold text-[#2D8B5A]">
-              {(childName || 'ط').slice(0, 1)}
-            </div>
-            <div>
-              <h2 className="text-xl font-bold text-[#0b1f14]">{childName}</h2>
-              <p className="text-sm text-slate-500">
-                {child?.age != null ? `${child.age} سنة` : 'العمر غير محدد'} ·{' '}
-                {statusLabel}
-              </p>
-            </div>
-          </div>
-          {!child?.id || child.id === 'local' ? (
-            <Link
-              href="/parent/register-child"
-              className="mt-4 inline-block text-sm font-semibold text-[#2D8B5A]"
-            >
-              سجّل بيانات الطفل ←
-            </Link>
-          ) : null}
-        </div>
-      </div>
-
-      <div className="rounded-3xl bg-[#2D8B5A] p-6 text-white">
-        <p className="text-sm text-emerald-100">الخطوة التالية</p>
-        <h2 className="mt-1 text-2xl font-bold">{nextStep.title}</h2>
-        <Link href={nextStep.href} className="mt-4 inline-block">
-          <Button className="bg-white text-[#1f6b44] hover:bg-emerald-50">
+      {/* بطاقة الخطوة التالية فقط */}
+      <div className="rounded-3xl border border-slate-100 bg-white p-7 shadow-sm">
+        <p className="text-sm font-semibold text-[#2D8B5A]">الخطوة التالية</p>
+        <h2 className="mt-2 text-2xl font-bold text-[#0b1f14]">
+          {nextStep.title}
+        </h2>
+        <p className="mt-3 text-sm leading-7 text-slate-500">{nextStep.body}</p>
+        <Link href={nextStep.href} className="mt-6 block">
+          <Button className="h-12 w-full text-base font-bold">
             {nextStep.cta}
           </Button>
         </Link>
-      </div>
-
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        {[
-          { href: '/dashboard/screening', label: 'الفرز', icon: '①' },
-          {
-            href: '/dashboard/parent-assessment',
-            label: 'الاستبيان',
-            icon: '②',
-          },
-          { href: '/dashboard/games', label: 'الألعاب', icon: '③' },
-          {
-            href: '/parent/assessment',
-            label: 'التقرير',
-            icon: '④',
-          },
-        ].map((a) => (
-          <Link
-            key={a.href + a.label}
-            href={a.href}
-            className="flex min-h-11 flex-col items-center justify-center rounded-2xl border border-emerald-100 bg-white p-4 text-center transition hover:border-[#2D8B5A]/40"
-          >
-            <span className="text-xl text-[#2D8B5A]">{a.icon}</span>
-            <span className="mt-2 text-sm font-semibold text-[#0b1f14]">
-              {a.label}
-            </span>
-          </Link>
-        ))}
-      </div>
-
-      <div className="rounded-3xl border border-emerald-100 bg-white p-6">
-        <h2 className="text-lg font-bold text-[#0b1f14]">النشاط الأخير</h2>
-        {events.length === 0 ? (
-          <p className="mt-3 text-sm text-slate-500">لا أحداث بعد.</p>
-        ) : (
-          <ul className="mt-4 space-y-3">
-            {events.map((e, i) => (
-              <li
-                key={`${e.title}-${i}`}
-                className="flex items-center justify-between text-sm"
-              >
-                <span className="font-medium text-slate-800">{e.title}</span>
-                <span className="text-xs text-slate-400">
-                  {new Date(e.at).toLocaleDateString('ar-EG')}
-                </span>
-              </li>
-            ))}
-          </ul>
-        )}
       </div>
 
       <ParentPricingCards />
 
       <Link
         href="/parent/booking"
-        className="block rounded-3xl border-2 border-dashed border-[#2D8B5A]/40 bg-emerald-50/50 p-6"
+        className="block rounded-3xl border border-dashed border-slate-200 bg-slate-50 px-6 py-5"
       >
-        <h2 className="text-lg font-bold text-[#0b1f14]">
-          حجز موعد فحص شامل مع فريق متعدد التخصصات
+        <h2 className="text-base font-bold text-[#0b1f14]">
+          حجز فحص شامل مع فريق متخصص
         </h2>
-        <p className="mt-2 text-sm text-slate-600">
-          اختر موعداً متاحاً ثم أكمل الدفع لتأكيد الحجز باسم الطفل.
+        <p className="mt-1 text-sm text-slate-500">
+          اختياري · بعد إكمال المسار الأساسي
         </p>
       </Link>
     </section>

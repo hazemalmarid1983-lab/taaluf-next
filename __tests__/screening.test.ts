@@ -30,4 +30,16 @@ describe('screening engine', () => {
       expect(d.scorePercent).toBeLessThanOrEqual(100);
     }
   });
+
+  it('all 12 items have unified question+options', () => {
+    expect(SCREENING_ITEMS).toHaveLength(12);
+    for (const item of SCREENING_ITEMS as Array<{
+      options?: unknown[];
+      question?: string;
+      text: string;
+    }>) {
+      expect(item.options).toHaveLength(4);
+      expect(item.question || item.text).toBeTruthy();
+    }
+  });
 });

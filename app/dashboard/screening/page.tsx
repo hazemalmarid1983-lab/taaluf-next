@@ -1,8 +1,10 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import OptionChoiceCards from '@/components/assessment/OptionChoiceCards';
+import ScreeningResultsHero from '@/components/screening/ScreeningResultsHero';
+import { useStepNav } from '@/hooks/useStepNav';
 import {
   SCREENING_DIMENSIONS,
   SCREENING_ITEMS,
@@ -12,16 +14,25 @@ import {
   type ScreeningResult,
 } from '@/lib/screeningEngine';
 
+type ScreeningItem = (typeof SCREENING_ITEMS)[number] & {
+  question?: string;
+  options?: Array<{ score: number; label: string; description: string }>;
+};
+
 export default function ScreeningPage() {
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [result, setResult] = useState<ScreeningResult | null>(null);
   const [msg, setMsg] = useState('');
   const [busy, setBusy] = useState(false);
+  const { locked, go } = useStepNav(500);
 
   const dimension = SCREENING_DIMENSIONS[step];
   const items = useMemo(
-    () => SCREENING_ITEMS.filter((i) => i.dimension === dimension?.id),
+    () =>
+      (SCREENING_ITEMS as ScreeningItem[]).filter(
+        (i) => i.dimension === dimension?.id
+      ),
     [dimension]
   );
   const progress = Math.round(((step + 1) / SCREENING_DIMENSIONS.length) * 100);
@@ -62,7 +73,6 @@ export default function ScreeningPage() {
         body: JSON.stringify({ childId, answers: list }),
       });
 
-      // توافق مع مسار التقييم العام
       await fetch('/api/assessments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -90,46 +100,11 @@ export default function ScreeningPage() {
 
   if (result) {
     return (
-      <section className="mx-auto max-w-2xl space-y-6">
-        <div className="rounded-3xl bg-[#0b1f14] p-7 text-white">
-          <p className="text-sm text-emerald-200">نتيجة الفرز الأولي</p>
-          <h1 className="mt-2 text-3xl font-bold">
-            {result.overall}% · {bandLabelAr(result.band)}
-          </h1>
-          <p className="mt-3 text-sm leading-7 text-emerald-100/80">
-            {result.band === 'elevated'
-              ? 'المؤشر مرتفع — يُوصى بالمتابعة إلى التقييم التربوي الكامل.'
-              : result.band === 'moderate'
-                ? 'مؤشر متوسط — يمكن المتابعة بالتقييم الكامل عند الحاجة.'
-                : 'ملف متوازن نسبياً — المتابعة الروتينية كافية حالياً.'}
-          </p>
-        </div>
-
-        <ul className="space-y-3 rounded-3xl border border-emerald-100 bg-white p-6">
-          {result.domainScores.map((d) => (
-            <li
-              key={d.dimension}
-              className="flex items-center justify-between text-sm"
-            >
-              <span className="font-semibold text-slate-800">{d.label_ar}</span>
-              <span className="text-slate-600">{d.scorePercent}%</span>
-            </li>
-          ))}
-        </ul>
-
-        {result.recommendFullAssessment && (
-          <Link
-            href="/dashboard/assessments/new"
-            className="block rounded-2xl bg-[#2D8B5A] px-5 py-4 text-center font-semibold text-white"
-          >
-            الانتقال إلى التقييم الكامل
-          </Link>
-        )}
-        <p className="text-center text-sm text-[#2D8B5A]">{msg}</p>
-        <Button variant="outline" onClick={() => setResult(null)} disabled={busy}>
-          إعادة الفرز
-        </Button>
-      </section>
+      <ScreeningResultsHero
+        result={result}
+        msg={msg}
+        onRetake={busy ? undefined : () => setResult(null)}
+      />
     );
   }
 
@@ -142,6 +117,9 @@ export default function ScreeningPage() {
         <h1 className="mt-1 text-2xl font-bold text-[#0b1f14]">
           {dimension?.label_ar}
         </h1>
+        <p className="mt-2 text-xs leading-6 text-slate-500">
+          اختر الوصف الأقرب لطبيعة طفلك في كل سؤال (مستقر ← شديد جداً)
+        </p>
         <div className="mt-4 h-2 overflow-hidden rounded-full bg-emerald-50">
           <div
             className="h-full rounded-full bg-[#2D8B5A] transition-all"
@@ -151,52 +129,52 @@ export default function ScreeningPage() {
       </div>
 
       <div className="space-y-4">
-        {items.map((item) => (
-          <div
-            key={item.id}
-            className="rounded-3xl border border-emerald-100 bg-white p-5"
-          >
-            <p className="text-sm font-medium leading-7 text-slate-800">
-              {item.text}
-            </p>
-            <div className="mt-3 grid grid-cols-2 gap-2 sm:grid-cols-4">
-              {SCREENING_LIKERT.map((opt) => (
-                <button
-                  key={opt.value}
-                  type="button"
-                  onClick={() =>
-                    setAnswers((prev) => ({ ...prev, [item.id]: opt.value }))
+        {items.map((item) => {
+          const options =
+            item.options ||
+            SCREENING_LIKERT.map((l) => ({
+              score: l.value,
+              label: l.label,
+              description: l.label,
+            }));
+          return (
+            <div
+              key={item.id}
+              className="rounded-3xl border border-emerald-100 bg-white p-5"
+            >
+              <p className="rounded-xl bg-[#F0F9F4] px-3 py-3 text-sm font-medium leading-7 text-[#0b1f14]">
+                {item.question || item.text}
+              </p>
+              <div className="mt-3">
+                <OptionChoiceCards
+                  options={options}
+                  value={answers[item.id]}
+                  onChange={(score) =>
+                    setAnswers((prev) => ({ ...prev, [item.id]: score }))
                   }
-                  className={
-                    answers[item.id] === opt.value
-                      ? 'rounded-xl bg-[#2D8B5A] px-3 py-2 text-sm font-semibold text-white'
-                      : 'rounded-xl border border-slate-200 px-3 py-2 text-sm text-slate-600 hover:border-[#2D8B5A]'
-                  }
-                >
-                  {opt.label}
-                </button>
-              ))}
+                />
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
       <div className="flex justify-between gap-3">
         <Button
           variant="ghost"
-          disabled={step === 0}
-          onClick={() => setStep((s) => Math.max(0, s - 1))}
+          disabled={step === 0 || locked}
+          onClick={() => go(() => setStep((s) => Math.max(0, s - 1)))}
         >
           السابق
         </Button>
         {step >= SCREENING_DIMENSIONS.length - 1 ? (
-          <Button disabled={!stepComplete || busy} onClick={finish}>
+          <Button disabled={!stepComplete || busy || locked} onClick={finish}>
             إنهاء وعرض النتيجة
           </Button>
         ) : (
           <Button
-            disabled={!stepComplete}
-            onClick={() => setStep((s) => s + 1)}
+            disabled={!stepComplete || locked}
+            onClick={() => go(() => setStep((s) => s + 1))}
           >
             التالي
           </Button>

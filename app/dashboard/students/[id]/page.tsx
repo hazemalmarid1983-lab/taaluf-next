@@ -8,6 +8,7 @@ import {
   loadStoredAssessments,
   type StoredAssessment,
 } from '@/lib/assessmentHelpers';
+import { hasActiveAssessment } from '@/lib/assessmentGate';
 import { loadGoalsLocal } from '@/lib/goalsStore';
 import type { TrackedGoal } from '@/lib/goalsEngine';
 
@@ -223,9 +224,22 @@ export default function StudentDetailPage() {
               <li>الحالة: {student?.status || 'نشط'}</li>
             </ul>
           </div>
-          <Link href="/dashboard/assessments/new">
-            <Button>تقييم جديد</Button>
-          </Link>
+          <Button
+            onClick={() => {
+              const gate = hasActiveAssessment(String(id));
+              if (gate.active) {
+                window.alert(gate.message);
+                if (gate.reason === 'completed') {
+                  window.location.href =
+                    '/dashboard/assessments/new?view=results';
+                }
+                return;
+              }
+              window.location.href = '/dashboard/assessments/new';
+            }}
+          >
+            تقييم جديد
+          </Button>
         </div>
       </div>
 
