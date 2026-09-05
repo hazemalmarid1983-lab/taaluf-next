@@ -1,4 +1,3 @@
-import { getHubDataDir } from '@/lib/hubDataDir';
 import {
   CLINICAL_HUB_FILE,
   hubReloadEachRequest,
@@ -25,9 +24,6 @@ import {
   type HubSessionRole,
   type MouState,
 } from '@/lib/clinicalHub';
-
-const DATA_DIR = getHubDataDir();
-const DATA_FILE = `${DATA_DIR}/${CLINICAL_HUB_FILE}`;
 
 const memory: ClinicalHubSnapshot = {
   posts: [],
