@@ -9,10 +9,13 @@ import {
   parseEntitlements,
 } from '@/lib/access';
 import { CONSENT_COOKIE } from '@/lib/consentConstants';
+import { ensureAuthUrl } from '@/lib/ensureAuthUrl';
 import {
   isLearningDifficultiesEnabled,
   isLearningDifficultiesRoute,
 } from '@/lib/featureFlags';
+
+ensureAuthUrl();
 
 export default withAuth(
   function middleware(req) {
@@ -140,6 +143,7 @@ export default withAuth(
     return NextResponse.next();
   },
   {
+    secret: process.env.NEXTAUTH_SECRET,
     callbacks: {
       authorized: ({ token, req }) => {
         const path = req.nextUrl.pathname;
@@ -158,6 +162,7 @@ export const config = {
     '/admin/:path*',
     '/hub',
     '/hub/:path*',
+    '/parent',
     '/parent/:path*',
     '/specialist/:path*',
     '/payments/:path*',
