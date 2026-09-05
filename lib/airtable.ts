@@ -1,5 +1,6 @@
 import Airtable, { FieldSet, Records } from 'airtable';
 import { airtableCreds, cleanEnv } from '@/lib/env';
+import { assertSafePlatformDataAccess } from '@/lib/platformEnvironment';
 
 /**
  * عميل Airtable — مخطط TaalofDB حسب دليل التنفيذ 2.0
@@ -21,6 +22,7 @@ export function isAirtableConfigured() {
 }
 
 function requireBase() {
+  assertSafePlatformDataAccess('airtable');
   const { apiKey, baseId } = airtableCreds();
   if (!apiKey || !baseId) {
     throw new Error('AIRTABLE_NOT_CONFIGURED: عيّن AIRTABLE_API_KEY و AIRTABLE_BASE_ID');

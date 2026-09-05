@@ -7,6 +7,10 @@ import fs from 'fs';
 import path from 'path';
 import { execSync } from 'child_process';
 import { loadEnvFiles } from './load-env';
+import {
+  isProductionPlatform,
+  previewUsesProductionAirtable,
+} from '../lib/platformEnvironment';
 
 loadEnvFiles();
 
@@ -102,8 +106,42 @@ function main() {
       level: 'warn',
       msg: `TAP_ENVIRONMENT=${tapEnv} (sandbox مقبول للتجربة)`,
     });
-  } else if (tapEnv === 'production') {
+  } else   if (tapEnv === 'production') {
     checks.push({ ok: true, level: 'pass', msg: 'TAP_ENVIRONMENT=production' });
+  }
+
+  if (previewUsesProductionAirtable()) {
+    checks.push({
+      ok: false,
+      level: 'fail',
+      msg: 'AIRTABLE_BASE_ID = AIRTABLE_PRODUCTION_BASE_ID خارج الإنتاج — استخدم Base تجريبي منفصل',
+    });
+  } else if (isProductionPlatform()) {
+    checks.push({
+      ok: true,
+      level: 'pass',
+      msg: 'بيئة الإنتاج — Airtable منفصل عن Preview',
+    });
+  } else if (process.env.AIRTABLE_PRODUCTION_BASE_ID) {
+    checks.push({
+      ok: true,
+      level: 'pass',
+      msg: 'حارس Airtable مفعّل — Preview/Dev لا يستخدم Base الإنتاج',
+    });
+  } else {
+    checks.push({
+      ok: true,
+      level: 'warn',
+      msg: 'AIRTABLE_PRODUCTION_BASE_ID غير مضبوط — أضِفه على Production في Vercel لحماية البيانات',
+    });
+  }
+
+  if (process.env.MAINTENANCE_MODE === 'true' && isProductionPlatform()) {
+    checks.push({
+      ok: true,
+      level: 'warn',
+      msg: 'MAINTENANCE_MODE=true — المستخدمون يرون صفحة الصيانة',
+    });
   }
 
   // .gitignore

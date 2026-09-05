@@ -2,14 +2,13 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { get, put } from '@vercel/blob';
 import { getHubDataDir, isEphemeralHubStorage } from '@/lib/hubDataDir';
+import { hubStorageNamespace } from '@/lib/platformEnvironment';
 
 export const CLINICAL_HUB_FILE = 'clinical-hub.json';
 export const PRIVILEGED_CREDENTIALS_FILE = 'privileged-credentials.json';
 
-const BLOB_PREFIX = 'taaluf-data';
-
 function blobPathname(filename: string) {
-  return `${BLOB_PREFIX}/${filename}`;
+  return `${hubStorageNamespace()}/${filename}`;
 }
 
 function localPath(filename: string) {

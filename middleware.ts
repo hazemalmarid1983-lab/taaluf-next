@@ -14,6 +14,11 @@ import {
   isLearningDifficultiesEnabled,
   isLearningDifficultiesRoute,
 } from '@/lib/featureFlags';
+import {
+  isProductionPlatform,
+  maintenanceModeEnabled,
+  roleBypassesMaintenance,
+} from '@/lib/platformEnvironment';
 
 ensureAuthUrl();
 
@@ -21,6 +26,23 @@ export default withAuth(
   function middleware(req) {
     const role = req.nextauth.token?.role as string | undefined;
     const path = req.nextUrl.pathname;
+
+    if (path.startsWith('/_next') || path.startsWith('/api/auth')) {
+      return NextResponse.next();
+    }
+
+    if (
+      maintenanceModeEnabled() &&
+      isProductionPlatform() &&
+      path !== '/maintenance' &&
+      !roleBypassesMaintenance(role)
+    ) {
+      if (path === '/login' || path.startsWith('/login?')) {
+        return NextResponse.next();
+      }
+      return NextResponse.redirect(new URL('/maintenance', req.url));
+    }
+
     const paymentsOff = arePaymentsDisabled();
     const entitlements = parseEntitlements(
       req.cookies.get(ENTITLEMENTS_COOKIE)?.value
@@ -147,6 +169,8 @@ export default withAuth(
     callbacks: {
       authorized: ({ token, req }) => {
         const path = req.nextUrl.pathname;
+        if (path === '/maintenance') return true;
+        if (path.startsWith('/login')) return true;
         if (path.startsWith('/specialist/pay')) return true;
         if (path.startsWith('/payments/callback')) return true;
         if (arePaymentsDisabled() && path.startsWith('/payments/')) return true;
@@ -158,6 +182,9 @@ export default withAuth(
 
 export const config = {
   matcher: [
+    '/',
+    '/login',
+    '/maintenance',
     '/dashboard/:path*',
     '/admin/:path*',
     '/hub',

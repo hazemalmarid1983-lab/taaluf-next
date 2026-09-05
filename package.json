@@ -12,6 +12,8 @@
     "setup:airtable": "tsx scripts/setup-airtable-guide.ts",
     "create:airtable": "tsx scripts/create-airtable-tables.ts",
     "predeploy": "tsx scripts/predeploy-check.ts",
+    "deploy:preview": "vercel",
+    "deploy:prod": "tsx scripts/deploy-production.ts",
     "security:audit": "tsx scripts/security-audit.ts"
   },
   "dependencies": {

@@ -4,6 +4,7 @@ import SessionProvider from '@/components/providers/SessionProvider';
 import RbacShell from '@/components/access/RbacShell';
 import { LanguageProvider } from '@/components/LanguageProvider';
 import LegalBanner from '@/components/layout/LegalBanner';
+import PlatformEnvironmentBannerGate from '@/components/layout/PlatformEnvironmentBannerGate';
 import SiteFooter from '@/components/layout/SiteFooter';
 import './globals.css';
 
@@ -47,6 +48,7 @@ export default function RootLayout({
         <SessionProvider>
           <RbacShell>
             <LanguageProvider>
+              <PlatformEnvironmentBannerGate />
               <LegalBanner />
               {children}
               <SiteFooter />
