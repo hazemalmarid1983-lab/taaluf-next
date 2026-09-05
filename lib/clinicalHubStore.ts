@@ -34,6 +34,7 @@ const memory: ClinicalHubSnapshot = {
     updatedAt: new Date(0).toISOString(),
     updatedBy: HUB_MEMBERS.hazem.nameAr,
   },
+  advisorOnboarding: {},
 };
 
 let loaded = false;
@@ -134,12 +135,14 @@ async function ensureLoaded() {
       ...(parsed.merhidDirectives || {}),
       text: parsed.merhidDirectives?.text?.trim() || dirBase.text,
     };
+    memory.advisorOnboarding = parsed.advisorOnboarding || {};
     ensureOnboardingPost();
   } catch {
     memory.posts = [];
     memory.mou = emptyMouState();
     memory.advisorGuide = emptyAdvisorGuideState();
     memory.merhidDirectives = defaultMerhidDirectives();
+    memory.advisorOnboarding = {};
     ensureOnboardingPost();
     await persist();
   }
@@ -299,4 +302,16 @@ export async function updateHubMerhidDirectives(
   };
   await persist();
   return JSON.parse(JSON.stringify(memory.merhidDirectives));
+}
+
+export async function markAdvisorWelcomeSeen(): Promise<
+  ClinicalHubSnapshot['advisorOnboarding']
+> {
+  await ensureLoaded();
+  memory.advisorOnboarding = {
+    ...memory.advisorOnboarding,
+    welcomeSeenAt: nowIso(),
+  };
+  await persist();
+  return JSON.parse(JSON.stringify(memory.advisorOnboarding));
 }

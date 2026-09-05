@@ -11,13 +11,17 @@ import {
 import { loadStoredAssessments } from '@/lib/assessmentHelpers';
 import { homePathForRole } from '@/lib/access';
 import {
-  HUB_ONBOARDING_POST_ID,
   mouOverallStatus,
+  type AdvisorOnboardingState,
   type HubActor,
   type HubPost,
   type MouOverallStatus,
   type MouState,
 } from '@/lib/clinicalHub';
+import {
+  resolveAdvisorOnboardingStep,
+  hubTabForAdvisorOnboardingStep,
+} from '@/lib/advisorOnboardingFlow';
 import {
   type AdvisorGuideState,
 } from '@/lib/advisorPlatformGuide';
@@ -243,16 +247,12 @@ export function resolveSpecialistNextAction(
   return fromSpecialistAction(getNextRecommendedAction(ctx));
 }
 
-function advisorCompletedOnboardingBriefing(posts: HubPost[]) {
-  const onboarding = posts.find((p) => p.id === HUB_ONBOARDING_POST_ID);
-  return onboarding?.replies.some((r) => r.authorMemberId === 'samer') ?? false;
-}
-
 export function resolveHubNextAction(input: {
   actor: HubActor;
   mou: MouState;
   posts: HubPost[];
   advisorGuide?: AdvisorGuideState;
+  advisorOnboarding?: AdvisorOnboardingState;
 }): UnifiedNextAction {
   const status = mouOverallStatus(input.mou);
   const pending = input.posts.filter((p) => p.status === 'pending').length;
@@ -260,12 +260,39 @@ export function resolveHubNextAction(input: {
     input.actor.memberId === 'hazem'
       ? input.mou.hazem.signed
       : input.mou.samer.signed;
-  const onboardingDone = advisorCompletedOnboardingBriefing(input.posts);
+  const onboarding = input.advisorOnboarding || {};
+  const advisorStep =
+    input.actor.role === 'scientific_advisor'
+      ? resolveAdvisorOnboardingStep({
+          actor: input.actor,
+          mou: input.mou,
+          posts: input.posts,
+          onboarding,
+        })
+      : 'complete';
 
-  if (
-    input.actor.role === 'scientific_advisor' &&
-    !onboardingDone
-  ) {
+  if (advisorStep === 'agreement') {
+    return {
+      id: 'hub_mou_sign',
+      stage: 'onboarding',
+      priority: 'critical',
+      emoji: '📜',
+      titleAr: 'راجع الاتفاقية واعتمد الشراكة',
+      titleEn: 'Review the agreement & partnership',
+      bodyAr:
+        'اتفاقية الشراكة الاستشارية — اقرأها بعناية ثم أكّد توقيعك لبدء التعاون.',
+      bodyEn:
+        'Advisory partnership agreement — read carefully, then confirm your sign-off to begin collaboration.',
+      href: '/hub?focus=agreement',
+      ctaAr: ownSigned ? 'عرض حالة الاتفاقية' : 'راجع الاتفاقية واعتمد',
+      ctaEn: ownSigned ? 'View agreement status' : 'Review & sign agreement',
+      stepLabelAr: 'الشراكة والاتفاق',
+      stepLabelEn: 'Partnership & agreement',
+      autoRedirect: !onboarding.welcomeSeenAt,
+    };
+  }
+
+  if (advisorStep === 'meeting') {
     return {
       id: 'hub_onboarding_meeting',
       stage: 'onboarding',
@@ -509,13 +536,30 @@ export function defaultHubTab(input: {
   pendingCount: number;
   actorRole: HubActor['role'];
   posts?: HubPost[];
+  advisorOnboarding?: AdvisorOnboardingState;
+  mou?: MouState;
 }): 'overview' | 'meeting' | 'agreement' {
   if (
     input.actorRole === 'scientific_advisor' &&
     input.posts &&
-    !advisorCompletedOnboardingBriefing(input.posts)
+    input.mou
   ) {
-    return 'meeting';
+    const step = resolveAdvisorOnboardingStep({
+      actor: {
+        memberId: 'samer',
+        role: 'scientific_advisor',
+        nameAr: '',
+        nameEn: '',
+        titleAr: '',
+        titleEn: '',
+      },
+      mou: input.mou,
+      posts: input.posts,
+      onboarding: input.advisorOnboarding || {},
+    });
+    if (step !== 'complete' && step !== 'welcome') {
+      return hubTabForAdvisorOnboardingStep(step);
+    }
   }
   if (input.mouStatus !== 'executed') return 'agreement';
   if (input.actorRole === 'admin' && input.pendingCount > 0) return 'meeting';

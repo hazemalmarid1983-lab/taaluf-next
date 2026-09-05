@@ -2,7 +2,7 @@ import { HUB_ONBOARDING_POST_ID } from '../lib/clinicalHub';
 import { defaultHubTab } from '../lib/nextBestActionFlow';
 
 describe('hub onboarding meeting tab', () => {
-  it('opens meeting tab first for advisor without onboarding reply', () => {
+  it('opens agreement tab first for advisor after welcome (MOU unsigned)', () => {
     const tab = defaultHubTab({
       mouStatus: 'pending',
       pendingCount: 0,
@@ -22,13 +22,20 @@ describe('hub onboarding meeting tab', () => {
           replies: [],
         },
       ],
+      mou: {
+        version: '2026.4-partnership-agreement',
+        termYears: 2,
+        hazem: { memberId: 'hazem', signed: false },
+        samer: { memberId: 'samer', signed: false },
+      },
+      advisorOnboarding: { welcomeSeenAt: '2026-01-01T00:00:00.000Z' },
     });
-    expect(tab).toBe('meeting');
+    expect(tab).toBe('agreement');
   });
 
-  it('opens agreement after advisor replied to onboarding', () => {
+  it('opens meeting after MOU signed without onboarding reply', () => {
     const tab = defaultHubTab({
-      mouStatus: 'pending',
+      mouStatus: 'awaiting_hazem',
       pendingCount: 0,
       actorRole: 'scientific_advisor',
       posts: [
@@ -39,23 +46,21 @@ describe('hub onboarding meeting tab', () => {
           body: 'Read me',
           status: 'approved',
           authorRole: 'admin',
-          authorName: 'حازem',
+          authorName: 'حازم',
           authorMemberId: 'hazem',
           createdAt: '2026-01-01',
           updatedAt: '2026-01-01',
-          replies: [
-            {
-              id: 'r1',
-              authorRole: 'scientific_advisor',
-              authorName: 'د. سامer',
-              authorMemberId: 'samer',
-              body: 'ملاحظاتي',
-              createdAt: '2026-01-02',
-            },
-          ],
+          replies: [],
         },
       ],
+      mou: {
+        version: '2026.4-partnership-agreement',
+        termYears: 2,
+        hazem: { memberId: 'hazem', signed: false },
+        samer: { memberId: 'samer', signed: true },
+      },
+      advisorOnboarding: { welcomeSeenAt: '2026-01-01T00:00:00.000Z' },
     });
-    expect(tab).toBe('agreement');
+    expect(tab).toBe('meeting');
   });
 });

@@ -58,6 +58,7 @@ export function useHubNextAction(
       mou: snapshot.mou,
       posts: snapshot.posts,
       advisorGuide: snapshot.advisorGuide,
+      advisorOnboarding: snapshot.advisorOnboarding,
     });
   }, [actor, snapshot]);
 }

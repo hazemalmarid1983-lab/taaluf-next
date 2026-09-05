@@ -128,11 +128,16 @@ export type HubMerhidDirectives = {
   updatedBy: string;
 };
 
+export type AdvisorOnboardingState = {
+  welcomeSeenAt?: string;
+};
+
 export type ClinicalHubSnapshot = {
   posts: HubPost[];
   mou: MouState;
   advisorGuide: AdvisorGuideState;
   merhidDirectives: HubMerhidDirectives;
+  advisorOnboarding: AdvisorOnboardingState;
 };
 
 export function isHubOnboardingPost(post: HubPost) {
