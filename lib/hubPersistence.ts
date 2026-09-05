@@ -17,7 +17,10 @@ function localPath(filename: string) {
 }
 
 export function hubBlobEnabled() {
-  return Boolean(process.env.BLOB_READ_WRITE_TOKEN?.trim());
+  if (process.env.BLOB_READ_WRITE_TOKEN?.trim()) return true;
+  // Vercel linked Blob stores inject BLOB_STORE_ID + OIDC auth at runtime.
+  if (process.env.VERCEL === '1' && process.env.BLOB_STORE_ID?.trim()) return true;
+  return false;
 }
 
 export function hubStorageIsEphemeral() {

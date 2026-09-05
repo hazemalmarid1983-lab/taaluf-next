@@ -19,5 +19,8 @@ export function getHubDataDir(): string {
 }
 
 export function isEphemeralHubStorage(): boolean {
-  return process.env.VERCEL === '1' && !process.env.TAALUF_DATA_DIR?.trim();
+  if (process.env.TAALUF_DATA_DIR?.trim()) return false;
+  if (process.env.BLOB_READ_WRITE_TOKEN?.trim()) return false;
+  if (process.env.VERCEL === '1' && process.env.BLOB_STORE_ID?.trim()) return false;
+  return process.env.VERCEL === '1';
 }

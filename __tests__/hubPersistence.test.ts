@@ -28,4 +28,14 @@ describe('hubPersistence', () => {
     const raw = await readHubJsonFile(CLINICAL_HUB_FILE);
     expect(JSON.parse(raw || '{}')).toEqual(payload);
   });
+
+  it('treats linked Vercel Blob store as durable', async () => {
+    process.env.VERCEL = '1';
+    process.env.BLOB_STORE_ID = 'store_test';
+    const { hubBlobEnabled, hubStorageIsEphemeral } = await import('../lib/hubPersistence');
+    const { isEphemeralHubStorage } = await import('../lib/hubDataDir');
+    expect(hubBlobEnabled()).toBe(true);
+    expect(hubStorageIsEphemeral()).toBe(false);
+    expect(isEphemeralHubStorage()).toBe(false);
+  });
 });
