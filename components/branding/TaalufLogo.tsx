@@ -3,6 +3,7 @@
 import { useId } from 'react';
 import Link from 'next/link';
 import { useLanguage } from '@/components/LanguageProvider';
+import { parentScreeningEntryHref } from '@/lib/parentJourney';
 
 type LogoProps = {
   size?: 'sm' | 'md' | 'lg';
@@ -28,7 +29,7 @@ export default function TaalufLogo({
   size = 'md',
   showSubtitle = true,
   clickable = true,
-  href = '/dashboard/pathways',
+  href = parentScreeningEntryHref(),
   tone = 'light',
 }: LogoProps) {
   const { lang, t } = useLanguage();

@@ -6,6 +6,7 @@
 import { ASSESSMENT_DRAFT_KEY, type AssessmentDraft } from '@/lib/assessmentGate';
 import { loadStoredAssessments } from '@/lib/assessmentHelpers';
 import { CONSENT_STORAGE_KEY } from '@/lib/consentConstants';
+import { isLearningDifficultiesEnabled } from '@/lib/featureFlags';
 
 export const PARENT_ROUTES = {
   home: '/parent',
@@ -30,6 +31,13 @@ export const PARENT_ROUTES = {
   goals: '/dashboard/goals',
   community: '/parent/community',
 } as const;
+
+/** نقطة دخول الفرز — مسار مزدوج أو فرز نمائي فقط */
+export function parentScreeningEntryHref(): string {
+  return isLearningDifficultiesEnabled()
+    ? PARENT_ROUTES.pathways
+    : PARENT_ROUTES.screening;
+}
 
 export const FULL_PATH_STORAGE_KEY = 'taaluf.fullPath.unlocked';
 export const STAFF_FOLLOWUP_KEY = 'taaluf.staffFollowup.unlocked';
@@ -115,13 +123,13 @@ export const PARENT_PATH_STEPS = [
     id: 'screening',
     label: 'الفرز المجاني',
     labelKey: 'stepScreening' as const,
-    href: PARENT_ROUTES.pathways,
+    href: parentScreeningEntryHref(),
   },
   {
     id: 'results',
     label: 'النتيجة',
     labelKey: 'stepResults' as const,
-    href: PARENT_ROUTES.pathways,
+    href: parentScreeningEntryHref(),
   },
   {
     id: 'choose',
@@ -373,7 +381,7 @@ export function resolveParentNextStep(
       kind: 'path',
       title: 'ابدأ الفرز الأولي مجاناً',
       body: '12 سؤالاً فقط · حوالي 5 دقائق · بدون دفع.',
-      href: PARENT_ROUTES.pathways,
+      href: parentScreeningEntryHref(),
       cta: 'ابدأ الفرز المجاني',
       copyId: 'startScreening',
     };

@@ -30,7 +30,7 @@ export const HOME = {
   eyebrow: `${BRAND.criteriaCount} مؤشراً · ${BRAND.domainCount} مجالات · إصدار ${BRAND.version}`,
   headline: 'ملامح سلوكية واضحة… واستراتيجيات يمكن تطبيقها غداً',
   support:
-    'منصة تقييم تربوي لأطفال التوحد وصعوبات التعلم — بدون تشخيص طبي، وبتوصيات منزلية ومدرسية دقيقة.',
+    'منصة تقييم تربوي لأطفال التوحد والإعاقات النمائية — بدون تشخيص طبي، وبتوصيات منزلية ومدرسية دقيقة.',
   ctaPrimary: 'دخول المختص',
   ctaSecondary: 'استكشف اللوحة',
 } as const;
@@ -85,9 +85,9 @@ export const DASHBOARD = {
       tone: 'primary' as const,
     },
     {
-      href: '/dashboard/pathways',
+      href: '/dashboard/screening',
       title: 'الفرز الأولي',
-      body: 'اختر المسار النمائي أو الأكاديمي، ثم أجب عن 12 بنداً لاستخراج خارطة أولية.',
+      body: '12 سؤالاً نمائياً لاستخراج خارطة أولية حول التوحد والإعاقات النمائية.',
       cta: 'ابدأ الفرز',
       tone: 'secondary' as const,
     },

@@ -9,6 +9,10 @@ import {
   parseEntitlements,
 } from '@/lib/access';
 import { CONSENT_COOKIE } from '@/lib/consentConstants';
+import {
+  isLearningDifficultiesEnabled,
+  isLearningDifficultiesRoute,
+} from '@/lib/featureFlags';
 
 export default withAuth(
   function middleware(req) {
@@ -53,6 +57,17 @@ export default withAuth(
       return NextResponse.redirect(
         new URL(role ? homePathForRole(role) : '/login?portal=hub', req.url)
       );
+    }
+
+    if (!isLearningDifficultiesEnabled() && isLearningDifficultiesRoute(path)) {
+      const dest =
+        path.startsWith('/dashboard/pathways') ||
+        path.startsWith('/dashboard/screening-learning')
+          ? '/dashboard/screening'
+          : role === 'parent'
+            ? '/parent'
+            : '/dashboard';
+      return NextResponse.redirect(new URL(dest, req.url));
     }
 
     if (path.startsWith('/parent')) {

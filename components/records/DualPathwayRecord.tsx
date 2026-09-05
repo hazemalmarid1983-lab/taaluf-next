@@ -10,7 +10,8 @@ import {
   type PathwaySnapshot,
 } from '@/lib/childPathwayRecord';
 import { localizeLabel } from '@/lib/i18n/pathwayLabels';
-import { PARENT_ROUTES } from '@/lib/parentJourney';
+import { parentScreeningEntryHref } from '@/lib/parentJourney';
+import { isLearningDifficultiesEnabled } from '@/lib/featureFlags';
 import PdfExportButton from '@/components/reports/PdfExportButton';
 
 function levelStyle(level: PathwayLevel) {
@@ -124,17 +125,19 @@ export default function DualPathwayRecord({
             className="h-12 w-full rounded-2xl bg-amber-500 text-sm font-black text-slate-900 hover:bg-amber-400 hover:text-slate-900"
           />
           <Link
-            href={PARENT_ROUTES.pathways}
+            href={parentScreeningEntryHref()}
             className="rounded-xl bg-[#2E7D8E] px-4 py-2 text-xs font-bold text-white"
           >
-            {t('pathwaysPortal')}
+            {isLearningDifficultiesEnabled() ? t('pathwaysPortal') : t('viewDetails')}
           </Link>
         </div>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-2">
+      <div className={`grid gap-4 ${isLearningDifficultiesEnabled() ? 'md:grid-cols-2' : ''}`}>
         <PathwayCard snapshot={record.developmental} accent="teal" />
-        <PathwayCard snapshot={record.academic} accent="amber" />
+        {isLearningDifficultiesEnabled() ? (
+          <PathwayCard snapshot={record.academic} accent="amber" />
+        ) : null}
       </div>
 
       {record.games.length > 0 && (

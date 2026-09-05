@@ -13,6 +13,7 @@ import {
   PARENT_PATH_STEPS,
   PARENT_ROUTES,
   clearActiveChildSession,
+  parentScreeningEntryHref,
   readParentJourneyState,
   type ParentJourneyState,
 } from '@/lib/parentJourney';
@@ -146,7 +147,7 @@ export default function ParentHomeDashboard({
                 ? PARENT_ROUTES.register
                 : (step.id === 'screening' || step.id === 'results') &&
                     (done || current)
-                  ? PARENT_ROUTES.pathways
+                  ? parentScreeningEntryHref()
                   : step.id === 'choose' && (done || current)
                     ? journey.next.href
                     : current

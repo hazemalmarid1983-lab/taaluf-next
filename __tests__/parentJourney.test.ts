@@ -48,7 +48,7 @@ describe('resolveParentNextStep', () => {
         hasGames: false,
         hasReport: false,
       }).href
-    ).toBe('/dashboard/pathways');
+    ).toBe('/dashboard/screening');
 
     expect(
       resolveParentNextStep({

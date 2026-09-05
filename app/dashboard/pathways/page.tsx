@@ -1,11 +1,25 @@
 'use client';
 
+import { useEffect } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/components/LanguageProvider';
+import { isLearningDifficultiesEnabled } from '@/lib/featureFlags';
 import { PARENT_ROUTES } from '@/lib/parentJourney';
 
 export default function AssessmentPathwaysPage() {
   const { t, dir } = useLanguage();
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!isLearningDifficultiesEnabled()) {
+      router.replace(PARENT_ROUTES.screening);
+    }
+  }, [router]);
+
+  if (!isLearningDifficultiesEnabled()) {
+    return null;
+  }
   return (
     <div
       className="relative flex min-h-[80vh] flex-col items-center justify-center overflow-hidden px-1 py-4 text-slate-900 sm:py-8"

@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useLanguage } from '@/components/LanguageProvider';
-import { PARENT_ROUTES, saveActiveChild } from '@/lib/parentJourney';
+import { PARENT_ROUTES, saveActiveChild, parentScreeningEntryHref } from '@/lib/parentJourney';
 
 function toWesternDigits(value: string) {
   const map: Record<string, string> = {
@@ -121,7 +121,7 @@ export default function ParentRegisterChildPage() {
       }),
     }).catch(() => undefined);
     setMsg(t('childSaved'));
-    setTimeout(() => router.push(PARENT_ROUTES.pathways), 400);
+    setTimeout(() => router.push(parentScreeningEntryHref()), 400);
   };
 
   return (
