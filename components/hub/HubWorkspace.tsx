@@ -7,7 +7,12 @@ import FrictionlessNextAction from '@/components/flow/FrictionlessNextAction';
 import { useHubNextAction } from '@/components/flow/useNextBestAction';
 import HubMeetingRoom from '@/components/hub/HubMeetingRoom';
 import HubMouSection from '@/components/hub/HubMouSection';
+import HubPlatformGuide from '@/components/hub/HubPlatformGuide';
 import HubRbacPanel from '@/components/hub/HubRbacPanel';
+import {
+  advisorGuideProgress,
+  type AdvisorGuideState,
+} from '@/lib/advisorPlatformGuide';
 import {
   HUB_MEMBERS,
   HUB_NAME_AR,
@@ -26,7 +31,7 @@ import {
   hubFocusFromQuery,
 } from '@/lib/nextBestActionFlow';
 
-type TabId = 'overview' | 'meeting' | 'agreement';
+type TabId = 'overview' | 'guide' | 'meeting' | 'agreement';
 
 export default function HubWorkspace() {
   const { lang } = useLanguage();
@@ -73,6 +78,7 @@ export default function HubWorkspace() {
         pendingCount: snapshot.posts.filter((p) => p.status === 'pending')
           .length,
         actorRole: actor.role,
+        advisorGuide: snapshot.advisorGuide,
       })
     );
   }, [focusParam, actor, snapshot, mouStatus]);
@@ -93,6 +99,36 @@ export default function HubWorkspace() {
   const applyMou = (mou: MouState, status: MouOverallStatus) => {
     setSnapshot((prev) => (prev ? { ...prev, mou } : prev));
     setMouStatus(status);
+  };
+
+  const applyGuide = (advisorGuide: AdvisorGuideState) => {
+    setSnapshot((prev) => (prev ? { ...prev, advisorGuide } : prev));
+  };
+
+  const acknowledgeGuideSection = async (
+    sectionId: string,
+    signerName: string
+  ): Promise<AdvisorGuideState> => {
+    const res = await fetch('/api/hub/guide', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sectionId, signerName }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || data.error || 'تعذر الاعتماد');
+    applyGuide(data.advisorGuide);
+    return data.advisorGuide as AdvisorGuideState;
+  };
+
+  const resetGuide = async () => {
+    const res = await fetch('/api/hub/guide', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'reset' }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || data.error || 'تعذر الضبط');
+    applyGuide(data.advisorGuide);
   };
 
   const createPost = async (input: {
@@ -149,9 +185,13 @@ export default function HubWorkspace() {
   const pendingCount =
     snapshot?.posts.filter((p) => p.status === 'pending').length ?? 0;
   const executed = mouStatus === 'executed';
+  const guideProgress = snapshot
+    ? advisorGuideProgress(snapshot.advisorGuide)
+    : { completed: 0, total: 10, percent: 0 };
 
   const tabs: { id: TabId; ar: string; en: string }[] = [
     { id: 'overview', ar: 'لوحة العمل', en: 'Workspace' },
+    { id: 'guide', ar: 'دليل المنصة', en: 'Platform guide' },
     { id: 'meeting', ar: 'غرفة الاجتماعات', en: 'Meeting room' },
     { id: 'agreement', ar: 'الشراكة والمذكرة', en: 'Partnership' },
   ];
@@ -224,6 +264,12 @@ export default function HubWorkspace() {
             }`}
           >
             {isAr ? item.ar : item.en}
+            {item.id === 'guide' &&
+            guideProgress.completed < guideProgress.total ? (
+              <span className="ms-2 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] text-amber-800">
+                {guideProgress.completed}/{guideProgress.total}
+              </span>
+            ) : null}
             {item.id === 'meeting' && pendingCount > 0 ? (
               <span className="ms-2 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] text-amber-800">
                 {pendingCount}
@@ -262,6 +308,14 @@ export default function HubWorkspace() {
           isAr={isAr}
           onOpenMeeting={() => setTab('meeting')}
           onOpenAgreement={() => setTab('agreement')}
+        />
+      ) : tab === 'guide' ? (
+        <HubPlatformGuide
+          actor={actor}
+          advisorGuide={snapshot.advisorGuide}
+          isAr={isAr}
+          onAcknowledge={acknowledgeGuideSection}
+          onReset={resetGuide}
         />
       ) : tab === 'meeting' ? (
         <HubMeetingRoom

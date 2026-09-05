@@ -2,6 +2,11 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { getHubDataDir } from '@/lib/hubDataDir';
 import {
+  emptyAdvisorGuideState,
+  isAdvisorGuideComplete,
+  type AdvisorGuideSectionId,
+} from '@/lib/advisorPlatformGuide';
+import {
   emptyMouState,
   HUB_MEMBERS,
   type ClinicalHubSnapshot,
@@ -20,6 +25,7 @@ const DATA_FILE = path.join(DATA_DIR, 'clinical-hub.json');
 const memory: ClinicalHubSnapshot = {
   posts: [],
   mou: emptyMouState(),
+  advisorGuide: emptyAdvisorGuideState(),
 };
 
 let loaded = false;
@@ -72,9 +78,24 @@ async function ensureLoaded() {
           hazem: { ...base.hazem, ...(stored?.hazem || {}) },
           samer: { ...base.samer, ...(stored?.samer || {}) },
         };
+    const guideBase = emptyAdvisorGuideState();
+    const storedGuide = parsed.advisorGuide;
+    const guideVersionChanged =
+      storedGuide?.version && storedGuide.version !== guideBase.version;
+    memory.advisorGuide = guideVersionChanged
+      ? guideBase
+      : {
+          ...guideBase,
+          ...(storedGuide || {}),
+          sections: {
+            ...guideBase.sections,
+            ...(storedGuide?.sections || {}),
+          },
+        };
   } catch {
     memory.posts = [seedWelcomePost()];
     memory.mou = emptyMouState();
+    memory.advisorGuide = emptyAdvisorGuideState();
     await persist();
   }
   if (!memory.posts.length) {
@@ -193,4 +214,30 @@ export async function resetAdvisoryMou(): Promise<MouState> {
   memory.mou = emptyMouState();
   await persist();
   return JSON.parse(JSON.stringify(memory.mou)) as MouState;
+}
+
+export async function acknowledgeAdvisorGuideSection(
+  sectionId: AdvisorGuideSectionId,
+  signerName: string
+): Promise<ClinicalHubSnapshot['advisorGuide']> {
+  await ensureLoaded();
+  const stamp = {
+    sectionId,
+    acknowledged: true as const,
+    acknowledgedAt: nowIso(),
+    signerName: signerName.trim(),
+  };
+  memory.advisorGuide.sections[sectionId] = stamp;
+  if (isAdvisorGuideComplete(memory.advisorGuide)) {
+    memory.advisorGuide.completedAt = nowIso();
+  }
+  await persist();
+  return JSON.parse(JSON.stringify(memory.advisorGuide));
+}
+
+export async function resetAdvisorGuide(): Promise<ClinicalHubSnapshot['advisorGuide']> {
+  await ensureLoaded();
+  memory.advisorGuide = emptyAdvisorGuideState();
+  await persist();
+  return JSON.parse(JSON.stringify(memory.advisorGuide));
 }

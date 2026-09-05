@@ -17,6 +17,11 @@ import {
   type MouOverallStatus,
   type MouState,
 } from '@/lib/clinicalHub';
+import {
+  advisorGuideProgress,
+  isAdvisorGuideComplete,
+  type AdvisorGuideState,
+} from '@/lib/advisorPlatformGuide';
 import { loadGoalsLocal } from '@/lib/goalsStore';
 import { safePostLoginPath } from '@/lib/loginPortal';
 import { loadSensoryHubSessions } from '@/lib/sensoryHubSession';
@@ -243,6 +248,7 @@ export function resolveHubNextAction(input: {
   actor: HubActor;
   mou: MouState;
   posts: HubPost[];
+  advisorGuide?: AdvisorGuideState;
 }): UnifiedNextAction {
   const status = mouOverallStatus(input.mou);
   const pending = input.posts.filter((p) => p.status === 'pending').length;
@@ -250,6 +256,32 @@ export function resolveHubNextAction(input: {
     input.actor.memberId === 'hazem'
       ? input.mou.hazem.signed
       : input.mou.samer.signed;
+  const guide = input.advisorGuide;
+  const guideDone = guide ? isAdvisorGuideComplete(guide) : true;
+  const guideProgress = guide ? advisorGuideProgress(guide) : null;
+
+  if (
+    input.actor.role === 'scientific_advisor' &&
+    guide &&
+    !guideDone
+  ) {
+    return {
+      id: 'hub_guide_review',
+      stage: 'onboarding',
+      priority: 'critical',
+      emoji: '📘',
+      titleAr: 'راجع دليل المنصة واعتمد كل قسم',
+      titleEn: 'Review the platform guide & acknowledge each section',
+      bodyAr: `أكملت ${guideProgress?.completed ?? 0} من ${guideProgress?.total ?? 0} أقسام — اقرأ منهجية المنصة واعتماد كل قسم قبل المذكرة والعمل.`,
+      bodyEn: `Completed ${guideProgress?.completed ?? 0} of ${guideProgress?.total ?? 0} sections — read the platform methodology and acknowledge each before the MOU and work.`,
+      href: '/hub?focus=guide',
+      ctaAr: 'افتح دليل المنصة',
+      ctaEn: 'Open platform guide',
+      stepLabelAr: 'دليل المنصة',
+      stepLabelEn: 'Platform guide',
+      autoRedirect: true,
+    };
+  }
 
   if (status !== 'executed') {
     return {
@@ -458,8 +490,13 @@ export function resolvePostLoginDestination(
 
 export function hubFocusFromQuery(
   focus: string | null | undefined
-): 'overview' | 'meeting' | 'agreement' | null {
-  if (focus === 'meeting' || focus === 'agreement' || focus === 'overview') {
+): 'overview' | 'guide' | 'meeting' | 'agreement' | null {
+  if (
+    focus === 'meeting' ||
+    focus === 'agreement' ||
+    focus === 'overview' ||
+    focus === 'guide'
+  ) {
     return focus;
   }
   return null;
@@ -469,7 +506,15 @@ export function defaultHubTab(input: {
   mouStatus: MouOverallStatus;
   pendingCount: number;
   actorRole: HubActor['role'];
-}): 'overview' | 'meeting' | 'agreement' {
+  advisorGuide?: AdvisorGuideState;
+}): 'overview' | 'guide' | 'meeting' | 'agreement' {
+  if (
+    input.actorRole === 'scientific_advisor' &&
+    input.advisorGuide &&
+    !isAdvisorGuideComplete(input.advisorGuide)
+  ) {
+    return 'guide';
+  }
   if (input.mouStatus !== 'executed') return 'agreement';
   if (input.actorRole === 'admin' && input.pendingCount > 0) return 'meeting';
   if (input.actorRole === 'scientific_advisor') return 'meeting';

@@ -3,6 +3,8 @@
  * ود. سامر (المستشار العلمي). ليست بوابة عامة للأخصائيين أو الأهل.
  */
 
+import type { AdvisorGuideState } from '@/lib/advisorPlatformGuide';
+
 export const HUB_PATH = '/hub';
 export const HUB_NAME_AR = 'مركز تآلف السريري والبحثي';
 export const HUB_NAME_EN = 'Taaluf Clinical & Research Hub';
@@ -122,6 +124,7 @@ export type MouOverallStatus =
 export type ClinicalHubSnapshot = {
   posts: HubPost[];
   mou: MouState;
+  advisorGuide: AdvisorGuideState;
 };
 
 export type HubActor = {

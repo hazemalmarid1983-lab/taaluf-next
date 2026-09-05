@@ -158,6 +158,28 @@ async function main() {
     record('PATCH reply allowed for advisor', false, 'no post id');
   }
 
+  const guideRes = await json('/api/hub/guide', jar, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sectionId: 'welcome', signerName: 'د. سامر' }),
+  });
+  record(
+    'POST /api/hub/guide acknowledge',
+    guideRes.status === 200 && guideRes.data?.guideProgress?.completed === 1,
+    `status ${guideRes.status}`
+  );
+
+  const guideReset = await json('/api/hub/guide', jar, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ action: 'reset' }),
+  });
+  record(
+    'Guide reset blocked for advisor',
+    guideReset.status === 403,
+    `status ${guideReset.status}`
+  );
+
   const mouReset = await json('/api/hub/mou', jar, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
