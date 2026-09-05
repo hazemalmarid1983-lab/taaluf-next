@@ -15,6 +15,7 @@
 
 # platform hub (local demo data)
 /.data/
+.airtable-preview.env
 
 # production
 /build

@@ -11,6 +11,8 @@
     "verify:airtable": "tsx scripts/verify-airtable.ts",
     "setup:airtable": "tsx scripts/setup-airtable-guide.ts",
     "create:airtable": "tsx scripts/create-airtable-tables.ts",
+    "setup:airtable-preview": "tsx scripts/create-preview-airtable-base.ts",
+    "vercel:preview-env": "tsx scripts/configure-vercel-preview-env.ts",
     "predeploy": "tsx scripts/predeploy-check.ts",
     "deploy:preview": "vercel",
     "deploy:prod": "tsx scripts/deploy-production.ts",
