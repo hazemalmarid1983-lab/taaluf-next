@@ -4,7 +4,9 @@ import { homePathForRole } from '@/lib/access';
 import { findUserByEmail, isAirtableConfigured } from '@/lib/airtable';
 import { logAction } from '@/lib/auditLog';
 import { ensureAuthUrl } from '@/lib/ensureAuthUrl';
+import { portalFromEmail, type PortalId } from '@/lib/loginPortal';
 import { hashPasswordSync, verifyPassword } from '@/lib/password';
+import { verifyPrivilegedLogin } from '@/lib/privilegedCredentials';
 
 ensureAuthUrl();
 
@@ -93,12 +95,22 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         const email = credentials?.email?.trim().toLowerCase();
         const password = credentials?.password || '';
+        const portal = String(credentials?.portal || '') as PortalId;
         if (!email || !password) return null;
+
+        const emailPortal = portalFromEmail(email);
+        if (emailPortal && portal && emailPortal !== portal) {
+          return null;
+        }
 
         if (demoUsersAllowed()) {
           const dev = DEMO_USERS.find((u) => u.email === email);
           if (dev) {
-            const isValid = await verifyPassword(password, dev.password_hash);
+            const isValid = await verifyPrivilegedLogin(
+              email,
+              password,
+              dev.password_hash
+            );
             if (!isValid) return null;
             return {
               id: dev.id,

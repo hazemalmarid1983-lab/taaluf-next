@@ -15,8 +15,10 @@ import type { TranslationKey } from '@/lib/i18n/translations';
 import { resolvePostLoginDestination } from '@/lib/nextBestActionFlow';
 import {
   demoEmailForPortal,
+  isPrivilegedPasswordPortal,
   parsePortalParam,
   portalFromEmail,
+  portalMatchesEmail,
   safePostLoginPath,
   type PortalId,
 } from '@/lib/loginPortal';
@@ -62,10 +64,19 @@ function LoginForm() {
   const paymentsOff =
     process.env.NEXT_PUBLIC_PAYMENTS_DISABLED === 'true' ||
     process.env.NEXT_PUBLIC_TAALUF_PILOT_MODE === 'true';
-  const [password, setPassword] = useState(paymentsOff ? 'taaluf123' : '');
+  const [password, setPassword] = useState(
+    paymentsOff && !isPrivilegedPasswordPortal(initial) ? 'taaluf123' : ''
+  );
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [acceptedTerms, setAcceptedTerms] = useState(paymentsOff);
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [passwordMsg, setPasswordMsg] = useState('');
+  const [passwordBusy, setPasswordBusy] = useState(false);
+
+  const privilegedPortal = isPrivilegedPasswordPortal(portal);
 
   const meta = useMemo(
     () => PORTALS.find((p) => p.id === portal) || PORTALS[1],
@@ -76,6 +87,49 @@ function LoginForm() {
     setPortal(id);
     setEmail(demoEmailForPortal(id));
     setError('');
+    setPasswordMsg('');
+    if (paymentsOff && !isPrivilegedPasswordPortal(id)) {
+      setPassword('taaluf123');
+    } else if (isPrivilegedPasswordPortal(id)) {
+      setPassword('');
+    }
+  };
+
+  const onChangePassword = async (e: FormEvent) => {
+    e.preventDefault();
+    setPasswordMsg('');
+    setPasswordBusy(true);
+    try {
+      if (!portalMatchesEmail(portal, email)) {
+        setPasswordMsg(t('portalMismatchError'));
+        return;
+      }
+      const res = await fetch('/api/auth/change-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          currentPassword,
+          newPassword,
+          confirmPassword,
+          portal,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setPasswordMsg(data.message || t('passwordChangeError'));
+        return;
+      }
+      setPasswordMsg(t('passwordSaved'));
+      setPassword(newPassword);
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch {
+      setPasswordMsg(t('passwordChangeError'));
+    } finally {
+      setPasswordBusy(false);
+    }
   };
 
   const onSubmit = async (e: FormEvent) => {
@@ -87,6 +141,11 @@ function LoginForm() {
     setLoading(true);
     setError('');
     const inferred = portalFromEmail(email) || portal;
+    if (!portalMatchesEmail(portal, email)) {
+      setLoading(false);
+      setError(t('portalMismatchError'));
+      return;
+    }
     const roleGuess =
       inferred === 'admin'
         ? 'admin'
@@ -102,7 +161,7 @@ function LoginForm() {
     const res = await signIn('credentials', {
       email,
       password,
-      portal: inferred,
+      portal,
       redirect: false,
       callbackUrl: dest,
     });
@@ -214,6 +273,76 @@ function LoginForm() {
           </Button>
         </form>
 
+        {privilegedPortal && (
+          <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50/70 p-4">
+            <p className="text-sm font-bold text-amber-950">
+              {t('privilegedPasswordTitle')}
+            </p>
+            <p className="mt-1 text-xs leading-6 text-amber-900/90">
+              {t('privilegedPasswordHint')}
+            </p>
+            <p className="mt-2 text-xs font-semibold text-amber-800">
+              {t('privilegedPortalSecurity')}
+            </p>
+            <form onSubmit={onChangePassword} className="mt-4 space-y-3">
+              <div className="space-y-2">
+                <Label htmlFor="currentPassword">{t('currentPassword')}</Label>
+                <Input
+                  id="currentPassword"
+                  type="password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  required
+                  autoComplete="current-password"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="newPassword">{t('newPassword')}</Label>
+                <Input
+                  id="newPassword"
+                  type="password"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  required
+                  minLength={8}
+                  autoComplete="new-password"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword">{t('confirmPassword')}</Label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                  minLength={8}
+                  autoComplete="new-password"
+                />
+              </div>
+              {passwordMsg && (
+                <p
+                  className={`text-sm ${
+                    passwordMsg === t('passwordSaved')
+                      ? 'text-emerald-700'
+                      : 'text-rose-600'
+                  }`}
+                >
+                  {passwordMsg}
+                </p>
+              )}
+              <Button
+                type="submit"
+                variant="outline"
+                className="w-full border-amber-300 bg-white text-amber-950 hover:bg-amber-100"
+                disabled={passwordBusy}
+              >
+                {passwordBusy ? t('savingPassword') : t('savePrivatePassword')}
+              </Button>
+            </form>
+          </div>
+        )}
+
         {portal === 'specialist' && !paymentsOff && (
           <p className="mt-4 text-sm text-slate-500">
             {t('noSpecialistAccount')}{' '}
@@ -223,7 +352,7 @@ function LoginForm() {
           </p>
         )}
 
-        {paymentsOff && (
+        {paymentsOff && !privilegedPortal && (
           <p className="mt-4 rounded-2xl bg-emerald-50 px-3 py-2 text-xs leading-6 text-emerald-900">
             {t('demoModeHint')}{' '}
             <span className="font-mono font-semibold">taaluf123</span>

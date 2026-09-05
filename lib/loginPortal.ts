@@ -65,6 +65,17 @@ export function demoEmailForPortal(portal: PortalId) {
   return 'specialist@taaluf.local';
 }
 
+/** بوابات بها حسابات محمية بكلمة مرور خاصة */
+export function isPrivilegedPasswordPortal(portal: PortalId) {
+  return portal === 'admin' || portal === 'hub';
+}
+
+/** يرفض الدخول إذا اختار المستخدم بوابة لا تطابق بريده */
+export function portalMatchesEmail(portal: PortalId, email: string) {
+  const expected = portalFromEmail(email);
+  return expected != null && expected === portal;
+}
+
 export function isKnownPortal(value: string): value is PortalId {
   return PORTALS.includes(value as PortalId);
 }
