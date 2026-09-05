@@ -60,18 +60,18 @@ async function ensureLoaded() {
     const raw = await fs.readFile(DATA_FILE, 'utf8');
     const parsed = JSON.parse(raw) as Partial<ClinicalHubSnapshot>;
     memory.posts = Array.isArray(parsed.posts) ? parsed.posts : [];
-    memory.mou = {
-      ...emptyMouState(),
-      ...(parsed.mou || {}),
-      hazem: {
-        ...emptyMouState().hazem,
-        ...(parsed.mou?.hazem || {}),
-      },
-      samer: {
-        ...emptyMouState().samer,
-        ...(parsed.mou?.samer || {}),
-      },
-    };
+    const base = emptyMouState();
+    const stored = parsed.mou;
+    const versionChanged =
+      stored?.version && stored.version !== base.version;
+    memory.mou = versionChanged
+      ? base
+      : {
+          ...base,
+          ...(stored || {}),
+          hazem: { ...base.hazem, ...(stored?.hazem || {}) },
+          samer: { ...base.samer, ...(stored?.samer || {}) },
+        };
   } catch {
     memory.posts = [seedWelcomePost()];
     memory.mou = emptyMouState();

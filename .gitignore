@@ -55,3 +55,6 @@ public/games/little-hero/TemplateData/
 next-env.d.ts
 
 .vercel
+
+.vercel
+.env*
