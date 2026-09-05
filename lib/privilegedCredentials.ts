@@ -1,6 +1,11 @@
-import { promises as fs } from 'fs';
 import path from 'path';
 import { getHubDataDir } from '@/lib/hubDataDir';
+import {
+  hubReloadEachRequest,
+  PRIVILEGED_CREDENTIALS_FILE,
+  readHubJsonFile,
+  writeHubJsonFile,
+} from '@/lib/hubPersistence';
 import { hashPassword, verifyPassword } from '@/lib/password';
 
 export type PrivilegedAccountId = 'admin' | 'advisor';
@@ -15,7 +20,7 @@ export type PrivilegedCredentialsFile = {
   accounts: Partial<Record<PrivilegedAccountId, PrivilegedCredentialRecord>>;
 };
 
-const DATA_FILE = path.join(getHubDataDir(), 'privileged-credentials.json');
+const DATA_FILE = path.join(getHubDataDir(), PRIVILEGED_CREDENTIALS_FILE);
 
 const EMAIL_TO_ACCOUNT: Record<string, PrivilegedAccountId> = {
   'admin@taaluf.local': 'admin',
@@ -41,10 +46,11 @@ export function isPrivilegedLoginEmail(email: string) {
 }
 
 async function ensureLoaded() {
-  if (loaded) return;
+  if (loaded && !hubReloadEachRequest()) return;
   loaded = true;
   try {
-    const raw = await fs.readFile(DATA_FILE, 'utf8');
+    const raw = await readHubJsonFile(PRIVILEGED_CREDENTIALS_FILE);
+    if (!raw) throw new Error('MISSING');
     const parsed = JSON.parse(raw) as Partial<PrivilegedCredentialsFile>;
     memory.accounts = parsed.accounts ?? {};
   } catch {
@@ -53,8 +59,10 @@ async function ensureLoaded() {
 }
 
 async function persist() {
-  await fs.mkdir(path.dirname(DATA_FILE), { recursive: true });
-  await fs.writeFile(DATA_FILE, JSON.stringify(memory, null, 2), 'utf8');
+  await writeHubJsonFile(
+    PRIVILEGED_CREDENTIALS_FILE,
+    JSON.stringify(memory, null, 2)
+  );
 }
 
 export async function getPrivilegedPasswordHash(

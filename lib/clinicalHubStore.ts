@@ -1,6 +1,10 @@
-import { promises as fs } from 'fs';
-import path from 'path';
 import { getHubDataDir } from '@/lib/hubDataDir';
+import {
+  CLINICAL_HUB_FILE,
+  hubReloadEachRequest,
+  readHubJsonFile,
+  writeHubJsonFile,
+} from '@/lib/hubPersistence';
 import {
   DEFAULT_HUB_MERHID_DIRECTIVES_AR,
   emptyAdvisorGuideState,
@@ -23,7 +27,7 @@ import {
 } from '@/lib/clinicalHub';
 
 const DATA_DIR = getHubDataDir();
-const DATA_FILE = path.join(DATA_DIR, 'clinical-hub.json');
+const DATA_FILE = `${DATA_DIR}/${CLINICAL_HUB_FILE}`;
 
 const memory: ClinicalHubSnapshot = {
   posts: [],
@@ -97,10 +101,11 @@ function ensureOnboardingPost() {
 }
 
 async function ensureLoaded() {
-  if (loaded) return;
+  if (loaded && !hubReloadEachRequest()) return;
   loaded = true;
   try {
-    const raw = await fs.readFile(DATA_FILE, 'utf8');
+    const raw = await readHubJsonFile(CLINICAL_HUB_FILE);
+    if (!raw) throw new Error('MISSING_HUB_DATA');
     const parsed = JSON.parse(raw) as Partial<ClinicalHubSnapshot>;
     memory.posts = Array.isArray(parsed.posts) ? parsed.posts : [];
     const base = emptyMouState();
@@ -154,8 +159,10 @@ async function ensureLoaded() {
 
 async function persist() {
   try {
-    await fs.mkdir(DATA_DIR, { recursive: true });
-    await fs.writeFile(DATA_FILE, JSON.stringify(memory, null, 2), 'utf8');
+    await writeHubJsonFile(
+      CLINICAL_HUB_FILE,
+      JSON.stringify(memory, null, 2)
+    );
   } catch {
     /* demo disk errors are non-fatal */
   }

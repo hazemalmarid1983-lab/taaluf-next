@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { mouOverallStatus } from '@/lib/clinicalHub';
 import { requireHubActor } from '@/lib/clinicalHubApi';
 import { getClinicalHubSnapshot } from '@/lib/clinicalHubStore';
+import { hubStorageIsEphemeral, hubStorageMode } from '@/lib/hubPersistence';
 
 export async function GET() {
   const gate = await requireHubActor();
@@ -13,5 +14,9 @@ export async function GET() {
     actor: gate.actor,
     snapshot,
     mouStatus: mouOverallStatus(snapshot.mou),
+    storage: {
+      mode: hubStorageMode(),
+      ephemeral: hubStorageIsEphemeral(),
+    },
   });
 }

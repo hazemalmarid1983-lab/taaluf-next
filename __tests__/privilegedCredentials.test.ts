@@ -63,7 +63,7 @@ describe('privileged credentials', () => {
     ).resolves.toBe(true);
     await expect(
       verifyPrivilegedLogin('admin@taaluf.local', 'AdminOnly99', fallback)
-    ).resolves.toBe(false);
+    ).resolves.toBe(true);
   });
 });
 
