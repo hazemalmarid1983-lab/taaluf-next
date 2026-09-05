@@ -1,34 +1,21 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
-import ParentPricingCards from '@/components/access/ParentPricingCards';
+import { useLanguage } from '@/components/LanguageProvider';
+import FrictionlessNextAction from '@/components/flow/FrictionlessNextAction';
+import { useParentNextAction } from '@/components/flow/useNextBestAction';
 import { Button } from '@/components/ui/button';
-import { loadStoredAssessments } from '@/lib/assessmentHelpers';
-import { loadGoalsLocal } from '@/lib/goalsStore';
 import { cn } from '@/lib/utils';
-
-type Child = {
-  id: string;
-  name: string;
-  age?: number;
-};
-
-const PATH_STEPS = [
-  { id: 'screening', label: 'الفرز', href: '/dashboard/screening' },
-  {
-    id: 'questionnaire',
-    label: 'الاستبيان',
-    href: '/dashboard/parent-assessment',
-  },
-  { id: 'games', label: 'الألعاب', href: '/dashboard/games' },
-  {
-    id: 'report',
-    label: 'التقرير',
-    href: '/parent/assessment?view=results',
-  },
-] as const;
+import {
+  PARENT_PATH_STEPS,
+  PARENT_ROUTES,
+  clearActiveChildSession,
+  readParentJourneyState,
+  type ParentJourneyState,
+} from '@/lib/parentJourney';
 
 export default function ParentHomeDashboard({
   unlocked,
@@ -38,234 +25,243 @@ export default function ParentHomeDashboard({
   studentNameFromEntitlements?: string;
 }) {
   const { data: session } = useSession();
-  const [child, setChild] = useState<Child | null>(null);
-  const [consented, setConsented] = useState(true);
-  const [hasScreening, setHasScreening] = useState(false);
-  const [hasParentQ, setHasParentQ] = useState(false);
-  const [hasGames, setHasGames] = useState(false);
-  const [hasReport, setHasReport] = useState(false);
-  const [goalsCount, setGoalsCount] = useState(0);
+  const router = useRouter();
+  const { t, dir } = useLanguage();
+  const [journey, setJourney] = useState<ParentJourneyState | null>(null);
+  const nextAction = useParentNextAction(studentNameFromEntitlements);
 
   useEffect(() => {
-    try {
-      setConsented(localStorage.getItem('taaluf_consented') === 'true');
-      const active = JSON.parse(
-        localStorage.getItem('taaluf.activeStudent') || 'null'
-      );
-      if (active?.id) {
-        setChild({
-          id: active.id,
-          name: active.name || studentNameFromEntitlements || 'طفلك',
-          age: active.age,
-        });
-      } else if (studentNameFromEntitlements) {
-        setChild({ id: 'local', name: studentNameFromEntitlements });
-      }
-
-      const screening = JSON.parse(
-        localStorage.getItem('taaluf.screening.v1') || 'null'
-      );
-      setHasScreening(Boolean(screening?.result));
-
-      const parentAssess = JSON.parse(
-        localStorage.getItem('taaluf.parentAssessment.v1') || '[]'
-      );
-      const parentDone =
-        Array.isArray(parentAssess) && parentAssess.length > 0;
-      setHasParentQ(parentDone);
-
-      const games = JSON.parse(
-        localStorage.getItem('taaluf.gameSessions.v1') || '[]'
-      );
-      setHasGames(Array.isArray(games) && games.length > 0);
-
-      const assessments = loadStoredAssessments();
-      const childId = active?.id;
-      const mine = childId
-        ? assessments.filter((a) => a.studentId === childId)
-        : assessments;
-      setHasReport(mine.length > 0 || parentDone);
-
-      const goals = loadGoalsLocal(childId);
-      setGoalsCount(goals.filter((g) => g.status === 'active').length);
-    } catch {
-      /* ignore */
-    }
+    setJourney(readParentJourneyState(studentNameFromEntitlements));
   }, [studentNameFromEntitlements, unlocked]);
 
-  const doneMap = useMemo(
-    () => ({
-      screening: hasScreening,
-      questionnaire: hasParentQ,
-      games: hasGames,
-      report: hasReport,
-    }),
-    [hasScreening, hasParentQ, hasGames, hasReport]
-  );
+  const handleStartNewChild = () => {
+    clearActiveChildSession();
+    router.push(PARENT_ROUTES.register);
+  };
 
-  const completedCount = PATH_STEPS.filter((s) => doneMap[s.id]).length;
-  const progressPct = Math.round((completedCount / PATH_STEPS.length) * 100);
+  if (!journey) {
+    return (
+      <p className="py-16 text-center text-sm text-slate-500">{t('loading')}</p>
+    );
+  }
 
-  const nextStep = useMemo(() => {
-    if (!consented)
-      return {
-        title: 'أكمل الموافقة قبل البدء',
-        body: 'نحتاج موافقتك لحماية بيانات طفلك قبل أي تقييم.',
-        href: '/consent',
-        cta: 'أوافق وأبدأ',
-      };
-    if (!child?.id || child.id === 'local')
-      return {
-        title: 'سجّل بيانات طفلك أولاً',
-        body: 'خطوة سريعة لتخصيص المسار حسب عمر الطفل.',
-        href: '/parent/register-child',
-        cta: 'تسجيل الطفل',
-      };
-    if (!hasScreening)
-      return {
-        title: 'ابدأ الفرز الأولي الآن',
-        body: '12 سؤالاً فقط · حوالي 5 دقائق · مجاناً.',
-        href: '/dashboard/screening',
-        cta: 'ابدأ الفرز الآن',
-      };
-    if (!hasParentQ)
-      return {
-        title: 'أكمل استبيان الأهل',
-        body: 'أسئلة يومية تساعدنا على فهم طفلك بدقة أكبر.',
-        href: '/dashboard/parent-assessment',
-        cta: 'ابدأ الاستبيان الآن',
-      };
-    if (!hasGames)
-      return {
-        title: 'جرّب الألعاب التفاعلية',
-        body: 'أنشطة قصيرة تدعم الصورة التربوية لطفلك.',
-        href: '/dashboard/games',
-        cta: 'افتح الألعاب',
-      };
-    if (hasReport)
-      return {
-        title: 'التقييم مكتمل',
-        body: 'راجع النتائج وخطة العمل المنزلية. لا حاجة لبدء تقييم جديد.',
-        href: '/parent/assessment?view=results',
-        cta: 'اطلع على التقرير',
-      };
-    if (goalsCount > 0)
-      return {
-        title: 'تابع أهداف طفلك',
-        body: 'سجّل ملاحظة اليوم وواصل الخطة التربوية.',
-        href: '/dashboard/goals',
-        cta: 'عرض الأهداف',
-      };
-    return {
-      title: 'اطّلع على التقرير',
-      body: 'راجع النتائج وخطة العمل المنزلية.',
-      href: '/parent/assessment?view=results',
-      cta: 'اطلع على التقرير',
-    };
-  }, [
-    consented,
-    child,
-    hasScreening,
-    hasParentQ,
-    hasGames,
-    hasReport,
-    goalsCount,
-  ]);
+  if (!journey.hasChild) {
+    return (
+      <div
+        className="mx-auto my-8 max-w-xl rounded-3xl border border-white/90 bg-white/80 p-8 text-center shadow-xl backdrop-blur-2xl"
+        dir={dir}
+      >
+        <h1 className="mb-3 text-2xl font-bold text-[#1F2A37]">
+          {t('welcomeParentsTitle')}
+        </h1>
+        <p className="mb-6 text-sm leading-relaxed text-gray-500">
+          {t('welcomeParentsBody')}
+        </p>
+        <div className="space-y-3">
+          <Link
+            href={PARENT_ROUTES.register}
+            className="block w-full rounded-xl bg-[#2E7D8E] py-3.5 font-bold text-white shadow transition hover:bg-[#256675]"
+          >
+            {t('registerNewChild')}
+          </Link>
+          <Link
+            href="/login?portal=parent"
+            className="block w-full rounded-xl border border-[#2E7D8E]/30 bg-[#FAF7F1] py-3 font-bold text-[#2E7D8E] transition hover:bg-gray-50"
+          >
+            {t('loginExisting')}
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
-  const parentName = session?.user?.name || 'ولي الأمر';
-  const childName = child?.name || 'طفلك';
+  const parentName = session?.user?.name || t('guardianFallback');
+  const childName = journey.child?.name || t('yourChild');
+  const { doneMap, progressPct, adaptiveSteps, selectedMode } = journey;
+  const complete = journey.next.kind === 'done';
+  const pathNote =
+    selectedMode === 'independent_parent'
+      ? t('pathIndependent')
+      : selectedMode === 'specialist_guided'
+        ? t('pathSpecialist')
+        : t('pathDefault');
 
   return (
-    <section className="mx-auto max-w-2xl space-y-5">
-      <header className="rounded-3xl border border-slate-100 bg-white px-6 py-7 shadow-sm">
-        <p className="text-sm font-semibold text-[#2D8B5A]">لوحة ولي الأمر</p>
+    <section className="mx-auto max-w-xl space-y-5" dir={dir}>
+      <div className="mb-1 flex flex-col items-center justify-between gap-4 rounded-3xl border border-white/90 bg-white/80 p-6 shadow-xl backdrop-blur-2xl sm:flex-row">
+        <div>
+          <span className="rounded-full border border-[#2E7D8E]/20 bg-[#FAF7F1] px-3 py-1 text-xs font-bold text-[#2E7D8E]">
+            {t('activeFile')}
+          </span>
+          <h2 className="mt-2 text-xl font-bold text-[#1F2A37]">
+            {t('childLabel', { name: childName })}
+          </h2>
+          <p className="mt-1 text-xs text-gray-500">{t('followOrRegister')}</p>
+        </div>
+        <button
+          type="button"
+          onClick={handleStartNewChild}
+          className="rounded-lg bg-gray-100 px-4 py-2 text-xs font-bold text-gray-600 transition hover:bg-gray-200"
+        >
+          {t('registerAnotherChild')}
+        </button>
+      </div>
+
+      <header className="rounded-3xl border border-white/90 bg-white/80 px-6 py-7 shadow-xl backdrop-blur-2xl">
+        <p className="text-sm font-semibold text-[#2D8B5A]">
+          {t('parentDashboard')}
+        </p>
         <h1 className="mt-2 text-3xl font-bold leading-tight text-[#0b1f14]">
-          أهلاً {parentName}
+          {t('welcomeParent', { name: parentName })}
         </h1>
         <p className="mt-2 text-sm leading-7 text-slate-500">
-          مسار واحد واضح لـ <span className="font-semibold text-[#0b1f14]">{childName}</span>
-          . أكمل الخطوات بالترتيب.
+          {t('assessmentPath')}{' '}
+          <span className="font-semibold text-[#0b1f14]">{childName}</span>
+          {pathNote}
         </p>
+        {selectedMode ? (
+          <p className="mt-3 inline-block rounded-full border border-[#2E7D8E]/20 bg-[#2E7D8E]/10 px-3 py-1 text-xs font-semibold text-[#2E7D8E]">
+            {selectedMode === 'independent_parent'
+              ? t('badgeFamily')
+              : t('badgeSpecialist')}
+          </p>
+        ) : null}
       </header>
 
-      {/* شريط التقدم الأفقي */}
-      <div className="rounded-3xl border border-slate-100 bg-white px-5 py-6 shadow-sm">
-        <div className="mb-4 flex items-center justify-between gap-3">
-          <h2 className="text-base font-bold text-[#0b1f14]">مسار التقييم</h2>
-          <span className="text-xs font-semibold text-[#2D8B5A]">
-            {progressPct}% مكتمل
-          </span>
-        </div>
+      <FrictionlessNextAction action={nextAction} isAr={dir === 'rtl'} />
 
-        <div className="mb-5 h-2 overflow-hidden rounded-full bg-slate-100">
-          <div
-            className="h-full rounded-full bg-[#2D8B5A] transition-all duration-500"
-            style={{ width: `${progressPct}%` }}
-          />
-        </div>
-
-        <ol className="grid grid-cols-4 gap-2">
-          {PATH_STEPS.map((step, idx) => {
+      <details className="rounded-3xl border border-white/90 bg-white/80 px-5 py-4 shadow-xl backdrop-blur-2xl">
+        <summary className="cursor-pointer text-sm font-bold text-[#0b1f14]">
+          {t('assessmentPath')} · {t('percentDone', { n: progressPct })}
+        </summary>
+        <div className="mt-4">
+          <ol className="grid grid-cols-4 gap-1">
+          {PARENT_PATH_STEPS.map((step, idx) => {
             const done = doneMap[step.id];
             const current =
               !done &&
-              PATH_STEPS.slice(0, idx).every((s) => doneMap[s.id]);
+              PARENT_PATH_STEPS.slice(0, idx).every((s) => doneMap[s.id]);
+            const href =
+              step.id === 'child' && (done || current)
+                ? PARENT_ROUTES.register
+                : (step.id === 'screening' || step.id === 'results') &&
+                    (done || current)
+                  ? PARENT_ROUTES.pathways
+                  : step.id === 'choose' && (done || current)
+                    ? journey.next.href
+                    : current
+                      ? journey.next.href
+                      : null;
             return (
               <li key={step.id} className="text-center">
-                <div
-                  className={cn(
-                    'mx-auto flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold',
-                    done && 'bg-[#2D8B5A] text-white',
-                    current && 'bg-[#2D8B5A]/15 text-[#2D8B5A] ring-2 ring-[#2D8B5A]/30',
-                    !done && !current && 'bg-slate-100 text-slate-400'
-                  )}
-                >
-                  {done ? '✓' : idx + 1}
-                </div>
-                <p
-                  className={cn(
-                    'mt-2 text-[11px] font-semibold leading-4',
-                    done || current ? 'text-[#0b1f14]' : 'text-slate-400'
-                  )}
-                >
-                  {step.label}
-                </p>
+                {href ? (
+                  <Link href={href} className="block">
+                    <div
+                      className={cn(
+                        'mx-auto flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold',
+                        done && 'bg-[#2D8B5A] text-white',
+                        current &&
+                          'bg-[#2D8B5A]/15 text-[#2D8B5A] ring-2 ring-[#2D8B5A]/30',
+                        !done && !current && 'bg-slate-100 text-slate-400'
+                      )}
+                    >
+                      {done ? '✓' : idx + 1}
+                    </div>
+                    <p
+                      className={cn(
+                        'mt-2 text-[10px] font-semibold leading-4 sm:text-[11px]',
+                        done || current ? 'text-[#0b1f14]' : 'text-slate-400'
+                      )}
+                    >
+                      {t(step.labelKey)}
+                    </p>
+                  </Link>
+                ) : (
+                  <>
+                    <div
+                      className={cn(
+                        'mx-auto flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold',
+                        done && 'bg-[#2D8B5A] text-white',
+                        current &&
+                          'bg-[#2D8B5A]/15 text-[#2D8B5A] ring-2 ring-[#2D8B5A]/30',
+                        !done && !current && 'bg-slate-100 text-slate-400'
+                      )}
+                    >
+                      {done ? '✓' : idx + 1}
+                    </div>
+                    <p
+                      className={cn(
+                        'mt-2 text-[10px] font-semibold leading-4 sm:text-[11px]',
+                        done || current ? 'text-[#0b1f14]' : 'text-slate-400'
+                      )}
+                    >
+                      {t(step.labelKey)}
+                    </p>
+                  </>
+                )}
               </li>
             );
           })}
         </ol>
-        <p className="mt-4 text-center text-xs text-slate-400">
-          الفرز → الاستبيان → الألعاب → التقرير
-        </p>
-      </div>
+        </div>
+      </details>
 
-      {/* بطاقة الخطوة التالية فقط */}
-      <div className="rounded-3xl border border-slate-100 bg-white p-7 shadow-sm">
-        <p className="text-sm font-semibold text-[#2D8B5A]">الخطوة التالية</p>
-        <h2 className="mt-2 text-2xl font-bold text-[#0b1f14]">
-          {nextStep.title}
-        </h2>
-        <p className="mt-3 text-sm leading-7 text-slate-500">{nextStep.body}</p>
-        <Link href={nextStep.href} className="mt-6 block">
-          <Button className="h-12 w-full text-base font-bold">
-            {nextStep.cta}
-          </Button>
+      {adaptiveSteps.length > 0 ? (
+        <div className="rounded-3xl border border-white/90 bg-white/80 px-5 py-6 shadow-xl backdrop-blur-2xl">
+          <h2 className="text-base font-bold text-[#0b1f14]">
+            {t('chosenPathSteps')}
+          </h2>
+          <ol className="mt-4 space-y-3">
+            {adaptiveSteps.map((step) => (
+              <li key={step.id}>
+                <Link href={step.path} className="block">
+                  <p className="text-sm font-semibold text-[#0b1f14]">
+                    {step.isCompleted ? t('donePrefix') : ''}
+                    {step.title}
+                    {!step.isRequired ? (
+                      <span className="ms-2 text-xs font-normal text-slate-400">
+                        {t('optional')}
+                      </span>
+                    ) : null}
+                  </p>
+                  <p className="text-xs leading-6 text-slate-500">
+                    {step.description}
+                  </p>
+                </Link>
+              </li>
+            ))}
+          </ol>
+        </div>
+      ) : null}
+
+      {complete && (
+        <div className="flex flex-col gap-2">
+          <Link href={PARENT_ROUTES.community}>
+            <Button variant="secondary" className="h-11 w-full">
+              {t('communitySupport')}
+            </Button>
+          </Link>
+          <Link href={PARENT_ROUTES.goals}>
+            <Button variant="outline" className="h-11 w-full">
+              {t('viewGoals')}
+            </Button>
+          </Link>
+        </div>
+      )}
+
+      {journey.hasScreening && (
+        <Link
+          href={PARENT_ROUTES.booking}
+          className="block rounded-3xl border border-dashed border-slate-200 bg-white/70 px-6 py-5 backdrop-blur-xl"
+        >
+          <h2 className="text-base font-bold text-[#0b1f14]">
+            {t('bookSpecialist')}
+          </h2>
+          <p className="mt-1 text-sm text-slate-500">
+            {t('bookSpecialistHint')}
+          </p>
         </Link>
-      </div>
-
-      <ParentPricingCards />
-
-      <Link
-        href="/parent/booking"
-        className="block rounded-3xl border border-dashed border-slate-200 bg-slate-50 px-6 py-5"
-      >
-        <h2 className="text-base font-bold text-[#0b1f14]">
-          حجز فحص شامل مع فريق متخصص
-        </h2>
-        <p className="mt-1 text-sm text-slate-500">
-          اختياري · بعد إكمال المسار الأساسي
-        </p>
-      </Link>
+      )}
     </section>
   );
 }

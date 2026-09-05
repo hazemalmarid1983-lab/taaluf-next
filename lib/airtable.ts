@@ -113,8 +113,9 @@ export async function createStudent(fields: {
       name: fields.name,
       dob: fields.dob,
       age: fields.age,
-      parent_phone: fields.parent_phone,
-      notes: fields.notes,
+        parent_phone: fields.parent_phone,
+        parent_name: fields.parent_name,
+        notes: fields.notes,
       ...record.fields,
     },
   };
@@ -134,6 +135,9 @@ export async function listStudents(maxRecords = 50) {
         dob: String(f.DOB || f.dob || ''),
         age: Number(f.Age || f.age || 0) || undefined,
         parent_phone: String(f.ParentPhone || f.parent_phone || ''),
+        parent_name: String(f.ParentName || f.parent_name || ''),
+        parent_email: String(f.ParentEmail || f.parent_email || ''),
+        specialist_email: String(f.SpecialistEmail || f.specialist_email || ''),
         notes: String(f.Notes || f.notes || ''),
         gender: String(f.Gender || ''),
         diagnosis: String(f.Diagnosis || ''),
@@ -165,7 +169,7 @@ export async function createAssessment(fields: {
     ),
     AssessmentType: 'أولي',
     TotalScore: fields.total_score ?? 0,
-    MaxScore: fields.max_score ?? 72,
+    MaxScore: fields.max_score ?? 108,
     Classification: fields.classification || '',
     AIConfidence: fields.ai_confidence ?? undefined,
     AIAnalysis: fields.ai_analysis || '',
@@ -228,11 +232,23 @@ export async function findUserByEmail(email: string) {
     .all();
   if (!rows.length) return null;
   const f = rows[0].fields as Record<string, unknown>;
+  const rawRole = String(f.Role || f.role || 'specialist').toLowerCase();
+  const role = rawRole.includes('admin')
+    ? 'admin'
+    : rawRole.includes('advisor') ||
+        rawRole.includes('مستشار') ||
+        rawRole.includes('scientific')
+      ? 'scientific_advisor'
+      : rawRole.includes('parent') || rawRole.includes('أهل')
+        ? 'parent'
+        : rawRole.includes('teacher') || rawRole.includes('معلم')
+          ? 'teacher'
+          : 'specialist';
   return {
     id: rows[0].id,
     email: String(f.Email || ''),
     name: String(f.Name || ''),
-    role: 'specialist',
+    role,
     // TODO: migrate existing users to bcrypt hashes on next login
     password_hash: String(f.PasswordHash || f.password_hash || ''),
   };

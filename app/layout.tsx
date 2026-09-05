@@ -1,23 +1,35 @@
 import type { Metadata } from 'next';
-import { Cairo } from 'next/font/google';
+import { Amiri, Tajawal } from 'next/font/google';
 import SessionProvider from '@/components/providers/SessionProvider';
+import RbacShell from '@/components/access/RbacShell';
+import { LanguageProvider } from '@/components/LanguageProvider';
+import LegalBanner from '@/components/layout/LegalBanner';
+import SiteFooter from '@/components/layout/SiteFooter';
 import './globals.css';
 
-const cairo = Cairo({
+const tajawal = Tajawal({
   subsets: ['arabic', 'latin'],
-  variable: '--font-cairo',
+  weight: ['400', '500', '700', '800'],
+  variable: '--font-tajawal',
+  display: 'swap',
+});
+
+const amiri = Amiri({
+  subsets: ['arabic', 'latin'],
+  weight: ['400', '700'],
+  variable: '--font-amiri',
   display: 'swap',
 });
 
 export const metadata: Metadata = {
   title: 'تآلف — منصة تقييم تربوي ذكية للأطفال',
   description:
-    'تقييم تربوي علمي مساعد لاضطرابات طيف التوحد وصعوبات التعلم للأطفال من 3 إلى 12 سنة',
+    'تقييم تربوي علمي مساعد لاضطرابات طيف التوحد وصعوبات التعلم — سلطنة عمان',
   openGraph: {
     title: 'تآلف — منصة تقييم تربوي ذكية للأطفال',
     description:
-      'تقييم تربوي علمي مساعد لاضطرابات طيف التوحد وصعوبات التعلم للأطفال من 3 إلى 12 سنة',
-    locale: 'ar_AE',
+      'تقييم تربوي علمي مساعد لاضطرابات طيف التوحد وصعوبات التعلم — سلطنة عمان',
+    locale: 'ar_OM',
     type: 'website',
   },
 };
@@ -29,8 +41,18 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="ar" dir="rtl">
-      <body className={`${cairo.variable} font-sans antialiased`}>
-        <SessionProvider>{children}</SessionProvider>
+      <body
+        className={`${tajawal.variable} ${amiri.variable} bg-cream font-body antialiased text-ink`}
+      >
+        <SessionProvider>
+          <RbacShell>
+            <LanguageProvider>
+              <LegalBanner />
+              {children}
+              <SiteFooter />
+            </LanguageProvider>
+          </RbacShell>
+        </SessionProvider>
       </body>
     </html>
   );

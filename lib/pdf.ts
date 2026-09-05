@@ -217,7 +217,7 @@ export async function buildAssessmentPdf(input: {
     input.goals.forEach((g, i) => {
       line(`${i + 1}. [${g.priority}] ${g.title} — درجة ${g.score}/3`);
       line(`المجال: ${g.domain}`, 10, 2);
-      line(`لماذا: ${g.why}`, 10, 2);
+      if (g.why?.trim()) line(`لماذا: ${g.why}`, 10, 2);
       line(`استراتيجية: ${g.strategy}`, 10, 8);
     });
   }

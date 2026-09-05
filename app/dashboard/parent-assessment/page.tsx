@@ -1,36 +1,38 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import OptionChoiceCards from '@/components/assessment/OptionChoiceCards';
-import { useStepNav } from '@/hooks/useStepNav';
+import { useLanguage } from '@/components/LanguageProvider';
 import { hasActiveParentQuestionnaire } from '@/lib/assessmentGate';
 import {
   PARENT_ITEMS,
   PARENT_SCALE,
   mapParentToCriteria,
 } from '@/lib/parentAssessment';
-
-const PAGE_SIZE = 2;
+import { localizeParentItem } from '@/lib/i18n/parentAssessmentI18n';
+import { PARENT_ROUTES } from '@/lib/parentJourney';
 
 export default function ParentAssessmentPage() {
+  const { lang, dir, t } = useLanguage();
   const router = useRouter();
-  const [page, setPage] = useState(0);
+  const [currentIdx, setCurrentIdx] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
+  const [selectedScore, setSelectedScore] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
   const [toast, setToast] = useState('');
-  const { locked, go } = useStepNav(500);
+  const advancing = useRef(false);
 
-  const totalPages = Math.ceil(PARENT_ITEMS.length / PAGE_SIZE);
-  const pageItems = useMemo(
-    () => PARENT_ITEMS.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE),
-    [page]
-  );
-  const answeredCount = PARENT_ITEMS.filter((i) => answers[i.id] != null).length;
-  const progress = Math.round((answeredCount / PARENT_ITEMS.length) * 100);
-  const pageComplete = pageItems.every((i) => answers[i.id] != null);
+  const item = PARENT_ITEMS[currentIdx] || PARENT_ITEMS[0];
+  const localized = localizeParentItem(item, lang);
+  const options =
+    localized.options.length > 0
+      ? localized.options
+      : PARENT_SCALE.map((l) => ({
+          score: l.value,
+          label: l.label,
+          description: l.label,
+        }));
 
   useEffect(() => {
     try {
@@ -50,7 +52,12 @@ export default function ParentAssessmentPage() {
       }
 
       const raw = localStorage.getItem('taaluf.parentAssessment.draft');
-      if (raw) setAnswers(JSON.parse(raw));
+      if (raw) {
+        const draft = JSON.parse(raw) as Record<string, number>;
+        setAnswers(draft);
+        const firstOpen = PARENT_ITEMS.findIndex((q) => draft[q.id] == null);
+        setCurrentIdx(firstOpen === -1 ? PARENT_ITEMS.length - 1 : firstOpen);
+      }
       if (gate.active && gate.reason === 'draft') {
         setToast(gate.message);
       }
@@ -64,11 +71,15 @@ export default function ParentAssessmentPage() {
       'taaluf.parentAssessment.draft',
       JSON.stringify(answers)
     );
+    localStorage.setItem(
+      'taaluf_parent_assessment_answers',
+      JSON.stringify(answers)
+    );
   }, [answers]);
 
-  const finish = async () => {
+  const finish = async (finalAnswers: Record<string, number>) => {
     setBusy(true);
-    setMsg('تم! جاري التحليل...');
+    setMsg(t('savingAnalysis'));
     try {
       let childId = 'child_local';
       try {
@@ -82,7 +93,7 @@ export default function ParentAssessmentPage() {
 
       const list = PARENT_ITEMS.map((i) => ({
         id: i.id,
-        value: Number(answers[i.id] ?? 0),
+        value: Number(finalAnswers[i.id] ?? 0),
       }));
       const mappedScores = mapParentToCriteria(list);
 
@@ -92,7 +103,7 @@ export default function ParentAssessmentPage() {
         body: JSON.stringify({ childId, answers: list }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'فشل الحفظ');
+      if (!res.ok) throw new Error(data.error || t('saveConsentError'));
 
       const storeKey = 'taaluf.parentAssessment.v1';
       const prev = JSON.parse(localStorage.getItem(storeKey) || '[]');
@@ -112,18 +123,52 @@ export default function ParentAssessmentPage() {
         )
       );
       localStorage.removeItem('taaluf.parentAssessment.draft');
-
-      setTimeout(() => {
-        router.push('/dashboard/assessments/new');
-      }, 900);
+      router.push(PARENT_ROUTES.games);
     } catch (err) {
-      setMsg(err instanceof Error ? err.message : 'تعذر الحفظ');
+      setMsg(err instanceof Error ? err.message : t('saveConsentError'));
       setBusy(false);
+      advancing.current = false;
     }
   };
 
+  const handleSelect = (score: number) => {
+    if (busy || advancing.current) return;
+    setSelectedScore(score);
+    const updated = { ...answers, [item.id]: score };
+    setAnswers(updated);
+
+    advancing.current = true;
+    window.setTimeout(() => {
+      if (currentIdx < PARENT_ITEMS.length - 1) {
+        setCurrentIdx((prev) => prev + 1);
+        setSelectedScore(null);
+        advancing.current = false;
+        window.scrollTo(0, 0);
+      } else {
+        void finish(updated);
+        window.scrollTo(0, 0);
+      }
+    }, 120);
+  };
+
+  if (!item) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-[#F1F5F9] font-bold text-slate-500">
+        {t('loadingAssessment')}
+      </div>
+    );
+  }
+
   return (
-    <section className="mx-auto max-w-2xl space-y-5">
+    <div
+      className={`relative flex min-h-screen flex-col items-center justify-start overflow-hidden bg-[#F1F5F9] px-4 py-8 text-slate-900 ${
+        dir === 'rtl' ? 'text-right' : 'text-left'
+      }`}
+      dir={dir}
+    >
+      <div className="pointer-events-none absolute right-10 top-16 h-96 w-96 rounded-full bg-teal-400/20 blur-[60px]" />
+      <div className="pointer-events-none absolute bottom-16 left-10 h-96 w-96 rounded-full bg-amber-500/20 blur-[60px]" />
+
       {toast && (
         <div
           role="status"
@@ -132,96 +177,109 @@ export default function ParentAssessmentPage() {
           {toast}
         </div>
       )}
-      <div
-        role="alert"
-        className="rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-semibold leading-7 text-amber-950"
-      >
-        هذا الاستبيان تقييم تربوي مساعد وليس تشخيصاً طبياً
-      </div>
 
-      <div className="rounded-3xl border border-emerald-100 bg-white p-6">
-        <p className="text-sm font-semibold text-[#2D8B5A]">
-          استبيان الأهل · صفحة {page + 1} من {totalPages}
-        </p>
-        <h1 className="mt-1 text-2xl font-bold text-[#0b1f14]">
-          ملاحظات يومية عن الطفل
-        </h1>
-        <p className="mt-2 text-xs leading-6 text-slate-500">
-          اختر الوصف الأقرب لطبيعة طفلك (مستقر ← شديد جداً)
-        </p>
-        <div className="mt-4 h-2 overflow-hidden rounded-full bg-emerald-50">
-          <div
-            className="h-full rounded-full bg-[#2D8B5A] transition-all"
-            style={{ width: `${progress}%` }}
-          />
-        </div>
-        <p className="mt-2 text-xs text-slate-400">{progress}% مكتمل</p>
-      </div>
+      <div className="relative z-10 my-4 w-full max-w-3xl space-y-5">
+        <div className="space-y-3 rounded-3xl border border-white/90 bg-white/85 p-6 text-center shadow-xl backdrop-blur-md sm:p-8">
+          <div className="flex items-center justify-between text-xs font-bold sm:text-sm">
+            <span className="rounded-full border border-[#2E7D8E]/20 bg-[#2E7D8E]/10 px-4 py-1.5 text-[#2E7D8E]">
+              {localized.domain}
+            </span>
+            <span className="text-slate-500">
+              {t('itemProgress', {
+                current: currentIdx + 1,
+                total: PARENT_ITEMS.length,
+              })}
+            </span>
+          </div>
 
-      <div className="space-y-4">
-        {pageItems.map((item) => {
-          const options =
-            item.options ||
-            PARENT_SCALE.map((l) => ({
-              score: l.value,
-              label: l.label,
-              description: l.label,
-            }));
-          return (
+          <h1 className="pt-2 text-2xl font-black leading-snug text-slate-900 sm:text-3xl">
+            {localized.question}
+          </h1>
+
+          <p className="text-xs text-slate-500 sm:text-sm">{t('chooseChildDesc')}</p>
+          <p className="text-[11px] leading-6 text-slate-400">
+            {t('educationalDisclaimer')}
+          </p>
+
+          <div className="mt-3 h-2.5 w-full overflow-hidden rounded-full bg-slate-200/70">
             <div
-              key={item.id}
-              className="rounded-3xl border border-emerald-100 bg-white p-5"
-            >
-              <p className="text-[11px] font-medium text-[#2D8B5A]/80">
-                {item.id} · {item.domain}
-              </p>
-              <p className="mt-2 rounded-xl bg-[#F0F9F4] px-3 py-3 text-sm font-medium leading-7 text-[#0b1f14]">
-                {item.question || item.text}
-              </p>
-              <div className="mt-3">
-                <OptionChoiceCards
-                  options={options}
-                  value={answers[item.id]}
-                  onChange={(score) =>
-                    setAnswers((prev) => ({ ...prev, [item.id]: score }))
-                  }
-                />
-              </div>
-            </div>
-          );
-        })}
-      </div>
+              className="h-full bg-gradient-to-r from-amber-500 to-[#2E7D8E] transition-all duration-500"
+              style={{
+                width: `${((currentIdx + 1) / PARENT_ITEMS.length) * 100}%`,
+              }}
+            />
+          </div>
+        </div>
 
-      <div className="flex justify-between gap-3">
-        <Button
-          variant="ghost"
-          disabled={page === 0 || busy || locked}
-          onClick={() => go(() => setPage((p) => Math.max(0, p - 1)))}
-        >
-          السابق
-        </Button>
-        {page >= totalPages - 1 ? (
-          <Button
-            disabled={
-              !pageComplete ||
-              answeredCount < PARENT_ITEMS.length ||
-              busy ||
-              locked
-            }
-            onClick={finish}
-          >
-            {busy ? 'جاري التحليل…' : 'إنهاء وحفظ'}
-          </Button>
-        ) : (
-          <Button
-            disabled={!pageComplete || busy || locked}
-            onClick={() => go(() => setPage((p) => p + 1))}
-          >
-            التالي
-          </Button>
-        )}
+        <div className="space-y-3 rounded-3xl border border-white/90 bg-white/85 p-5 shadow-xl backdrop-blur-md sm:p-6">
+          {options.map((opt) => {
+            const isSelected =
+              selectedScore === opt.score ||
+              (selectedScore == null && answers[item.id] === opt.score);
+            return (
+              <button
+                key={opt.score}
+                type="button"
+                onClick={() => handleSelect(opt.score)}
+                disabled={busy}
+                className={`flex w-full items-start gap-4 rounded-2xl border-2 p-4 text-start transition-all sm:p-5 ${
+                  isSelected
+                    ? 'scale-[1.01] border-amber-500 bg-amber-50/90 shadow-md'
+                    : 'border-slate-200/80 bg-white/70 hover:border-slate-300 hover:bg-white'
+                }`}
+              >
+                <div
+                  className={`mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full border-2 transition-all ${
+                    isSelected
+                      ? 'border-amber-500 bg-amber-500'
+                      : 'border-slate-300'
+                  }`}
+                >
+                  {isSelected && (
+                    <span className="block h-2 w-2 rounded-full bg-white" />
+                  )}
+                </div>
+
+                <div className="flex-1 space-y-1">
+                  <div className="text-base font-bold text-slate-900 sm:text-lg">
+                    {opt.score} • {opt.label}
+                  </div>
+                  <div className="text-xs leading-relaxed text-slate-600 sm:text-sm">
+                    {opt.description}
+                  </div>
+                </div>
+              </button>
+            );
+          })}
+
+          <div className="flex items-center justify-between border-t border-slate-200/60 pt-3 text-xs">
+            <button
+              type="button"
+              onClick={() => {
+                if (currentIdx > 0) {
+                  advancing.current = false;
+                  setCurrentIdx((i) => i - 1);
+                  setSelectedScore(null);
+                  window.scrollTo(0, 0);
+                }
+              }}
+              disabled={currentIdx === 0 || busy}
+              className="rounded-xl bg-slate-100 px-4 py-2 font-bold text-slate-700 transition hover:bg-slate-200 disabled:opacity-30"
+            >
+              {t('prev')}
+            </button>
+            <span className="font-bold text-slate-400">
+              {t('percentDone', {
+                n: Math.round(((currentIdx + 1) / PARENT_ITEMS.length) * 100),
+              })}
+            </span>
+          </div>
+        </div>
+
+        {msg ? (
+          <p className="text-center text-sm font-bold text-[#2E7D8E]">{msg}</p>
+        ) : null}
       </div>
-      {msg && <p className="text-center text-sm text-[#2D8B5A]">{msg}</p>}
-    </section>
+    </div>
   );
 }

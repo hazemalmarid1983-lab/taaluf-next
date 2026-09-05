@@ -1,14 +1,16 @@
 import { cookies } from 'next/headers';
 import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
 import {
   arePaymentsDisabled,
   ENTITLEMENTS_COOKIE,
-  isValidSubscriptionCode,
   OPEN_ENTITLEMENTS,
   parseEntitlements,
   serializeEntitlements,
   type Entitlements,
 } from '@/lib/access';
+import { authOptions } from '@/lib/auth';
+import { isValidSubscriptionCode } from '@/lib/subscriptionCodes';
 
 function readEntitlements(): Entitlements {
   if (arePaymentsDisabled()) return { ...OPEN_ENTITLEMENTS };
@@ -24,11 +26,26 @@ function writeEntitlements(e: Entitlements) {
   });
 }
 
+async function requireUser() {
+  const session = await getServerSession(authOptions);
+  if (!session?.user) {
+    return {
+      error: NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 }),
+    };
+  }
+  return { session };
+}
+
 export async function GET() {
+  const auth = await requireUser();
+  if (auth.error) return auth.error;
   return NextResponse.json({ ok: true, entitlements: readEntitlements() });
 }
 
 export async function POST(req: Request) {
+  const auth = await requireUser();
+  if (auth.error) return auth.error;
+
   const body = await req.json();
   const action = String(body.action || '');
   const current = readEntitlements();
@@ -55,6 +72,15 @@ export async function POST(req: Request) {
   }
 
   if (action === 'pay') {
+    if (!arePaymentsDisabled()) {
+      return NextResponse.json(
+        {
+          error: 'PAY_VIA_GATEWAY',
+          message: 'الدفع يتم عبر بوابة Tap فقط',
+        },
+        { status: 403 }
+      );
+    }
     const product = String(body.product || '');
     const studentName = body.studentName
       ? String(body.studentName)

@@ -103,7 +103,7 @@ export default function VisualTracking({ childId, onComplete }: Props) {
         levelReached,
         metrics: {
           trackingAccuracy: accuracy,
-          linkedCriteria: ['C15', 'C9'],
+          linkedCriteria: ['C11', 'C12'],
           scoring: 'manual_specialist',
         },
         trials: nextTrials,
@@ -165,7 +165,7 @@ export default function VisualTracking({ childId, onComplete }: Props) {
           المستوى {MAX_LEVEL}
         </p>
         <p className="mt-1 text-xs text-slate-400">
-          مرتبط بالمعايير: C15 · C9 — تقييم يدوي من الأخصائي
+          مرتبط بالمعايير: C11 · C12 — تقييم يدوي من الأخصائي
         </p>
         {msg && <p className="mt-3 text-sm text-[#2D8B5A]">{msg}</p>}
         <Button

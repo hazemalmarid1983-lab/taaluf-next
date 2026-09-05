@@ -5,10 +5,10 @@
   "total_items": 12,
   "note": "فرز أولي موحّد: سؤال + 4 خيارات تصف طبيعة الطفل (0 مستقر → 3 شديد جداً)",
   "dimensions": [
-    { "id": "linguistic", "label_ar": "لغوي" },
-    { "id": "behavioral", "label_ar": "سلوكي" },
-    { "id": "cognitive", "label_ar": "معرفي" },
-    { "id": "motor", "label_ar": "حركي" }
+    { "id": "linguistic", "label_ar": "التواصل الاستجابي والتعبيري" },
+    { "id": "behavioral", "label_ar": "التفاعل والاندماج الاجتماعي واللعب" },
+    { "id": "cognitive", "label_ar": "النمو المعرفي والحلول الإدراكية" },
+    { "id": "motor", "label_ar": "السلوك والتكيف والحواس واستقلالية الذات" }
   ],
   "likert": [
     { "value": 0, "label": "مستقر" },

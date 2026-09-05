@@ -12,21 +12,22 @@ import {
   type AssessmentDraft,
 } from '@/lib/assessmentGate';
 import {
-  compareWithPrevious,
   domainSourcesFromFusion,
+  familyResultFromStoredSources,
   fuseAssessmentSources,
   getPreviousAssessment,
   loadStoredGameScores,
   loadStoredParentScores,
-  saveStoredAssessment,
+  persistLocalAssessment,
   suggestNextAssessmentDate,
   type StoredAssessment,
 } from '@/lib/assessmentHelpers';
+import { readJourneyMode } from '@/lib/parentJourney';
 import { useStepNav } from '@/hooks/useStepNav';
 import { ASSESSMENT_UI } from '@/lib/content';
+import { LEGAL_DISCLAIMERS } from '@/lib/legalContent';
 import { buildProposedGoals } from '@/lib/goalsEngine';
 import type { AiAnalysisPayload } from '@/lib/openai';
-import { downloadAssessmentPdf } from '@/lib/pdf';
 import {
   DOMAINS,
   calculateAssessmentResult,
@@ -58,6 +59,47 @@ function resultFromStored(
     })),
     ageBand
   );
+}
+
+function fuseSessionScores(opts: {
+  studentId?: string;
+  sessionScores: AssessmentScore[];
+  isParentPortal: boolean;
+  ageBand: ReturnType<typeof getAgeBand>;
+  activeCriteria: ReturnType<typeof getActiveCriteria>;
+}) {
+  const parentScores = loadStoredParentScores(opts.studentId);
+  const gameScores = loadStoredGameScores(opts.studentId);
+  const sessionLite = opts.sessionScores.map((s) => ({
+    criterionId: s.criterionId,
+    score: s.score,
+  }));
+  const fused = fuseAssessmentSources({
+    specialistScores: opts.isParentPortal ? [] : sessionLite,
+    parentScores: opts.isParentPortal
+      ? [...parentScores, ...sessionLite]
+      : parentScores,
+    gameScores,
+  });
+  const fusedMap = new Map(
+    fused.map((f) => [f.criterionId, f.fusedScore] as const)
+  );
+  const fusedScores: AssessmentScore[] = opts.activeCriteria.map((c) => {
+    const base = opts.sessionScores.find((s) => s.criterionId === c.id);
+    return {
+      criterionId: c.id,
+      score: fusedMap.has(c.id)
+        ? fusedMap.get(c.id)!
+        : Number(base?.score ?? 0),
+      specialistNotes: base?.specialistNotes,
+      evidence: base?.evidence,
+    };
+  });
+  return {
+    fused,
+    fusedScores,
+    result: calculateAssessmentResult(fusedScores, opts.ageBand),
+  };
 }
 
 export default function NewAssessmentPage() {
@@ -104,6 +146,9 @@ function NewAssessmentInner() {
   const [domainSources, setDomainSources] = useState<Record<string, string[]>>(
     {}
   );
+  const [reportScores, setReportScores] = useState<AssessmentScore[] | null>(
+    null
+  );
   const [gateReady, setGateReady] = useState(false);
 
   const ageBand = useMemo(() => {
@@ -121,6 +166,32 @@ function NewAssessmentInner() {
   const showToast = (text: string) => {
     setToast(text);
     window.setTimeout(() => setToast(''), 4500);
+  };
+
+  const applyStoredResults = (
+    stored: StoredAssessment,
+    band: ReturnType<typeof getAgeBand>
+  ) => {
+    const result = resultFromStored(stored, band);
+    setComputed(result);
+    setReportScores(stored.scores);
+    setScores(
+      Object.fromEntries(stored.scores.map((x) => [x.criterionId, x.score]))
+    );
+    setNotes(
+      Object.fromEntries(
+        stored.scores
+          .filter((x) => x.specialistNotes)
+          .map((x) => [x.criterionId, x.specialistNotes || ''])
+      )
+    );
+    setNextDate(
+      stored.nextAssessmentDate ||
+        suggestNextAssessmentDate(stored.classification)
+    );
+    if (stored.aiAnalysis) setAi(stored.aiAnalysis as AiAnalysisPayload);
+    setPhase('results');
+    setMsg(`تقرير محفوظ · ${stored.percentage}% · ${stored.classification}`);
   };
 
   useEffect(() => {
@@ -144,74 +215,105 @@ function NewAssessmentInner() {
             : '5-6';
       const prev = getPreviousAssessment(s.id);
       setPrevious(prev);
-
       const gate = hasActiveAssessment(s.id);
       const draft = gate.draft as AssessmentDraft | null | undefined;
+      const activeList = getActiveCriteria(band);
 
-      if (wantResults && prev) {
-        const result = resultFromStored(prev, band);
-        setComputed(result);
-        setScores(
-          Object.fromEntries(prev.scores.map((x) => [x.criterionId, x.score]))
-        );
-        setNotes(
-          Object.fromEntries(
-            prev.scores
-              .filter((x) => x.specialistNotes)
-              .map((x) => [x.criterionId, x.specialistNotes || ''])
-          )
-        );
-        setNextDate(
-          prev.nextAssessmentDate ||
-            suggestNextAssessmentDate(prev.classification)
-        );
-        if (prev.aiAnalysis) setAi(prev.aiAnalysis as AiAnalysisPayload);
-        setPhase('results');
-        setMsg(`تقرير محفوظ · ${prev.percentage}% · ${prev.classification}`);
-        setGateReady(true);
-        return;
-      }
-
-      if (gate.active && isParentPortal) {
-        showToast(gate.message);
-        if (gate.reason === 'completed' && prev) {
-          const result = resultFromStored(prev, band);
-          setComputed(result);
-          setScores(
-            Object.fromEntries(prev.scores.map((x) => [x.criterionId, x.score]))
-          );
-          setNextDate(
-            prev.nextAssessmentDate ||
-              suggestNextAssessmentDate(prev.classification)
-          );
-          if (prev.aiAnalysis) setAi(prev.aiAnalysis as AiAnalysisPayload);
-          setPhase('results');
+      const showParentResults = () => {
+        if (!isParentPortal) return;
+        if (!wantResults) {
           router.replace('/parent/assessment?view=results');
-        } else if (draft?.scores) {
-          setScores(draft.scores);
-          setNotes(draft.notes || {});
-          setStep(draft.step || 0);
-          setMsg('تم استئناف التقييم قيد المعالجة');
         }
+      };
+
+      if (prev) {
+        applyStoredResults(prev, band);
+        if (isParentPortal) showParentResults();
         setGateReady(true);
         return;
       }
 
-      if (gate.active && !isParentPortal && gate.reason === 'completed' && !wantResults) {
-        showToast(gate.message);
-        if (prev) {
-          const result = resultFromStored(prev, band);
-          setComputed(result);
-          setScores(
-            Object.fromEntries(prev.scores.map((x) => [x.criterionId, x.score]))
-          );
-          setNextDate(
-            prev.nextAssessmentDate ||
-              suggestNextAssessmentDate(prev.classification)
-          );
-          if (prev.aiAnalysis) setAi(prev.aiAnalysis as AiAnalysisPayload);
-          setPhase('results');
+      if (
+        (wantResults || isParentPortal) &&
+        draft?.childId === s.id &&
+        draft.scores &&
+        Object.keys(draft.scores).length > 0 &&
+        (draft.status === 'completed_pending_report' || wantResults)
+      ) {
+        const sessionScores: AssessmentScore[] = activeList.map((c) => ({
+          criterionId: c.id,
+          score: Number(draft.scores[c.id] ?? 0),
+          specialistNotes: draft.notes?.[c.id],
+        }));
+        const fused = fuseSessionScores({
+          studentId: s.id,
+          sessionScores,
+          isParentPortal,
+          ageBand: band,
+          activeCriteria: activeList,
+        });
+        const stored = persistLocalAssessment({
+          studentId: s.id,
+          studentName: s.name,
+          percentage: fused.result.percentage,
+          classification: fused.result.classification,
+          totalScore: fused.result.totalScore,
+          maxScore: fused.result.maxScore,
+          domainAverages: fused.result.domainAverages,
+          scores: fused.fusedScores,
+          nextAssessmentDate: suggestNextAssessmentDate(
+            fused.result.classification
+          ),
+        });
+        setPrevious(stored);
+        setDomainSources(domainSourcesFromFusion(fused.fused));
+        applyStoredResults(stored, band);
+        showParentResults();
+        setGateReady(true);
+        return;
+      }
+
+      if (wantResults && isParentPortal) {
+        if (readJourneyMode() === 'independent_parent') {
+          const family = familyResultFromStoredSources(s.id);
+          if (family) {
+            const stored = persistLocalAssessment({
+              studentId: s.id,
+              studentName: s.name,
+              percentage: family.result.percentage,
+              classification: family.result.classification,
+              totalScore: family.result.totalScore,
+              maxScore: family.result.maxScore,
+              domainAverages: family.result.domainAverages,
+              scores: family.fusedScores,
+              nextAssessmentDate: suggestNextAssessmentDate(
+                family.result.classification
+              ),
+            });
+            setDomainSources(domainSourcesFromFusion(family.fused));
+            applyStoredResults(stored, band);
+            setGateReady(true);
+            return;
+          }
         }
+        router.replace('/parent');
+        setGateReady(true);
+        return;
+      }
+
+      if (gate.active && isParentPortal && gate.reason === 'draft' && draft?.scores) {
+        showToast(gate.message);
+        setScores(draft.scores);
+        setNotes(draft.notes || {});
+        setStep(draft.step || 0);
+        setMsg('تم استئناف التقييم قيد المعالجة');
+        setGateReady(true);
+        return;
+      }
+
+      if (gate.active && !isParentPortal && gate.reason === 'completed' && prev) {
+        showToast(gate.message);
+        applyStoredResults(prev, band);
       } else if (draft?.childId === s.id && draft.scores) {
         setScores(draft.scores);
         setNotes(draft.notes || {});
@@ -227,6 +329,7 @@ function NewAssessmentInner() {
   }, [router, wantResults, isParentPortal]);
 
   useEffect(() => {
+    if (phase === 'results') return;
     setScores((prev) => {
       const next = { ...prev };
       for (const c of activeCriteria) {
@@ -234,7 +337,7 @@ function NewAssessmentInner() {
       }
       return next;
     });
-  }, [activeCriteria]);
+  }, [activeCriteria, phase]);
 
   // حفظ مسودة أثناء التقدم
   useEffect(() => {
@@ -264,14 +367,9 @@ function NewAssessmentInner() {
     [activeCriteria, scores, notes, evidence]
   );
 
-  const comparison = useMemo(
-    () => (computed ? compareWithPrevious(computed, previous) : null),
-    [computed, previous]
-  );
-
   const goals = useMemo(
-    () => (computed ? buildProposedGoals(scoreList) : []),
-    [computed, scoreList]
+    () => (computed ? buildProposedGoals(reportScores || scoreList) : []),
+    [computed, reportScores, scoreList]
   );
 
   const criterion = activeCriteria[step];
@@ -293,51 +391,42 @@ function NewAssessmentInner() {
       return;
     }
 
-    const parentScores = loadStoredParentScores(student?.id);
-    const gameScores = loadStoredGameScores(student?.id);
-    const fused = fuseAssessmentSources({
-      specialistScores: scoreList.map((s) => ({
-        criterionId: s.criterionId,
-        score: s.score,
-      })),
-      parentScores,
-      gameScores,
+    const fused = fuseSessionScores({
+      studentId: student?.id,
+      sessionScores: scoreList,
+      isParentPortal,
+      ageBand,
+      activeCriteria,
     });
-    const fusedMap = new Map(
-      fused.map((f) => [f.criterionId, f.fusedScore] as const)
-    );
-    const fusedScores: AssessmentScore[] = activeCriteria.map((c) => {
-      const base = scoreList.find((s) => s.criterionId === c.id);
-      return {
-        criterionId: c.id,
-        score: fusedMap.has(c.id)
-          ? fusedMap.get(c.id)!
-          : Number(base?.score ?? 0),
-        specialistNotes: base?.specialistNotes,
-        evidence: base?.evidence,
-      };
-    });
-    const result = calculateAssessmentResult(fusedScores, ageBand);
-    setDomainSources(domainSourcesFromFusion(fused));
+    const result = fused.result;
+    const next = suggestNextAssessmentDate(result.classification);
+    setDomainSources(domainSourcesFromFusion(fused.fused));
+    setReportScores(fused.fusedScores);
     setComputed(result);
-    setNextDate(suggestNextAssessmentDate(result.classification));
+    setNextDate(next);
     setPhase('results');
     if (student?.id) {
-      saveAssessmentDraft({
-        childId: student.id,
-        scores: Object.fromEntries(
-          Object.entries(scores).filter(([, v]) => v != null)
-        ) as Record<string, number>,
-        notes,
-        step,
-        updatedAt: new Date().toISOString(),
-        status: 'completed_pending_report',
+      const stored = persistLocalAssessment({
+        studentId: student.id,
+        studentName: student.name,
+        percentage: result.percentage,
+        classification: result.classification,
+        totalScore: result.totalScore,
+        maxScore: result.maxScore,
+        domainAverages: result.domainAverages,
+        scores: fused.fusedScores,
+        nextAssessmentDate: next,
       });
+      setPrevious(stored);
+      clearAssessmentDraft(student.id);
     }
     setMsg(
       `اكتمل الاستبيان — النتيجة ${result.percentage}% · ${result.classification}`
     );
     window.scrollTo({ top: 0, behavior: 'smooth' });
+    if (isParentPortal) {
+      router.replace('/parent/assessment?view=results');
+    }
   };
 
   const runAi = async () => {
@@ -352,7 +441,7 @@ function NewAssessmentInner() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          scores: scoreList,
+          scores: reportScores || scoreList,
           studentName: student?.name,
           childAge: student?.age,
           ageBand,
@@ -389,13 +478,14 @@ function NewAssessmentInner() {
     }
     setBusySave(true);
     setMsg('');
+    const persistScores = reportScores || scoreList;
     try {
       const res = await fetch('/api/airtable/assessments', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           studentId: student.id,
-          scores: scoreList,
+          scores: persistScores,
           aiAnalysis: ai,
           nextAssessmentDate: nextDate,
           ageBand,
@@ -418,11 +508,11 @@ function NewAssessmentInner() {
         totalScore: computed.totalScore,
         maxScore: computed.maxScore,
         domainAverages: computed.domainAverages,
-        scores: scoreList,
+        scores: persistScores,
         nextAssessmentDate: nextDate,
         aiAnalysis: ai,
       };
-      saveStoredAssessment(stored);
+      persistLocalAssessment(stored);
       clearAssessmentDraft(student.id);
       setPrevious(stored);
       await fetch('/api/platform/events', {
@@ -447,38 +537,6 @@ function NewAssessmentInner() {
     }
   };
 
-  const exportPdf = async () => {
-    if (!computed) {
-      setMsg('أكمل الاستبيان أولاً');
-      return;
-    }
-    try {
-      setMsg('جاري إنشاء التقرير العربي…');
-      await downloadAssessmentPdf(`taaluf-${student?.name || 'assessment'}.pdf`, {
-        studentName: student?.name || 'طالب',
-        childAge: student?.age,
-        result: computed,
-        ai,
-        goals,
-        nextAssessmentDate: nextDate,
-        comparison,
-        domainSources,
-      });
-      await fetch('/api/audit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          action: 'view_report',
-          entityType: 'report',
-          entityId: student?.id || 'report',
-        }),
-      }).catch(() => undefined);
-      setMsg('تم تنزيل التقرير بالعربية');
-    } catch (err) {
-      setMsg(err instanceof Error ? err.message : 'تعذر إنشاء PDF');
-    }
-  };
-
   if (!gateReady) {
     return (
       <p className="py-16 text-center text-sm text-slate-500">
@@ -493,7 +551,7 @@ function NewAssessmentInner() {
         {toast && (
           <div
             role="status"
-            className="fixed left-1/2 top-4 z-[60] w-[min(92vw,28rem)] -translate-x-1/2 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-center text-sm font-semibold text-amber-950 shadow-lg"
+            className="fixed left-1/2 top-4 z-[60] w-[min(92vw,28rem)] -translate-x-1/2 rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-center text-sm font-semibold text-amber-950 shadow-lg print:hidden"
           >
             {toast}
           </div>
@@ -511,7 +569,6 @@ function NewAssessmentInner() {
           onNextDateChange={setNextDate}
           onRunAi={runAi}
           onSave={saveAssessment}
-          onExportPdf={exportPdf}
           domainSources={domainSources}
           onBackToQuestions={() => {
             if (isParentPortal && previous) {
@@ -534,7 +591,7 @@ function NewAssessmentInner() {
         />
 
         {bookingOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 p-4 print:hidden">
             <div className="w-full max-w-md rounded-3xl bg-white p-6 shadow-xl">
               <h3 className="text-xl font-bold text-[#0b1f14]">
                 حجز موعد — فريق متعدد التخصصات
@@ -588,6 +645,9 @@ function NewAssessmentInner() {
           {student
             ? `${student.name}${student.age != null ? ` · ${student.age} سنة` : ''} · فئة عمرية ${ageBand}`
             : `لا طالب نشط — سجّل طالباً لربط التقييم · فئة ${ageBand}`}
+        </p>
+        <p className="mt-2 text-xs leading-6 text-slate-500">
+          {LEGAL_DISCLAIMERS.preAssessment}
         </p>
         <div className="mt-4">
           <div className="mb-1 flex justify-between text-xs text-slate-500">

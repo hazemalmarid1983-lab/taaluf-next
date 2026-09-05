@@ -28,7 +28,11 @@ export async function POST(req: Request) {
       name: String(body.name || 'طفل'),
       age: body.age != null ? Number(body.age) : undefined,
       dob: body.dob ? String(body.dob) : undefined,
-      parentEmail: email,
+      parentEmail:
+        role === 'parent' ? email : body.parentEmail ? String(body.parentEmail) : undefined,
+      parentName: body.parentName ? String(body.parentName) : undefined,
+      specialistEmail:
+        role === 'specialist' || role === 'teacher' ? email : undefined,
       createdAt: new Date().toISOString(),
       source:
         role === 'specialist' || role === 'teacher'

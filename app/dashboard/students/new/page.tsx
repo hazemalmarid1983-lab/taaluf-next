@@ -2,10 +2,17 @@
 
 import { FormEvent, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { STUDENT_COPY } from '@/lib/content';
+import { useLanguage } from '@/components/LanguageProvider';
+import { saveActiveChild } from '@/lib/parentJourney';
+import {
+  addToCaseload,
+  upsertLocalStudent,
+} from '@/lib/specialistCaseload';
 
 function computeAge(dob: string) {
   if (!dob) return 0;
@@ -19,9 +26,12 @@ function computeAge(dob: string) {
 }
 
 export default function NewStudentPage() {
+  const { t } = useLanguage();
   const router = useRouter();
+  const { data: session } = useSession();
   const [name, setName] = useState('');
   const [dob, setDob] = useState('');
+  const [parentName, setParentName] = useState('');
   const [parentPhone, setParentPhone] = useState('');
   const [notes, setNotes] = useState('');
   const [msg, setMsg] = useState('');
@@ -31,32 +41,60 @@ export default function NewStudentPage() {
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
+    if (!name.trim() || !dob) return;
     setLoading(true);
     setMsg('');
+
+    const row = {
+      id: `child_${Date.now()}`,
+      name: name.trim(),
+      dob,
+      age,
+      parent_name: parentName.trim(),
+      parent_phone: parentPhone.trim(),
+      notes: notes.trim(),
+      status: 'نشط',
+      specialist_email: String(session?.user?.email || ''),
+      specialist_name: String(session?.user?.name || ''),
+    };
+
     try {
-      const res = await fetch('/api/students', {
+      upsertLocalStudent(row);
+      if (session?.user?.email) addToCaseload(session.user.email, row.id);
+      saveActiveChild({
+        id: row.id,
+        name: row.name,
+        age: row.age,
+        dob: row.dob,
+      });
+
+      fetch('/api/students', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          name,
-          dob,
-          parent_phone: parentPhone,
-          notes,
+          name: row.name,
+          dob: row.dob,
+          parent_name: row.parent_name,
+          parent_phone: row.parent_phone,
+          notes: row.notes,
         }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.message || data.error || 'فشل الحفظ');
+      }).catch(() => undefined);
 
-      const student = data.record;
-      const localKey = 'taaluf.students.v1';
-      const prev = JSON.parse(localStorage.getItem(localKey) || '[]');
-      const row = {
-        id: student.id,
-        ...student.fields,
-      };
-      localStorage.setItem(localKey, JSON.stringify([row, ...prev]));
-      localStorage.setItem('taaluf.activeStudent', JSON.stringify(row));
-      await fetch('/api/platform/events', {
+      fetch('/api/airtable/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          kind: 'child',
+          childId: row.id,
+          name: row.name,
+          birthDate: row.dob,
+          dob: row.dob,
+          guardianName: row.parent_name,
+          guardianPhone: row.parent_phone,
+        }),
+      }).catch(() => undefined);
+
+      fetch('/api/platform/events', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -64,15 +102,15 @@ export default function NewStudentPage() {
           id: row.id,
           name: row.name,
           age: row.age,
-          dob,
+          dob: row.dob,
         }),
       }).catch(() => undefined);
 
-      setMsg(`تم حفظ ${row.name} (${row.age} سنة)`);
-      setTimeout(() => router.push('/dashboard/assessments/new'), 700);
+      router.push(`/dashboard/students/${row.id}`);
     } catch (err) {
-      setMsg(err instanceof Error ? err.message : 'تعذر الحفظ');
-    } finally {
+      setMsg(
+        err instanceof Error ? err.message : 'تعذر حفظ الحالة محلياً'
+      );
       setLoading(false);
     }
   };
@@ -80,9 +118,9 @@ export default function NewStudentPage() {
   return (
     <section className="mx-auto max-w-xl">
       <div className="rounded-3xl border border-emerald-100 bg-white p-7 shadow-sm">
-        <p className="text-sm font-semibold text-[#2D8B5A]">الخطوة 1 من 2</p>
+        <p className="text-sm font-semibold text-[#2D8B5A]">حالة جديدة</p>
         <h1 className="mt-2 text-3xl font-bold text-[#0b1f14]">
-          {STUDENT_COPY.title}
+          {t('newCaseTitle')}
         </h1>
         <p className="mt-2 text-sm leading-7 text-slate-500">
           {STUDENT_COPY.subtitle}
@@ -117,6 +155,16 @@ export default function NewStudentPage() {
           </div>
 
           <div className="space-y-2">
+            <Label htmlFor="parent">اسم ولي الأمر</Label>
+            <Input
+              id="parent"
+              value={parentName}
+              onChange={(e) => setParentName(e.target.value)}
+              placeholder="اختياري"
+            />
+          </div>
+
+          <div className="space-y-2">
             <Label htmlFor="phone">هاتف ولي الأمر</Label>
             <Input
               id="phone"
@@ -127,7 +175,7 @@ export default function NewStudentPage() {
           </div>
 
           <div className="space-y-2">
-            <Label htmlFor="notes">ملاحظات</Label>
+            <Label htmlFor="notes">ملاحظات الحالة</Label>
             <Input
               id="notes"
               value={notes}

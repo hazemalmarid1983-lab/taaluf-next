@@ -36,6 +36,20 @@ yarn-error.log*
 # vercel
 .vercel
 
+# unity
+unity/LittleHeroAdventure/Library/
+unity/LittleHeroAdventure/Temp/
+unity/LittleHeroAdventure/Obj/
+unity/LittleHeroAdventure/obj/
+unity/LittleHeroAdventure/Logs/
+unity/LittleHeroAdventure/UserSettings/
+unity/LittleHeroAdventure/MemoryCaptures/
+unity/LittleHeroAdventure/*.csproj
+unity/LittleHeroAdventure/*.sln
+unity/LittleHeroAdventure/*.userprefs
+public/games/little-hero/Build/
+public/games/little-hero/TemplateData/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

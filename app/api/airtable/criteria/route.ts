@@ -8,7 +8,7 @@ import {
   TAALOF_CRITERIA,
 } from '@/types/taalof';
 
-/** يعيد المعايير الرسمية من taalof_criteria.json (مصدر الحقيقة في التطبيق) */
+/** يعيد المعايير الرسمية من taalof_criteria_v3.json (مصدر الحقيقة في التطبيق) */
 export async function GET() {
   const session = await getServerSession(authOptions);
   if (!session?.user) {

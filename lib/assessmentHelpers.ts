@@ -1,11 +1,14 @@
 import type { AssessmentResult } from '@/types/taalof';
 
 export {
+  familyResultFromStoredSources,
   fuseAssessmentSources,
+  calculateFusion,
   domainSourcesFromFusion,
   loadStoredGameScores,
   loadStoredParentScores,
   SOURCE_LABEL_AR,
+  SOURCE_WEIGHTS,
   gameResultToCriteriaScores,
 } from '@/lib/fusion';
 
@@ -57,13 +60,48 @@ export function loadStoredAssessments(): StoredAssessment[] {
 }
 
 export function saveStoredAssessment(row: StoredAssessment) {
-  const list = loadStoredAssessments();
+  const list = loadStoredAssessments().filter((a) => a.id !== row.id);
   localStorage.setItem(STORE_KEY, JSON.stringify([row, ...list].slice(0, 80)));
+}
+
+export function persistLocalAssessment(
+  row: Omit<StoredAssessment, 'id' | 'savedAt'> & {
+    id?: string;
+    savedAt?: string;
+  }
+): StoredAssessment {
+  const previous = getPreviousAssessment(row.studentId);
+  const reuseLatest =
+    !row.id &&
+    !!previous &&
+    Date.now() - new Date(previous.savedAt).getTime() < 2 * 60 * 60 * 1000;
+  const stored: StoredAssessment = {
+    ...row,
+    id: row.id || (reuseLatest && previous ? previous.id : `local_${Date.now()}`),
+    savedAt:
+      row.savedAt ||
+      (reuseLatest && previous
+        ? previous.savedAt
+        : new Date().toISOString()),
+  };
+  saveStoredAssessment(stored);
+  return stored;
+}
+
+export function listStudentAssessmentsChronological(
+  studentId: string
+): StoredAssessment[] {
+  return loadStoredAssessments()
+    .filter((a) => a.studentId === studentId)
+    .sort(
+      (a, b) => new Date(a.savedAt).getTime() - new Date(b.savedAt).getTime()
+    );
 }
 
 export function getPreviousAssessment(
   studentId: string
 ): StoredAssessment | null {
+  if (!studentId) return null;
   const list = loadStoredAssessments().filter((a) => a.studentId === studentId);
   return list[0] || null;
 }

@@ -47,7 +47,26 @@ export type TrackedGoal = {
   lastUpdate?: string;
 };
 
-/** نص هدف SMART بالعربية من توصية المعيار */
+export const DEFAULT_GOAL_WHY =
+  'يظهر الطفل حاجة لدعم إضافي في هذا السلوك وفق الملاحظة التربوية.';
+
+export function goalWhyFromCriterion(
+  criterion:
+    | {
+        levels?: Record<string, { description?: string }>;
+      }
+    | undefined,
+  score: number
+): string {
+  const rounded = Math.min(3, Math.max(0, Math.round(Number(score) || 0)));
+  const fromLevel =
+    criterion?.levels?.[String(rounded) as '0' | '1' | '2' | '3']
+      ?.description?.trim();
+  if (fromLevel) return fromLevel;
+  return DEFAULT_GOAL_WHY;
+}
+
+/** نص هدف SMART بالعربية — يفضّل autoGoal من بنك v3 */
 export function buildSmartGoalText(
   criterionName: string,
   recommendation: string,
@@ -64,8 +83,9 @@ export function buildProposedGoals(
     .map((s) => {
       const c = getCriterionById(s.criterionId);
       if (!c) return null;
+      const roundedScore = Math.min(3, Math.max(0, Math.round(s.score)));
       const priority: ProposedGoal['priority'] =
-        s.score >= 3 ? 'عالية' : s.score === 2 ? 'متوسطة' : 'متابعة';
+        roundedScore >= 3 ? 'عالية' : roundedScore === 2 ? 'متوسطة' : 'متابعة';
       return {
         id: `goal-${c.id}`,
         criterionId: c.id,
@@ -73,7 +93,7 @@ export function buildProposedGoals(
         title: c.name,
         priority,
         score: s.score,
-        why: c.levels[String(s.score) as '0' | '1' | '2' | '3']?.description || '',
+        why: goalWhyFromCriterion(c, s.score),
         strategy: c.recommendation,
       } satisfies ProposedGoal;
     })
@@ -102,7 +122,9 @@ export function createTrackedGoalsFromScores(
       criterionId: g.criterionId,
       domain: g.domain,
       title: g.title,
-      smartText: buildSmartGoalText(g.title, c?.recommendation || g.strategy),
+      smartText:
+        c?.autoGoal ||
+        buildSmartGoalText(g.title, c?.recommendation || g.strategy),
       baseline,
       target: Math.min(100, baseline + 30),
       current: baseline,
@@ -137,6 +159,13 @@ export function todayPracticeFromGoal(goal: TrackedGoal | null) {
   };
 }
 
+export function analysisFocusSentence(weakDomains: string[]): string {
+  if (!weakDomains.length) {
+    return 'تظهر الحاجة إلى دعم ومتابعة روتينية في الجوانب السلوكية والتفاعلية';
+  }
+  return `تظهر حاجة إلى دعم مركّز في: ${weakDomains.join('، ')}`;
+}
+
 /** تحليل تربوي محلي عند غياب OpenAI — يظهر دائماً على الشاشة */
 export function buildLocalAiAnalysis(
   result: AssessmentResult,
@@ -153,9 +182,9 @@ export function buildLocalAiAnalysis(
   const top = goals.slice(0, 3);
 
   return {
-    analysis: `بناءً على تقييم تآلف (${result.percentage}% · ${result.classification}) تظهر حاجة دعم مركّزة في: ${
-      weakDomains.join('، ') || 'متابعة روتينية'
-    }. يُفضَّل اختيار هدف تربوي واحد أسبوعياً وتوثيق التقدّم في المنزل والمدرسة. هذا تحليل توجيهي وليس تشخيصاً طبياً.`,
+    analysis: `بناءً على تقييم تآلف (${result.percentage}% · ${result.classification}) ${analysisFocusSentence(
+      weakDomains
+    )}. يُفضَّل اختيار هدف تربوي واحد أسبوعياً وتوثيق التقدّم في المنزل والمدرسة. هذا تحليل توجيهي وليس تشخيصاً طبياً.`,
     strengths: strongDomains.length
       ? strongDomains.map((d) => `ملامح أكثر استقراراً نسبياً في مجال ${d}`)
       : ['وجود أساس يمكن البناء عليه عبر روتين قصير يومي'],
@@ -164,16 +193,19 @@ export function buildLocalAiAnalysis(
     ),
     recommendations: {
       special_education:
-        goals.find((g) => g.domain === 'التربية الخاصة')?.strategy ||
-        'تعليمات قصيرة مع تعزيز فوري وتقسيم المهام.',
+        goals.find((g) => g.domain === 'النمو المعرفي والحلول الإدراكية')
+          ?.strategy || 'تعليمات قصيرة مع تعزيز فوري وتقسيم المهام.',
       speech:
-        goals.find((g) => g.domain === 'النطق والتخاطب')?.strategy ||
-        'نماذج لغوية بسيطة مع دعم بصري عند الطلب.',
+        goals.find((g) => g.domain === 'التواصل الاستجابي والتعبيري')
+          ?.strategy || 'نماذج لغوية بسيطة مع دعم بصري عند الطلب.',
       psychological:
-        goals.find((g) => g.domain === 'النفسية' || g.domain === 'التواصل الاجتماعي')
-          ?.strategy || 'روتين تهدئة وخياران واضحان عند الإحباط.',
+        goals.find(
+          (g) =>
+            g.domain === 'التفاعل والاندماج الاجتماعي واللعب' ||
+            g.domain === 'السلوك والتكيف والحواس واستقلالية الذات'
+        )?.strategy || 'روتين تهدئة وخياران واضحان عند الإحباط.',
       occupational:
-        goals.find((g) => g.domain === 'الوظيفية' || g.domain === 'التكيف')
+        goals.find((g) => g.domain === 'السلوك والتكيف والحواس واستقلالية الذات')
           ?.strategy || 'مهارات مساعدة يومية بخطوات مرئية قصيرة.',
     },
     intervention_plan:

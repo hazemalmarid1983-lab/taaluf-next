@@ -9,6 +9,8 @@ import {
 } from '@/lib/goalsEngine';
 import { loadGoalsLocal, saveGoalsLocal, upsertGoalLocal } from '@/lib/goalsStore';
 import { loadStoredAssessments } from '@/lib/assessmentHelpers';
+import { useLanguage } from '@/components/LanguageProvider';
+import SensoryHubRecommendationsCard from '@/components/sensory-hub/SensoryHubRecommendationsCard';
 
 const MOODS = ['😊', '😐', '😟', '😢'] as const;
 
@@ -41,6 +43,8 @@ function WeekChart({ values }: { values: number[] }) {
 }
 
 export default function GoalsPage() {
+  const { t, lang } = useLanguage();
+  const isAr = lang === 'ar';
   const [childId, setChildId] = useState('child_local');
   const [goals, setGoals] = useState<TrackedGoal[]>([]);
   const [noteGoalId, setNoteGoalId] = useState<string | null>(null);
@@ -145,7 +149,7 @@ export default function GoalsPage() {
   return (
     <section className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold text-[#0b1f14]">الأهداف التربوية</h1>
+        <h1 className="text-3xl font-bold text-[#0b1f14]">{t('educationalGoals')}</h1>
         <p className="mt-2 text-sm text-slate-600">
           أهداف SMART من المعايير ذات الدرجة ≥ 2 مع تتبّع أسبوعي.
         </p>
@@ -166,6 +170,8 @@ export default function GoalsPage() {
         <WeekChart values={weekValues} />
       </div>
 
+      <div className="grid gap-6 lg:grid-cols-[1fr_320px]">
+        <div className="space-y-6">
       {goals.length === 0 ? (
         <p className="rounded-3xl border border-dashed border-emerald-200 bg-white p-8 text-center text-sm text-slate-500">
           لا أهداف بعد — أكمل تقييماً للطفل لتوليد أهداف تلقائياً.
@@ -233,6 +239,11 @@ export default function GoalsPage() {
           })}
         </div>
       )}
+
+        </div>
+
+        <SensoryHubRecommendationsCard goals={goals} isAr={isAr} />
+      </div>
 
       {noteGoalId && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">

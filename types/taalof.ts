@@ -1,9 +1,9 @@
 /**
  * تعريفات TypeScript لمنصة تآلف
- * مصدر البيانات: data/taalof_criteria.json
+ * مصدر البيانات: data/taalof_criteria_v3.json (Canon 4.0-unified)
  */
 
-import criteriaData from '@/data/taalof_criteria.json';
+import criteriaData from '@/data/taalof_criteria_v3.json';
 
 export interface CriterionLevel {
   label: string;
@@ -13,6 +13,8 @@ export interface CriterionLevel {
 export interface Criterion {
   id: string;
   name: string;
+  /** عنوان معياري مرادف لـ name في Canon 4.0 */
+  title?: string;
   domain: string;
   domain_en: string;
   /** نص السؤال الموحّد المعروض للمقيّم */
@@ -20,6 +22,9 @@ export interface Criterion {
   description: string;
   levels: Record<'0' | '1' | '2' | '3', CriterionLevel>;
   recommendation: string;
+  /** هدف SMART التربوي التلقائي */
+  autoGoal?: string;
+  referralRecommendation?: string;
   weight: number;
   ageBands?: string[];
   is_reverse?: boolean;
@@ -33,6 +38,12 @@ export interface Classification {
   color: string;
 }
 
+export interface AgeBandLabel {
+  ar: string;
+  en: string;
+  months?: string;
+}
+
 export interface TaalofCriteriaData {
   version: string;
   platform: string;
@@ -40,6 +51,34 @@ export interface TaalofCriteriaData {
   domains: string[];
   classifications: Classification[];
   criteria: Criterion[];
+  ageBandLabels?: Record<string, AgeBandLabel>;
+}
+
+/** توافق مع محرك الدمج v3 */
+export type TaalufCriterion = Criterion;
+
+export type FusionSource = 'specialist' | 'parent' | 'game';
+
+export type NeedLevel = 'مستقر' | 'متوسط' | 'شديد' | 'شديد جداً';
+
+export type OverallClassification =
+  | 'طبيعي'
+  | 'خفيف'
+  | 'متوسط'
+  | 'شديد'
+  | 'شديد جداً';
+
+export interface FusedScoreResult {
+  criterionId: string;
+  fusedScore: number;
+  sourcesUsed: FusionSource[];
+  needLevel: NeedLevel;
+}
+
+export interface DomainScore {
+  domain: string;
+  score: number;
+  percentage: number;
 }
 
 export interface AssessmentScore {
@@ -82,6 +121,17 @@ export const TAALOF_CRITERIA: TaalofCriteriaData =
 export const CRITERIA_LIST: Criterion[] = TAALOF_CRITERIA.criteria;
 export const DOMAINS: string[] = TAALOF_CRITERIA.domains;
 export const CLASSIFICATIONS: Classification[] = TAALOF_CRITERIA.classifications;
+export const AGE_BAND_LABELS: Record<string, AgeBandLabel> =
+  TAALOF_CRITERIA.ageBandLabels || {
+    '3-4': { ar: 'نبت', en: 'sprout' },
+    '5-6': { ar: 'شتلة', en: 'seedling' },
+    '7-9': { ar: 'ثمرة', en: 'fruit' },
+    '10-12': { ar: 'نضج', en: 'ripeness' },
+  };
+
+export function getAgeBandLabel(ageBand: string): AgeBandLabel | undefined {
+  return AGE_BAND_LABELS[ageBand];
+}
 
 export function getCriterionById(id: string): Criterion | undefined {
   return CRITERIA_LIST.find((c) => c.id === id);

@@ -11,10 +11,16 @@ const config: Config = {
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
-        primary: "#2D8B5A",
+        primary: "#2E7D8E",
+        ink: "#1F2A37",
+        teal: "#2E7D8E",
+        gold: "#E5B86E",
+        cream: "#F3F5F7",
       },
       fontFamily: {
-        sans: ["var(--font-cairo)", "Tahoma", "sans-serif"],
+        sans: ["var(--font-tajawal)", "Tahoma", "sans-serif"],
+        heading: ["var(--font-tajawal)", "Tahoma", "sans-serif"],
+        body: ["var(--font-amiri)", "Georgia", "serif"],
       },
     },
   },

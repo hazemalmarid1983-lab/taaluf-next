@@ -126,7 +126,7 @@ export default function ImitationGame({ childId, onComplete }: Props) {
           levelReached: PROMPTS.length,
           metrics: {
             imitationRate: rate,
-            linkedCriteria: ['C3', 'C4', 'C11'],
+            linkedCriteria: ['C15', 'C16', 'C11'],
           },
           trials: nextTrials,
           startedAt: startedAt || new Date().toISOString(),
@@ -154,7 +154,7 @@ export default function ImitationGame({ childId, onComplete }: Props) {
           النتيجة {score} · معدل التقليد {Math.round(imitationRate * 100)}%
         </p>
         <p className="mt-1 text-xs text-slate-400">
-          مرتبط بالمعايير: C3 · C4 · C11
+          مرتبط بالمعايير: C15 · C16 · C11
         </p>
         {msg && <p className="mt-3 text-sm text-[#2D8B5A]">{msg}</p>}
         <Button

@@ -4,9 +4,9 @@ import {
 } from '../lib/parentAssessment';
 
 describe('parent assessment mapping', () => {
-  it('maps P1 to C15', () => {
+  it('maps P1 to C12', () => {
     const mapped = mapParentToCriteria([{ id: 'P1', value: 2 }]);
-    expect(mapped[0].criterionId).toBe('C15');
+    expect(mapped[0].criterionId).toBe('C12');
     expect(mapped[0].source).toBe('parent');
     expect(mapped[0].score).toBe(2);
   });

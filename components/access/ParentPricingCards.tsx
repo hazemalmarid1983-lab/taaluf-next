@@ -2,9 +2,12 @@
 
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useLanguage } from '@/components/LanguageProvider';
+import { localizePlanName, PERIOD_KEY } from '@/lib/i18n/pricingI18n';
 import {
-  PRICING_TIERS,
+  DEFAULT_CURRENCY,
   SUPPORTED_CURRENCIES,
+  TAALUF_PRICING,
   getPrice,
 } from '@/lib/pricing';
 
@@ -12,37 +15,15 @@ const paymentsOff =
   process.env.NEXT_PUBLIC_PAYMENTS_DISABLED === 'true' ||
   process.env.NEXT_PUBLIC_TAALUF_PILOT_MODE === 'true';
 
-const CARDS = [
-  {
-    tier: PRICING_TIERS.free,
-    href: '/dashboard/screening',
-    cta: 'ابدأ مجاناً',
-    popular: false,
-  },
-  {
-    tier: PRICING_TIERS.assessment,
-    href: paymentsOff
-      ? '/dashboard/parent-assessment'
-      : '/parent/pay-assessment',
-    cta: paymentsOff ? 'ابدأ التقييم' : 'ادفع وابدأ',
-    popular: true,
-  },
-  {
-    tier: PRICING_TIERS.monitoring,
-    href: paymentsOff ? '/dashboard/goals' : '/parent/pay-assessment',
-    cta: paymentsOff ? 'افتح المتابعة' : 'اشترك شهرياً',
-    popular: false,
-  },
-] as const;
-
 export default function ParentPricingCards() {
-  const [currency, setCurrency] = useState('USD');
+  const { lang, t } = useLanguage();
+  const [currency, setCurrency] = useState(DEFAULT_CURRENCY);
 
   const priced = useMemo(
     () =>
-      CARDS.map((c) => ({
-        ...c,
-        price: getPrice(c.tier.id, currency),
+      TAALUF_PRICING.parents.map((plan) => ({
+        plan,
+        price: getPrice(plan.id, currency),
       })),
     [currency]
   );
@@ -50,7 +31,10 @@ export default function ParentPricingCards() {
   return (
     <section className="space-y-4">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="text-xl font-bold text-[#0b1f14]">باقات تآلف</h2>
+        <div>
+          <h2 className="text-xl font-bold text-[#0b1f14]">{t('parentPlans')}</h2>
+          <p className="mt-1 text-sm text-slate-500">{t('parentPlansLead')}</p>
+        </div>
         <select
           value={currency}
           onChange={(e) => setCurrency(e.target.value)}
@@ -65,39 +49,41 @@ export default function ParentPricingCards() {
       </div>
       {paymentsOff && (
         <p className="rounded-2xl bg-slate-50 px-4 py-3 text-sm text-slate-600">
-          الوضع التجريبي: كل الباقات مفتوحة بدون دفع.
+          {t('pilotOpen')}
         </p>
       )}
       <div className="grid gap-4 md:grid-cols-3">
-        {priced.map(({ tier, href, cta, price, popular }) => (
+        {priced.map(({ plan, price }) => (
           <article
-            key={tier.id}
-            className="relative flex h-full flex-col rounded-2xl border border-slate-100 bg-white p-6 shadow-sm"
+            key={plan.id}
+            className={`relative flex h-full flex-col rounded-2xl border bg-white p-6 ${
+              plan.recommended
+                ? 'border-[#2D8B5A]/40 shadow-sm'
+                : 'border-slate-100'
+            }`}
           >
-            {popular ? (
+            {plan.recommended ? (
               <span className="absolute -top-2 left-4 rounded-full bg-[#2D8B5A] px-3 py-1 text-[11px] font-bold text-white">
-                الأكثر شيوعاً
+                {t('mostComplete')}
               </span>
             ) : null}
-            <h3 className="text-xl font-bold text-[#0b1f14]">{tier.name_ar}</h3>
+            <p className="text-xs font-bold text-[#2D8B5A]">{t(PERIOD_KEY[plan.period])}</p>
+            <h3 className="mt-1 text-xl font-bold text-[#0b1f14]">
+              {localizePlanName(plan.name, lang)}
+            </h3>
             <p className="mt-2 text-3xl font-bold text-[#2D8B5A]">
-              {paymentsOff || price === 0
-                ? 'مجاناً للتجربة'
-                : `${price} ${currency}`}
-              {!paymentsOff && tier.id === 'monitoring' && price > 0 ? (
-                <span className="text-sm font-normal text-slate-400"> /شهر</span>
-              ) : null}
+              {paymentsOff ? t('freeTrial') : `${price} ${currency}`}
             </p>
             <ul className="mt-4 flex-1 space-y-1 text-sm text-slate-600">
-              {tier.features_ar.map((f) => (
+              {plan.features.map((f) => (
                 <li key={f}>• {f}</li>
               ))}
             </ul>
             <Link
-              href={href}
+              href="/login?portal=parent"
               className="mt-5 inline-block rounded-xl bg-[#2D8B5A] px-4 py-2.5 text-center text-sm font-semibold text-white transition hover:bg-[#247a4d]"
             >
-              {cta}
+              {t('startParentPortal')}
             </Link>
           </article>
         ))}

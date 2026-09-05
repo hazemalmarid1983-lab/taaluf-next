@@ -5,8 +5,11 @@ import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Suspense } from 'react';
+import { PARENT_ROUTES, readLastPurchase, unlockFullPath, unlockStaffFollowup } from '@/lib/parentJourney';
+import { useLanguage } from '@/components/LanguageProvider';
 
 function CallbackInner() {
+  const { t } = useLanguage();
   const params = useSearchParams();
   const router = useRouter();
   const [status, setStatus] = useState<'loading' | 'ok' | 'fail'>('loading');
@@ -39,7 +42,17 @@ function CallbackInner() {
         }
         setStatus('ok');
         setMsg('تم الدفع بنجاح');
-        setTimeout(() => router.push('/parent/assessment'), 1200);
+        const product =
+          params.get('product') ||
+          readLastPurchase() ||
+          'assessment';
+        if (product === 'monitoring' || product === 'specialist_guided') {
+          unlockStaffFollowup();
+          setTimeout(() => router.push(PARENT_ROUTES.booking), 1200);
+        } else {
+          unlockFullPath();
+          setTimeout(() => router.push(PARENT_ROUTES.questionnaire), 1200);
+        }
       } catch {
         setStatus('fail');
         setMsg('تعذر التحقق من الدفع');
@@ -51,13 +64,7 @@ function CallbackInner() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-[linear-gradient(180deg,#f0f9f4_0%,#f8fafc_100%)] px-4">
       <div className="w-full max-w-md rounded-3xl border border-emerald-100 bg-white p-8 text-center shadow-sm">
-        <h1 className="text-2xl font-bold text-[#0b1f14]">
-          {status === 'ok'
-            ? 'تم الدفع بنجاح'
-            : status === 'fail'
-              ? 'فشل الدفع'
-              : 'التحقق من الدفع'}
-        </h1>
+        <h1 className="text-2xl font-bold text-[#0b1f14]">{t('paymentResult')}</h1>
         <p className="mt-3 text-sm leading-7 text-slate-600">{msg}</p>
         {status === 'fail' && (
           <div className="mt-6 flex flex-col gap-2">
@@ -73,7 +80,7 @@ function CallbackInner() {
         )}
         {status === 'ok' && (
           <p className="mt-4 text-xs text-slate-400">
-            جاري التحويل إلى التقييم…
+            جاري فتح المسار الذي اخترته…
           </p>
         )}
       </div>

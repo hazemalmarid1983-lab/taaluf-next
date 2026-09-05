@@ -17,18 +17,94 @@ export type ScreeningResult = {
   recommendFullAssessment: boolean;
 };
 
-const DIMENSIONS = ['linguistic', 'behavioral', 'cognitive', 'motor'] as const;
-
-const LABELS: Record<string, string> = {
-  linguistic: 'لغوي',
-  behavioral: 'سلوكي',
-  cognitive: 'معرفي',
-  motor: 'حركي',
-};
-
 export const SCREENING_ITEMS = screeningData.items;
 export const SCREENING_LIKERT = screeningData.likert;
 export const SCREENING_DIMENSIONS = screeningData.dimensions;
+export const SCREENING_THRESHOLDS = {
+  moderate: 25,
+  elevated: 50,
+} as const;
+
+const DIMENSIONS = SCREENING_DIMENSIONS.map((d) => d.id);
+
+const LABELS: Record<string, string> = Object.fromEntries(
+  SCREENING_DIMENSIONS.map((d) => [d.id, d.label_ar])
+);
+
+const CANON_COMM = 'التواصل الاستجابي والتعبيري';
+const CANON_SOCIAL = 'التفاعل والاندماج الاجتماعي واللعب';
+const CANON_COG = 'النمو المعرفي والحلول الإدراكية';
+const CANON_ADAPT = 'السلوك والتكيف والحواس واستقلالية الذات';
+
+/** تحويل الأسماء القديمة/المختصرة والمعرّفات الداخلية إلى Canon 4.0 */
+export const DOMAIN_NAME_MAP: Record<string, string> = {
+  لغوي: CANON_COMM,
+  linguistic: CANON_COMM,
+  'النطق والتخاطب': CANON_COMM,
+  [CANON_COMM]: CANON_COMM,
+  سلوكي: CANON_SOCIAL,
+  behavioral: CANON_SOCIAL,
+  'التربية الخاصة': CANON_SOCIAL,
+  'التفاعل والاندماج واللعب': CANON_SOCIAL,
+  [CANON_SOCIAL]: CANON_SOCIAL,
+  معرفي: CANON_COG,
+  cognitive: CANON_COG,
+  'النمو المعرفي والإدراكي': CANON_COG,
+  [CANON_COG]: CANON_COG,
+  حركي: CANON_ADAPT,
+  motor: CANON_ADAPT,
+  'السلوك والتكيف والحواس': CANON_ADAPT,
+  [CANON_ADAPT]: CANON_ADAPT,
+};
+
+export function canonicalScreeningDomainLabel(name?: string | null): string {
+  if (!name) return CANON_COMM;
+  return DOMAIN_NAME_MAP[name] || name;
+}
+
+export function normalizeScreeningResult(result: ScreeningResult): ScreeningResult {
+  return {
+    ...result,
+    domainScores: result.domainScores.map((d) => ({
+      ...d,
+      label_ar: canonicalScreeningDomainLabel(d.label_ar || d.dimension),
+    })),
+  };
+}
+
+/** توصيات منزلية فورية حسب المحور الأعلى احتياجاً (Canon 4.0) */
+export const IMMEDIATE_TIPS: Record<string, { title: string; tip: string }> = {
+  'التواصل الاستجابي والتعبيري': {
+    title: 'تطوير مهارة الطلب والتعبير اليومي',
+    tip: 'جرّب وضع الألعاب أو الوجبات المفضلة في مجال رؤية طفلك وبعيداً عن متناول يده، وانتظر 3 ثوانٍ قبل تقديمها لتحفيز الإشارة أو الطلب بكلمة بدلاً من سحب اليد.',
+  },
+  'التفاعل والاندماج الاجتماعي واللعب': {
+    title: 'تعزيز الانتباه المشترك والتواصل البصري',
+    tip: 'اجلس بمستوى عيني طفلك مباشرة أثناء نشاط يحبه، وقلّد إحدى حركاته مع ابتسامة واضحة ثم توقف وانتظر نظرة عينيه قبل إكمال اللعبة بالتناوب.',
+  },
+  'النمو المعرفي والحلول الإدراكية': {
+    title: 'تطوير مهارات المطابقة والتمييز',
+    tip: 'استخدم أدوات المطبخ اليومية (مثل الملاعق أو الأكواب الملونة) وشجع طفلك على فرزها في مجموعتين متشابهتين كنشاط لعب يومي مرح.',
+  },
+  'السلوك والتكيف والحواس واستقلالية الذات': {
+    title: 'دعم الروتين والمرونة والانتقال',
+    tip: 'استخدم بطاقتين مصورتين للنشاط الحالي والنشاط التالي (مثلاً: صورة الحذاء ثم صورة الحديقة) لتنبيه طفلك قبل الانتقال بدقيقتين لتجنب الانزعاج.',
+  },
+};
+
+export function getImmediateScreeningTip(result: ScreeningResult) {
+  const top = [...result.domainScores].sort(
+    (a, b) => b.scorePercent - a.scorePercent
+  )[0];
+  const key = canonicalScreeningDomainLabel(
+    top?.label_ar || top?.dimension || LABELS.linguistic
+  );
+  return {
+    domain: key,
+    percentage: top?.scorePercent ?? 0,
+    ...(IMMEDIATE_TIPS[key] || IMMEDIATE_TIPS[CANON_COMM]),
+  };
+}
 
 /** مقياس موحّد 0–3 (مستقر → شديد جداً؛ أعلى = حاجة دعم أكبر) */
 function concernValue(raw: number): number {
@@ -74,7 +150,11 @@ export function calculateScreening(answers: ScreeningAnswer[]): ScreeningResult 
   const overall =
     totalMax > 0 ? Math.round((total / totalMax) * 100) : 0;
   const band: ScreeningResult['band'] =
-    overall < 25 ? 'balanced' : overall < 50 ? 'moderate' : 'elevated';
+    overall < SCREENING_THRESHOLDS.moderate
+      ? 'balanced'
+      : overall < SCREENING_THRESHOLDS.elevated
+        ? 'moderate'
+        : 'elevated';
 
   return {
     domainScores,

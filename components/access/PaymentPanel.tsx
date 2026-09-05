@@ -14,14 +14,20 @@ export default function PaymentPanel({
   studentName,
   onPaid,
   title,
+  amount,
+  currency,
 }: {
   product: Product;
   slotId?: string;
   studentName?: string;
   title?: string;
+  amount?: number;
+  currency?: string;
   onPaid: () => void;
 }) {
   const price = PRICES[product];
+  const displayAmount = amount ?? price.amount;
+  const displayCurrency = currency ?? price.currency;
   const [card, setCard] = useState('4242 4242 4242 4242');
   const [name, setName] = useState('');
   const [busy, setBusy] = useState(false);
@@ -86,7 +92,7 @@ export default function PaymentPanel({
           {title || price.label}
         </h2>
         <p className="mt-2 text-3xl font-bold text-[#2D8B5A]">
-          {price.amount} {price.currency}
+          {displayAmount} {displayCurrency}
         </p>
         <p className="mt-1 text-xs text-slate-400">
           دفع تجريبي للتطوير — لا يُخصم مبلغ حقيقي

@@ -1,19 +1,13 @@
 'use client';
 
-import { FormEvent, useState } from 'react';
+import { FormEvent, useEffect, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import type { PortalRole } from '@/lib/access';
-import { MERHID_NAME } from '@/lib/merhid';
+import { useLanguage } from '@/components/LanguageProvider';
 import { MessageCircle } from 'lucide-react';
 
 type Msg = { role: 'user' | 'assistant'; text: string };
-
-const SCOPE_HINT: Record<string, string> = {
-  admin: 'وضع حر — مساعدة تشغيل وصياغة ودعم المنصة',
-  specialist: 'مقيد بمسار التقييم والأهداف والتقارير فقط',
-  parent: 'مقيد بشرح النتيجة والأنشطة المنزلية فقط',
-};
 
 export default function MerhidChat({
   scope,
@@ -22,15 +16,34 @@ export default function MerhidChat({
   scope: PortalRole | 'admin';
   compact?: boolean;
 }) {
+  const { t, dir } = useLanguage();
+  const merhidName = t('merhidName');
+  const hint =
+    scope === 'admin'
+      ? t('merhidHintAdmin')
+      : scope === 'scientific_advisor'
+        ? t('merhidHintAdvisor')
+        : scope === 'specialist'
+          ? t('merhidHintSpecialist')
+          : t('merhidHintParent');
   const [open, setOpen] = useState(!compact);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([
     {
       role: 'assistant',
-      text: `مرحباً، أنا ${MERHID_NAME}. ${SCOPE_HINT[scope] || ''}`,
+      text: t('merhidHello', { name: merhidName, hint }),
     },
   ]);
+
+  useEffect(() => {
+    setMessages((current) => {
+      if (current.length === 1 && current[0].role === 'assistant') {
+        return [{ role: 'assistant', text: t('merhidHello', { name: merhidName, hint }) }];
+      }
+      return current;
+    });
+  }, [merhidName, hint, t]);
 
   const send = async (e?: FormEvent) => {
     e?.preventDefault();
@@ -50,44 +63,48 @@ export default function MerhidChat({
         ...m,
         {
           role: 'assistant',
-          text: data.reply || data.message || 'تعذر الرد الآن',
+          text: data.reply || data.message || t('loading'),
         },
       ]);
     } catch {
       setMessages((m) => [
         ...m,
-        { role: 'assistant', text: 'تعذر الاتصال بالمرشد حالياً.' },
+        { role: 'assistant', text: t('loading') },
       ]);
     } finally {
       setBusy(false);
     }
   };
 
+  const align = dir === 'rtl' ? 'text-right' : 'text-left';
+
   if (compact && !open) {
     return (
       <button
         type="button"
+        dir={dir}
         onClick={() => setOpen(true)}
-        className="fixed bottom-5 left-5 z-40 flex items-center gap-2 rounded-full bg-[#2D8B5A] px-4 py-3 text-sm font-semibold text-white shadow-lg"
+        className="fixed bottom-5 start-5 z-40 flex items-center gap-2 rounded-full bg-[#2E7D8E] px-4 py-3 text-sm font-semibold text-white shadow-lg backdrop-blur-xl print:hidden"
       >
         <MessageCircle className="h-4 w-4" />
-        {MERHID_NAME}
+        {merhidName}
       </button>
     );
   }
 
   return (
     <div
+      dir={dir}
       className={
         compact
-          ? 'fixed bottom-5 left-5 z-40 flex h-[420px] w-[min(100%-2rem,360px)] flex-col rounded-3xl border border-emerald-100 bg-white shadow-2xl'
-          : 'flex h-[420px] flex-col rounded-3xl border border-emerald-100 bg-white'
+          ? `fixed bottom-5 start-5 z-40 flex h-[420px] w-[min(100%-2rem,360px)] flex-col rounded-3xl border border-white/90 bg-white/85 shadow-2xl backdrop-blur-xl print:hidden ${align}`
+          : `flex h-[420px] flex-col rounded-3xl border border-white/90 bg-white/85 backdrop-blur-xl ${align}`
       }
     >
-      <div className="flex items-center justify-between border-b border-emerald-50 px-4 py-3">
+      <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
         <div>
-          <p className="font-bold text-[#2D8B5A]">{MERHID_NAME}</p>
-          <p className="text-[11px] text-slate-400">{SCOPE_HINT[scope]}</p>
+          <p className="font-bold text-[#2E7D8E]">{merhidName}</p>
+          <p className="text-[11px] text-slate-400">{hint}</p>
         </div>
         {compact && (
           <button
@@ -95,7 +112,7 @@ export default function MerhidChat({
             className="text-xs text-slate-400"
             onClick={() => setOpen(false)}
           >
-            إغلاق
+            {t('merhidClose')}
           </button>
         )}
       </div>
@@ -103,25 +120,26 @@ export default function MerhidChat({
         {messages.map((m, i) => (
           <div
             key={`${m.role}-${i}`}
+            dir={dir}
             className={
               m.role === 'user'
-                ? 'mr-6 rounded-2xl bg-[#2D8B5A] px-3 py-2 text-white'
-                : 'ml-4 rounded-2xl bg-[#F0F9F4] px-3 py-2 text-slate-700'
+                ? `rounded-2xl bg-[#2E7D8E] px-3 py-2 text-white ${align}`
+                : `rounded-2xl bg-amber-50 px-3 py-2 text-slate-700 ${align}`
             }
           >
             {m.text}
           </div>
         ))}
       </div>
-      <form onSubmit={send} className="flex gap-2 border-t border-emerald-50 p-3">
+      <form onSubmit={send} className="flex gap-2 border-t border-slate-100 p-3">
         <Input
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="اكتب سؤالك…"
+          placeholder={t('merhidPlaceholder')}
           disabled={busy}
         />
         <Button type="submit" disabled={busy || !input.trim()}>
-          إرسال
+          {t('merhidSend')}
         </Button>
       </form>
     </div>

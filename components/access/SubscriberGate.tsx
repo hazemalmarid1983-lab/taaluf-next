@@ -38,7 +38,7 @@ export default function SubscriberGate({
       setMsg(data.message);
       onSuccess?.();
       setTimeout(() => {
-        router.push('/dashboard/screening');
+        router.push('/parent');
         router.refresh();
       }, 400);
     } catch (err) {
@@ -53,7 +53,7 @@ export default function SubscriberGate({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="fixed bottom-5 right-5 z-40 rounded-full border border-emerald-200 bg-white px-4 py-2 text-xs font-bold text-[#2D8B5A] shadow-md hover:bg-emerald-50"
+        className="fixed bottom-5 right-5 z-40 rounded-full border border-emerald-200 bg-white px-4 py-2 text-xs font-bold text-[#2D8B5A] shadow-md hover:bg-emerald-50 print:hidden"
       >
         مشترك
       </button>
@@ -63,8 +63,7 @@ export default function SubscriberGate({
           <div className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-xl">
             <h3 className="text-lg font-bold text-[#0b1f14]">دخول المشترك</h3>
             <p className="mt-2 text-sm leading-7 text-slate-500">
-              أدخل رمز الاشتراك لفتح البوابات دون عملية دفع. الرموز التجريبية:
-              TAALUF-VIP
+              أدخل رمز الاشتراك لفتح البوابات دون عملية دفع.
             </p>
             <form onSubmit={submit} className="mt-4 space-y-3">
               <Input

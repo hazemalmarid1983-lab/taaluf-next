@@ -2,119 +2,56 @@
 
 import Link from 'next/link';
 import type { ScreeningResult } from '@/lib/screeningEngine';
-import { bandLabelAr } from '@/lib/screeningEngine';
+import {
+  SCREENING_THRESHOLDS,
+  bandLabelAr,
+  canonicalScreeningDomainLabel,
+  getImmediateScreeningTip,
+} from '@/lib/screeningEngine';
+import { PARENT_ROUTES } from '@/lib/parentJourney';
+import PdfExportButton from '@/components/reports/PdfExportButton';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 
-const paymentsOff =
-  process.env.NEXT_PUBLIC_PAYMENTS_DISABLED === 'true' ||
-  process.env.NEXT_PUBLIC_TAALUF_PILOT_MODE === 'true';
+type Tone = 'green' | 'yellow' | 'red';
 
-type Tone = 'green' | 'yellow' | 'red' | 'locked';
-
-type ResultCard = {
-  id: string;
-  title: string;
-  status: string;
-  hint: string;
-  tone: Tone;
-  locked?: boolean;
-};
-
-const TONE_BORDER: Record<Tone, string> = {
-  green: 'border-green-500',
-  yellow: 'border-yellow-400',
-  red: 'border-red-500',
-  locked: 'border-cyan-800/60',
-};
-
-const TONE_TEXT: Record<Tone, string> = {
-  green: 'text-green-400',
-  yellow: 'text-yellow-400',
-  red: 'text-red-400',
-  locked: 'text-cyan-700',
-};
-
-/** تحويل نسبة القلق (أعلى = أكثر حاجة) إلى تسمية العرض */
 function statusFromPercent(scorePercent: number): {
   status: string;
   tone: Tone;
   hint: string;
 } {
-  if (scorePercent < 30) {
+  if (scorePercent < SCREENING_THRESHOLDS.moderate) {
     return {
       status: 'مستقر',
       tone: 'green',
       hint: 'المؤشرات ضمن المدى المتوازن حالياً',
     };
   }
-  if (scorePercent < 55) {
+  if (scorePercent < SCREENING_THRESHOLDS.elevated) {
     return {
-      status: 'بحاجة مراقبة',
+      status: 'بحاجة متابعة',
       tone: 'yellow',
       hint: 'يُفضّل المتابعة بدعم تربوي موجّه',
     };
   }
   return {
-    status: 'تدخل عاجل',
+    status: 'أولوية دعم',
     tone: 'red',
-    hint: 'يُوصى بالانتقال إلى التقييم التربوي الكامل',
+    hint: 'يُوصى بإكمال المسار حتى التقرير التربوي',
   };
 }
 
-const DIM_TITLE: Record<string, string> = {
-  linguistic: 'النطق والتخاطب',
-  behavioral: 'التربية الخاصة',
-  cognitive: 'الجانب المعرفي',
-  motor: 'المهارات الحركية',
+const TONE_CLASS: Record<Tone, string> = {
+  green: 'border-[#2D8B5A]/40 bg-[#F0F9F4]',
+  yellow: 'border-amber-200 bg-[#FFFBEB]/70',
+  red: 'border-red-200 bg-[#FEF2F2]/70',
 };
 
-const LOCKED_TEASERS: ResultCard[] = [
-  {
-    id: 'psych',
-    title: 'الجانب النفسي',
-    status: 'مقفل',
-    hint: 'متاح في التقرير الكامل',
-    tone: 'locked',
-    locked: true,
-  },
-  {
-    id: 'social',
-    title: 'التواصل الاجتماعي',
-    status: 'مقفل',
-    hint: 'متاح في التقرير الكامل',
-    tone: 'locked',
-    locked: true,
-  },
-  {
-    id: 'restricted',
-    title: 'السلوك المقيد',
-    status: 'مقفل',
-    hint: 'متاح في التقرير الكامل',
-    tone: 'locked',
-    locked: true,
-  },
-  {
-    id: 'adaptive',
-    title: 'التكيف اليومي',
-    status: 'مقفل',
-    hint: 'متاح في التقرير الكامل',
-    tone: 'locked',
-    locked: true,
-  },
-];
-
-function buildCards(result: ScreeningResult): ResultCard[] {
-  const free = result.domainScores.map((d) => {
-    const mapped = statusFromPercent(d.scorePercent);
-    return {
-      id: d.dimension,
-      title: DIM_TITLE[d.dimension] || d.label_ar,
-      status: mapped.status,
-      hint: `${mapped.hint} · ${d.scorePercent}%`,
-      tone: mapped.tone,
-    };
-  });
-  return [...free, ...LOCKED_TEASERS];
-}
+const TONE_TEXT: Record<Tone, string> = {
+  green: 'text-[#2D8B5A]',
+  yellow: 'text-[#B45309]',
+  red: 'text-[#991B1B]',
+};
 
 export default function ScreeningResultsHero({
   result,
@@ -125,128 +62,124 @@ export default function ScreeningResultsHero({
   msg?: string;
   onRetake?: () => void;
 }) {
-  const cards = buildCards(result);
-  const nextHref = paymentsOff
-    ? '/dashboard/parent-assessment'
-    : '/parent/pay-assessment';
-
-  const print = () => {
-    window.print();
-  };
+  const activeTip = getImmediateScreeningTip(result);
 
   return (
-    <div className="screening-results-print -mx-4 min-h-[70vh] bg-[#0d1a1f] px-4 py-8 text-white sm:-mx-6 sm:px-6 md:rounded-3xl">
-      <div className="mx-auto w-full max-w-5xl rounded-3xl border border-[#2a4a55] bg-[#15262d] p-6 shadow-2xl sm:p-10">
-        <div className="mb-8 flex flex-wrap items-center justify-between gap-3">
-          <div>
-            <h1 className="text-2xl font-bold text-cyan-300 sm:text-3xl">
-              نتائج الفحص الأولي لطفلك
-            </h1>
-            <p className="mt-2 text-sm text-gray-400">
-              المؤشر العام: {result.overall}% · {bandLabelAr(result.band)}
-            </p>
-          </div>
-          <span className="rounded-full bg-gray-700 px-4 py-1 text-sm text-gray-300">
-            نسخة مجانية
+    <section className="screening-results-print print-document mx-auto max-w-2xl space-y-5 print:bg-white print:p-0" dir="rtl">
+      <div className="sticky top-2 z-50 print:hidden">
+        <PdfExportButton
+          documentTitle="نتيجة_الفرز_تآلف"
+          label="تنزيل التقرير / بطاقة الدعم (PDF) 📥"
+          className="h-14 w-full rounded-2xl bg-amber-500 text-base font-black text-slate-900 shadow-lg hover:bg-amber-400 hover:text-slate-900"
+        />
+      </div>
+      <header className="rounded-3xl border border-gray-100 bg-white px-6 py-8 text-center shadow-sm">
+        <span className="mb-3 inline-block rounded-full border border-[#2E7D8E]/20 bg-[#FAF7F1] px-3.5 py-1.5 text-xs font-bold text-[#2E7D8E]">
+          مجاني • الفرز الأولي اكتمل
+        </span>
+        <h1 className="mb-2 text-3xl font-bold text-[#1F2A37]">
+          نتائج الفرز لطفلك
+        </h1>
+        <p className="mx-auto max-w-xl text-xs text-gray-500">
+          المؤشر العام:{' '}
+          <strong className="text-[#1F2A37]">%{result.overall}</strong> •{' '}
+          {bandLabelAr(result.band)} • الفرز مجاني. التقييم الكامل والاشتراك
+          يتيحان لك باقي المسار.
+        </p>
+      </header>
+
+      <div className="rounded-2xl border-2 border-[#2E7D8E]/30 bg-gradient-to-l from-[#F0FDFA] to-[#FAF7F1] p-6 shadow-sm">
+        <div className="flex items-start gap-3">
+          <span className="rounded-xl bg-white p-2 text-2xl shadow-sm" aria-hidden>
+            💡
           </span>
-        </div>
-
-        <div className="mb-10 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-          {cards.map((card) => (
-            <div
-              key={card.id}
-              className={`rounded-xl border-r-4 bg-[#0e1a20] p-4 transition hover:bg-[#1a2f38] ${TONE_BORDER[card.tone]} ${
-                card.locked ? 'opacity-70' : ''
-              }`}
-            >
-              <h3 className="text-sm text-gray-400">{card.title}</h3>
-              <p className={`mt-1 text-2xl font-bold ${TONE_TEXT[card.tone]}`}>
-                {card.status}
-              </p>
-              <p className="mt-2 text-xs text-gray-500">{card.hint}</p>
-            </div>
-          ))}
-        </div>
-
-        <div className="my-10 h-px w-full bg-gradient-to-r from-transparent via-cyan-700 to-transparent" />
-
-        <div className="relative overflow-hidden rounded-2xl border border-[#2a4a55] bg-[#0a151a] p-6 shadow-inner sm:p-8">
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-cyan-900/10 to-transparent" />
-
-          <div className="relative z-10 space-y-4 text-center">
-            <div className="mb-2 flex justify-center">
-              <span className="rounded-full border border-cyan-700/50 bg-cyan-800/40 px-3 py-1 text-xs text-cyan-300">
-                اكتشف المزيد عن طفلك
-              </span>
-            </div>
-
-            <h2 className="text-2xl font-bold leading-tight text-gray-100 md:text-3xl">
-              النتائج التي تراها ليست سوى القشرة الخارجية.
-              <br />
-              <span className="text-cyan-300">
-                طفلك يحاول إخبارك بشيء أعمق.
-              </span>
-            </h2>
-
-            <p className="mx-auto max-w-2xl text-base leading-relaxed text-gray-400">
-              أكمل المسار لتحصل على دليلك التربوي المتقدم، وتعرف خارطة الطريق
-              التي تساعدك على فهم طفلك ودعمه اليوم.
+          <div>
+            <span className="text-xs font-bold tracking-wide text-[#2E7D8E]">
+              توصية تآلف الفورية (بناءً على نتائج اليوم)
+            </span>
+            <h3 className="mb-1.5 mt-0.5 text-base font-bold text-[#1F2A37]">
+              {activeTip.title}
+            </h3>
+            <p className="text-xs leading-relaxed text-gray-700 sm:text-sm">
+              {activeTip.tip}
             </p>
-
-            <div className="pt-6">
-              <Link
-                href={nextHref}
-                className="inline-block rounded-full bg-gradient-to-r from-[#fbbf24] to-[#f59e0b] px-10 py-4 text-lg font-bold text-[#0f172a] shadow-[0_0_20px_rgba(251,191,36,0.3)] transition hover:scale-105 hover:from-[#f59e0b] hover:to-[#d97706] active:scale-95"
-              >
-                {paymentsOff
-                  ? 'افتح التقييم التربوي الكامل'
-                  : 'احصل على التقرير الكامل الآن'}
-              </Link>
-            </div>
-
-            <div className="flex flex-wrap items-center justify-center gap-4 pt-4 text-xs text-gray-500">
-              <button
-                type="button"
-                onClick={print}
-                className="underline transition hover:text-gray-300"
-              >
-                اطبع النتيجة الحالية
-              </button>
-              {onRetake ? (
-                <button
-                  type="button"
-                  onClick={onRetake}
-                  className="underline transition hover:text-gray-300"
-                >
-                  إعادة الفرز
-                </button>
-              ) : null}
-            </div>
-
-            {msg ? (
-              <p className="pt-2 text-sm text-cyan-400/80">{msg}</p>
-            ) : null}
           </div>
         </div>
       </div>
 
-      <style jsx global>{`
-        @media print {
-          body * {
-            visibility: hidden;
-          }
-          .screening-results-print,
-          .screening-results-print * {
-            visibility: visible;
-          }
-          .screening-results-print {
-            position: absolute;
-            inset: 0;
-            background: white !important;
-            color: black !important;
-          }
-        }
-      `}</style>
-    </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        {result.domainScores.map((d) => {
+          const mapped = statusFromPercent(d.scorePercent);
+          const isHighNeed = d.scorePercent >= 60;
+          return (
+            <article
+              key={d.dimension}
+              className={cn(
+                'rounded-2xl border p-5 text-center transition',
+                isHighNeed ? TONE_CLASS.red : TONE_CLASS[mapped.tone]
+              )}
+            >
+              <span className="mb-1 block text-xs text-gray-500">
+                {canonicalScreeningDomainLabel(d.label_ar || d.dimension)}
+              </span>
+              <h3
+                className={cn(
+                  'mb-1 text-lg font-bold',
+                  isHighNeed ? TONE_TEXT.red : TONE_TEXT[mapped.tone]
+                )}
+              >
+                {mapped.status}
+              </h3>
+              <span className="block text-[11px] text-gray-400">
+                {mapped.hint} • %{d.scorePercent}
+              </span>
+            </article>
+          );
+        })}
+      </div>
+
+      <div className="rounded-2xl border border-gray-100 bg-white p-6 text-center print:hidden">
+        <span className="block text-xs text-gray-400">اختر الخطوة التالية</span>
+        <h2 className="mt-1 text-lg font-bold text-[#1F2A37]">
+          الألعاب أو إكمال التقييم
+        </h2>
+        <div className="mt-4 flex flex-col justify-center gap-3 sm:flex-row">
+          <Link
+            href={`${PARENT_ROUTES.pay}?plan=assessment`}
+            className="rounded-xl bg-[#2E7D8E] px-8 py-3 text-sm font-bold text-white shadow-md transition hover:bg-[#256675]"
+          >
+            إكمال التقييم الشامل وإصدار التقرير
+          </Link>
+          <Link
+            href={PARENT_ROUTES.community}
+            className="rounded-xl border border-[#2E7D8E]/30 bg-[#FAF7F1] px-6 py-3 text-sm font-bold text-[#2E7D8E] transition hover:bg-gray-50"
+          >
+            تصفح أنشطة المجتمع
+          </Link>
+        </div>
+        <div className="mt-4 space-y-2">
+          <Link href={PARENT_ROUTES.games} className="block">
+            <Button variant="outline" className="h-11 w-full font-bold">
+              العب مغامرة البطل الصغير
+            </Button>
+          </Link>
+          <Link href={PARENT_ROUTES.booking} className="block">
+            <Button variant="secondary" className="h-11 w-full font-bold">
+              حجز موعد للتواصل مع المختص
+            </Button>
+          </Link>
+        </div>
+        <div className="mt-4 flex flex-wrap justify-center gap-4 text-xs text-slate-400">
+          {onRetake ? (
+            <button type="button" onClick={onRetake} className="underline">
+              إعادة الفرز
+            </button>
+          ) : null}
+        </div>
+        {msg ? (
+          <p className="mt-3 text-center text-sm text-[#2D8B5A]">{msg}</p>
+        ) : null}
+      </div>
+    </section>
   );
 }

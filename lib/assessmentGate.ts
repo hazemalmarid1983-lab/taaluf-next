@@ -69,22 +69,8 @@ export function hasActiveAssessment(childId: string): ActiveAssessmentInfo {
   }
 
   const draft = readDraft();
-  if (
-    draft &&
-    draft.childId === childId &&
-    (draft.status === 'in_progress' ||
-      draft.status === 'completed_pending_report')
-  ) {
-    return {
-      active: true,
-      reason: 'draft',
-      message: ACTIVE_TOAST,
-      draft,
-      latest: getLatestAssessmentForChild(childId),
-    };
-  }
-
   const latest = getLatestAssessmentForChild(childId);
+
   if (latest) {
     return {
       active: true,
@@ -92,6 +78,34 @@ export function hasActiveAssessment(childId: string): ActiveAssessmentInfo {
       message: ACTIVE_TOAST,
       latest,
       draft,
+    };
+  }
+
+  if (
+    draft &&
+    draft.childId === childId &&
+    draft.status === 'completed_pending_report'
+  ) {
+    return {
+      active: true,
+      reason: 'completed',
+      message: ACTIVE_TOAST,
+      draft,
+      latest,
+    };
+  }
+
+  if (
+    draft &&
+    draft.childId === childId &&
+    draft.status === 'in_progress'
+  ) {
+    return {
+      active: true,
+      reason: 'draft',
+      message: ACTIVE_TOAST,
+      draft,
+      latest,
     };
   }
 

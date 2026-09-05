@@ -1,5 +1,6 @@
 'use client';
 
+import { shortRadarDomainLabel } from '@/lib/radarLabels';
 import {
   PolarAngleAxis,
   PolarGrid,
@@ -16,7 +17,8 @@ type Props = {
 
 export default function AssessmentRadarChart({ domainAverages }: Props) {
   const data = Object.entries(domainAverages).map(([domain, value]) => ({
-    domain,
+    domain: shortRadarDomainLabel(domain),
+    fullDomain: domain,
     score: Number(value.toFixed(2)),
   }));
 
@@ -29,13 +31,19 @@ export default function AssessmentRadarChart({ domainAverages }: Props) {
   }
 
   return (
-    <div className="h-80 w-full" dir="ltr">
+    <div className="h-96 w-full" dir="ltr">
       <ResponsiveContainer width="100%" height="100%">
-        <RadarChart data={data} cx="50%" cy="50%" outerRadius="70%">
+        <RadarChart
+          data={data}
+          cx="50%"
+          cy="50%"
+          outerRadius="55%"
+          margin={{ top: 36, right: 72, bottom: 36, left: 72 }}
+        >
           <PolarGrid stroke="#cbd5e1" />
           <PolarAngleAxis
             dataKey="domain"
-            tick={{ fill: '#475569', fontSize: 10 }}
+            tick={{ fill: '#334155', fontSize: 12 }}
           />
           <PolarRadiusAxis
             angle={30}
@@ -49,6 +57,10 @@ export default function AssessmentRadarChart({ domainAverages }: Props) {
               borderRadius: 12,
               color: '#0f172a',
             }}
+            formatter={(value) => [value, 'النتيجة']}
+            labelFormatter={(_, payload) =>
+              String(payload?.[0]?.payload?.fullDomain || '')
+            }
           />
           <Radar
             name="النتيجة"

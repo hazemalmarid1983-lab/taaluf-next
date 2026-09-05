@@ -4,6 +4,7 @@
 
 import { promises as fs } from 'fs';
 import path from 'path';
+import { getHubDataDir } from '@/lib/hubDataDir';
 
 export type PlatformUser = {
   id: string;
@@ -18,6 +19,8 @@ export type PlatformStudent = {
   age?: number;
   dob?: string;
   parentEmail?: string;
+  parentName?: string;
+  specialistEmail?: string;
   createdAt: string;
   source: 'parent' | 'specialist' | 'admin';
 };
@@ -61,7 +64,7 @@ type Hub = {
   payments: PlatformPayment[];
 };
 
-const DATA_DIR = path.join(process.cwd(), '.data');
+const DATA_DIR = getHubDataDir();
 const DATA_FILE = path.join(DATA_DIR, 'platform-hub.json');
 
 const memory: Hub = {
@@ -101,8 +104,14 @@ export const DIRECTORY_USERS: PlatformUser[] = [
   {
     id: 'usr_admin',
     email: 'admin@taaluf.local',
-    name: 'إدارة تآلف',
+    name: 'حازم',
     role: 'admin',
+  },
+  {
+    id: 'usr_advisor',
+    email: 'samer@taaluf.local',
+    name: 'د. سامر',
+    role: 'scientific_advisor',
   },
   {
     id: 'usr_specialist',

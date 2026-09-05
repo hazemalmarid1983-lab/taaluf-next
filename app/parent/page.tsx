@@ -6,6 +6,7 @@ import {
   parseEntitlements,
 } from '@/lib/access';
 
+/** بوابة ولي الأمر: ترحيب إن لم يُسجَّل طفل، وبطاقة الملف النشط مع مسار التقييم إن وُجد. */
 export default function ParentHomePage() {
   const entitlements = parseEntitlements(
     cookies().get(ENTITLEMENTS_COOKIE)?.value

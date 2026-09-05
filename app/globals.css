@@ -3,21 +3,65 @@
 @tailwind utilities;
 
 :root {
-  --background: #f0f9f4;
+  --background: #f3f5f7;
   --foreground: #0f172a;
-  --primary: #2d8b5a;
-  --primary-deep: #1f6b44;
+  --primary: #2e7d8e;
+  --primary-deep: #1f2a37;
   --card: #ffffff;
-  --muted: #64748b;
-  --surface: #e8f5ee;
-  --ink: #0b1f14;
+  --muted: #6b7280;
+  --surface: #f3efe6;
+  --ink: #0f172a;
+  --gold: #e5b86e;
+  --teal: #2e7d8e;
 }
 
-body {
-  color: var(--foreground);
-  background: var(--background);
-  font-family: var(--font-cairo), 'Segoe UI', Tahoma, sans-serif;
-  min-height: 100vh;
+@layer base {
+  html {
+    direction: rtl;
+  }
+
+  html[dir='rtl'] {
+    direction: rtl;
+  }
+
+  html[dir='ltr'] {
+    direction: ltr;
+  }
+
+  body {
+    background-color: #f3f5f7;
+    color: #0f172a;
+    font-family: var(--font-amiri), 'Amiri', 'Times New Roman', serif;
+    min-height: 100vh;
+    text-align: start;
+    unicode-bidi: isolate;
+  }
+
+  [dir='rtl'] {
+    text-align: right;
+    unicode-bidi: isolate;
+  }
+
+  [dir='ltr'] {
+    text-align: left;
+    unicode-bidi: isolate;
+  }
+}
+
+.xenon-glass {
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.85);
+  box-shadow: 0 10px 30px -5px rgba(46, 125, 142, 0.08);
+}
+
+h1,
+h2,
+h3,
+h4,
+.font-heading {
+  font-family: var(--font-tajawal), 'Tajawal', Tahoma, sans-serif;
 }
 
 @keyframes taaluf-rise {
@@ -70,11 +114,63 @@ body {
   animation: taaluf-drift 16s ease-in-out infinite;
 }
 
+/* هبوط بطاقة المهمة في خانة «تمت» — حركة قصيرة غير مفرطة تناسب الحساسية الحسية */
+@keyframes taaluf-settle {
+  from {
+    opacity: 0;
+    transform: scale(0.88);
+  }
+  60% {
+    transform: scale(1.04);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.taaluf-settle {
+  animation: taaluf-settle 0.45s ease-out both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .taaluf-settle {
+    animation: taaluf-fade 0.2s ease-out both;
+  }
+
+  /* دائرة التنفس تنتقل فوراً بدل التمدد البطيء — الحركة المستمرة مربكة لبعض الأطفال */
+  .taaluf-breath-circle {
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* نمط التركيز الهادئ: إخفاء شريط التنقل والودجات العائمة تحت الطبقة */
+body.taaluf-sensory-focus {
+  overflow: hidden;
+  overscroll-behavior: none;
+}
+
+body.taaluf-sensory-focus header:not([data-sensory-focus]),
+body.taaluf-sensory-focus footer,
+body.taaluf-sensory-focus [data-taaluf-legal-banner] {
+  visibility: hidden;
+  pointer-events: none;
+}
+
+body.taaluf-sensory-focus [data-taaluf-rbac-widget] {
+  display: none !important;
+}
+
+body.taaluf-sensory-focus .fixed.bottom-5 {
+  visibility: hidden;
+  pointer-events: none;
+}
+
 .taaluf-hero-bg {
   background:
-    radial-gradient(ellipse 80% 60% at 15% 20%, rgba(45, 139, 90, 0.22), transparent 55%),
-    radial-gradient(ellipse 70% 50% at 85% 75%, rgba(31, 107, 68, 0.18), transparent 50%),
-    linear-gradient(160deg, #0b1f14 0%, #163d28 42%, #1f6b44 78%, #2d8b5a 100%);
+    radial-gradient(ellipse 80% 60% at 15% 20%, rgba(46, 125, 142, 0.28), transparent 55%),
+    radial-gradient(ellipse 70% 50% at 85% 75%, rgba(229, 184, 110, 0.18), transparent 50%),
+    linear-gradient(160deg, #1f2a37 0%, #243b4a 42%, #2e7d8e 78%, #3a8fa0 100%);
 }
 
 .taaluf-mesh {
@@ -82,6 +178,137 @@ body {
     linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
     linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px);
   background-size: 48px 48px;
+}
+
+@media print {
+  @page {
+    size: A4;
+    margin: 12mm;
+  }
+
+  html,
+  body {
+    background: #ffffff !important;
+    color: #0f172a !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .print-glow,
+  .print-hide-actions {
+    display: none !important;
+  }
+
+  .print-document {
+    background: #ffffff !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  a[href]::after {
+    content: none !important;
+  }
+
+  body.printing-physician-summary * {
+    visibility: hidden;
+  }
+
+  body.printing-physician-summary .physician-summary-sheet,
+  body.printing-physician-summary .physician-summary-sheet * {
+    visibility: visible;
+  }
+
+  body.printing-physician-summary .physician-summary-sheet {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    max-width: none;
+    box-shadow: none;
+    border: none;
+    padding: 0;
+    background: #ffffff !important;
+  }
+
+  body.printing-physician-summary .physician-summary-sheet button {
+    display: none !important;
+  }
+
+  body.printing-school-pass * {
+    visibility: hidden;
+  }
+
+  body.printing-school-pass .school-pass-sheet,
+  body.printing-school-pass .school-pass-sheet * {
+    visibility: visible;
+  }
+
+  body.printing-school-pass .school-pass-sheet {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    max-width: none;
+    box-shadow: none;
+    border: none;
+    padding: 0;
+    background: #ffffff !important;
+  }
+
+  body.printing-school-pass .school-pass-sheet button {
+    display: none !important;
+  }
+
+  body.printing-clinical-report * {
+    visibility: hidden;
+  }
+
+  body.printing-clinical-report .clinical-progress-report-sheet,
+  body.printing-clinical-report .clinical-progress-report-sheet * {
+    visibility: visible;
+  }
+
+  body.printing-clinical-report .clinical-progress-report-sheet {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    max-width: none;
+    box-shadow: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    background: #ffffff !important;
+  }
+
+  body.printing-clinical-report button {
+    display: none !important;
+  }
+
+  body.printing-contract * {
+    visibility: hidden;
+  }
+
+  body.printing-contract .contract-document-sheet,
+  body.printing-contract .contract-document-sheet * {
+    visibility: visible;
+  }
+
+  body.printing-contract .contract-document-sheet {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    max-width: none;
+    box-shadow: none;
+    border: none;
+    padding: 0;
+    margin: 0;
+    background: #ffffff !important;
+  }
+
+  body.printing-contract button {
+    display: none !important;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {

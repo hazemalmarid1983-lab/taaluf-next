@@ -4,8 +4,10 @@ import { Suspense, useEffect, useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import PaymentPanel from '@/components/access/PaymentPanel';
 import { getSlotById } from '@/lib/booking';
+import { useLanguage } from '@/components/LanguageProvider';
 
 function BookingPayInner() {
+  const { t } = useLanguage();
   const router = useRouter();
   const params = useSearchParams();
   const slotId = params.get('slot') || '';
@@ -39,7 +41,7 @@ function BookingPayInner() {
   return (
     <section className="mx-auto max-w-lg space-y-4">
       <div className="rounded-3xl bg-white p-5 shadow-sm">
-        <h1 className="text-xl font-bold text-[#0b1f14]">دفع وتأكيد الحجز</h1>
+        <h1 className="text-xl font-bold text-[#0b1f14]">{t('payConfirmBooking')}</h1>
         <p className="mt-2 text-sm text-slate-600">
           الموعد: <strong>{slot.label}</strong>
         </p>

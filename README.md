@@ -1,10 +1,8 @@
 # تآلف (Next.js 14)
 
-منصة تقييم أطفال التوحد وصعوبات التعلم — 24 مؤشراً عبر 8 مجالات.
+منصة تقييم تربوي لأطفال التوحد وصعوبات التعلم — 36 مؤشراً عبر 8 مجالات.
 
-المصدر الرسمي للمعايير والدليل:
-- `data/taalof_criteria.json` (من مجلد «تقييم الحوت»)
-- `docs/AIRTABLE_VERCEL_GUIDE.md`
+مسار ولي الأمر: فرز → استبيان → ألعاب → تقييم → تقرير.
 
 ## التشغيل
 
@@ -20,31 +18,29 @@ npm run dev
 
 | البريد | كلمة المرور | الدور |
 |--------|-------------|--------|
-| specialist@taaluf.local | taaluf123 | أخصائي |
-| teacher@taaluf.local | taaluf123 | معلّم |
 | parent@taaluf.local | taaluf123 | ولي أمر |
+| specialist@taaluf.local | taaluf123 | أخصائي |
+| admin@taaluf.local | taaluf123 | إدارة |
 
 ## المسارات
 
-- `/login` — NextAuth
-- `/dashboard` — لوحة التحكم
-- `/dashboard/students/new` — إضافة طالب
-- `/dashboard/assessments/new` — تقييم 24 مؤشراً + Radar + AI + PDF
+- `/login?portal=parent` — بوابة الأهل
+- `/parent` — لوحة المسار
+- `/dashboard` — لوحة المختص
+- `/dashboard/assessments/new` — تقييم 36 مؤشراً + دمج + AI + PDF
 
-## API (حسب الدليل)
+بدون مفاتيح Airtable: الحفظ يعمل محلياً في المتصفح. التقرير يحتاج `GEMINI_API_KEY` أو `OPENAI_API_KEY`.
 
-- `GET/POST /api/airtable/students`
-- `POST /api/airtable/assessments`
-- `GET /api/airtable/criteria`
-- `POST /api/ai/analyze`
+## القالب النهائي (عمان · 14 أغسطس 2026)
 
-## Airtable — TaalofDB
+المسارات المختصرة: `/assessment` `/games` `/messages` `/bookings` `/terms` `/privacy` `/faq` `/video-analysis` `/sensory-room/[childId]`.
 
-أنشئ الجداول: `Students` · `Specialists` · `Assessments` · `AssessmentCriteria` · `Reports` · `ParentSurveys`  
-ثم عبّئ `.env.local` بـ `AIRTABLE_API_KEY` و `AIRTABLE_BASE_ID`.
+الموافقات أربع طبقات. القانون الحاكم: سلطنة عمان / المركز العماني للتحكيم التجاري. التسعير بالدولار مع ريال عماني.
 
-بدون مفاتيح: الحفظ يعمل محلياً. تحليل AI يحتاج `OPENAI_API_KEY`.
+## مغامرة البطل الصغير
 
-## Vercel
+لعبة تقييم ثلاثية المراحل (تقليد، تتبع بصري، مشاعر) ضمن `/dashboard/games`.
 
-ارفع المستودع → أضف متغيرات البيئة من `.env.example` → Deploy.
+- نسخة المتصفح تعمل فوراً داخل المنصة.
+- مشروع Unity 2022 LTS في `unity/LittleHeroAdventure` — بعد تصدير WebGL انسخ البناء إلى `public/games/little-hero/`.
+- التفاصيل: [`unity/LittleHeroAdventure/README.md`](unity/LittleHeroAdventure/README.md).

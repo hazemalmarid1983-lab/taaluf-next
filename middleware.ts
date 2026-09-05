@@ -5,6 +5,7 @@ import {
   canAccessAssessment,
   canAccessSpecialistPortal,
   ENTITLEMENTS_COOKIE,
+  homePathForRole,
   parseEntitlements,
 } from '@/lib/access';
 import { CONSENT_COOKIE } from '@/lib/consentConstants';
@@ -18,13 +19,8 @@ export default withAuth(
       req.cookies.get(ENTITLEMENTS_COOKIE)?.value
     );
 
-    // صفحات الدفع معطّلة في الوضع التجريبي → توجيه لمسار فعلي بدل إرجاع لنفس الصفحة
+    // صفحات الدفع معطّلة في الوضع التجريبي → لا نوقف الحجز/Tap الخلفي
     if (paymentsOff) {
-      if (path.startsWith('/parent/pay-assessment')) {
-        return NextResponse.redirect(
-          new URL('/dashboard/parent-assessment', req.url)
-        );
-      }
       if (path.startsWith('/parent/booking/pay')) {
         return NextResponse.redirect(new URL('/parent/booking', req.url));
       }
@@ -34,20 +30,36 @@ export default withAuth(
             ? '/parent'
             : role === 'admin'
               ? '/admin'
-              : role
-                ? '/dashboard'
-                : '/login?portal=specialist';
+              : role === 'scientific_advisor'
+                ? '/hub'
+                : role
+                  ? '/dashboard'
+                  : '/login?portal=specialist';
         return NextResponse.redirect(new URL(dest, req.url));
       }
     }
 
     if (path.startsWith('/admin') && role !== 'admin') {
-      return NextResponse.redirect(new URL('/login?portal=admin', req.url));
+      return NextResponse.redirect(
+        new URL(role ? homePathForRole(role) : '/login?portal=admin', req.url)
+      );
+    }
+
+    if (
+      path.startsWith('/hub') &&
+      role !== 'admin' &&
+      role !== 'scientific_advisor'
+    ) {
+      return NextResponse.redirect(
+        new URL(role ? homePathForRole(role) : '/login?portal=hub', req.url)
+      );
     }
 
     if (path.startsWith('/parent')) {
       if (role !== 'parent' && role !== 'admin') {
-        return NextResponse.redirect(new URL('/login?portal=parent', req.url));
+        return NextResponse.redirect(
+          new URL(role ? homePathForRole(role) : '/login?portal=parent', req.url)
+        );
       }
       if (
         !paymentsOff &&
@@ -62,14 +74,34 @@ export default withAuth(
 
     if (path.startsWith('/dashboard')) {
       const parentAllowed =
+        path.startsWith('/dashboard/pathways') ||
+        path.startsWith('/dashboard/academic') ||
+        path.startsWith('/dashboard/results') ||
         path.startsWith('/dashboard/screening') ||
         path.startsWith('/dashboard/parent-assessment') ||
         path.startsWith('/dashboard/games') ||
+        path.startsWith('/dashboard/home-classroom') ||
+        path.startsWith('/dashboard/tools-bank') ||
         path.startsWith('/dashboard/messages') ||
-        path.startsWith('/dashboard/goals');
+        path.startsWith('/dashboard/goals') ||
+        path.startsWith('/dashboard/parent');
 
       if (role === 'parent' && !parentAllowed) {
         return NextResponse.redirect(new URL('/parent', req.url));
+      }
+
+      const paidParentPath =
+        path.startsWith('/dashboard/parent-assessment') ||
+        path.startsWith('/dashboard/games') ||
+        path.startsWith('/dashboard/goals');
+
+      if (
+        !paymentsOff &&
+        role === 'parent' &&
+        paidParentPath &&
+        !canAccessAssessment(entitlements)
+      ) {
+        return NextResponse.redirect(new URL('/parent/pay-assessment', req.url));
       }
       if (role === 'admin') {
         // الإدارة تصل للوحة المختص للاطلاع
@@ -83,7 +115,8 @@ export default withAuth(
     }
 
     if (
-      path.startsWith('/dashboard/assessments/new') &&
+      (path.startsWith('/dashboard/assessments/new') ||
+        path.startsWith('/parent/assessment')) &&
       req.cookies.get(CONSENT_COOKIE)?.value !== 'true'
     ) {
       return NextResponse.redirect(new URL('/consent', req.url));
@@ -108,9 +141,22 @@ export const config = {
   matcher: [
     '/dashboard/:path*',
     '/admin/:path*',
+    '/hub',
+    '/hub/:path*',
     '/parent/:path*',
     '/specialist/:path*',
     '/payments/:path*',
     '/consent',
+    '/assessment/:path*',
+    '/games/:path*',
+    '/messages',
+    '/bookings/:path*',
+    '/video-analysis',
+    '/sensory-room',
+    '/sensory-room/:path*',
+    '/sensory-rooms',
+    '/sensory-rooms/:path*',
+    '/sensory-matching',
+    '/sensory-matching/:path*',
   ],
 };

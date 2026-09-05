@@ -36,8 +36,15 @@ const DEMO_USERS = [
     id: 'usr_admin',
     email: 'admin@taaluf.local',
     password_hash: hashPasswordSync('taaluf123'),
-    name: 'إدارة تآلف',
+    name: 'حازم',
     role: 'admin',
+  },
+  {
+    id: 'usr_advisor',
+    email: 'samer@taaluf.local',
+    password_hash: hashPasswordSync('taaluf123'),
+    name: 'د. سامر',
+    role: 'scientific_advisor',
   },
   {
     id: 'usr_specialist',
@@ -72,6 +79,9 @@ const DEMO_USERS = [
 export const authOptions: NextAuthOptions = {
   // يساعد على Vercel عند اختلال بناء روابط الاستضافة
   ...( { trustHost: true } as Partial<NextAuthOptions> ),
+  useSecureCookies: String(process.env.NEXTAUTH_URL || '').startsWith(
+    'https://'
+  ),
   providers: [
     CredentialsProvider({
       name: 'Credentials',
@@ -83,7 +93,6 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         const email = credentials?.email?.trim().toLowerCase();
         const password = credentials?.password || '';
-        const portal = (credentials?.portal || '').trim();
         if (!email || !password) return null;
 
         if (demoUsersAllowed()) {
@@ -91,14 +100,6 @@ export const authOptions: NextAuthOptions = {
           if (dev) {
             const isValid = await verifyPassword(password, dev.password_hash);
             if (!isValid) return null;
-            if (portal === 'admin' && dev.role !== 'admin') return null;
-            if (
-              portal === 'specialist' &&
-              !['specialist', 'teacher', 'admin'].includes(dev.role)
-            )
-              return null;
-            if (portal === 'parent' && !['parent', 'admin'].includes(dev.role))
-              return null;
             return {
               id: dev.id,
               email: dev.email,
@@ -117,11 +118,12 @@ export const authOptions: NextAuthOptions = {
                 user.password_hash
               );
               if (!isValid) return null;
+              const role = String(user.role || 'specialist');
               return {
                 id: user.id,
                 email: user.email,
                 name: user.name,
-                role: user.role,
+                role,
               };
             }
           } catch {
@@ -166,6 +168,7 @@ export const authOptions: NextAuthOptions = {
         /* ignore */
       }
       if (url.includes('/admin')) return `${baseUrl}/admin`;
+      if (url.includes('/hub')) return `${baseUrl}/hub`;
       if (url.includes('/parent')) return `${baseUrl}/parent`;
       if (url.includes('/dashboard')) return `${baseUrl}/dashboard`;
       return baseUrl;

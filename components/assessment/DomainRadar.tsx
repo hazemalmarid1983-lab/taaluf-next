@@ -1,5 +1,6 @@
 'use client';
 
+import { shortRadarDomainLabel } from '@/lib/radarLabels';
 import {
   PolarAngleAxis,
   PolarGrid,
@@ -16,7 +17,8 @@ type Props = {
 
 export default function DomainRadar({ domainAverages }: Props) {
   const data = Object.entries(domainAverages).map(([domain, value]) => ({
-    domain,
+    domain: shortRadarDomainLabel(domain),
+    fullDomain: domain,
     value: Number(value.toFixed(2)),
   }));
 
@@ -27,13 +29,19 @@ export default function DomainRadar({ domainAverages }: Props) {
   }
 
   return (
-    <div className="h-80 w-full" dir="ltr">
+    <div className="h-96 w-full" dir="ltr">
       <ResponsiveContainer width="100%" height="100%">
-        <RadarChart data={data} cx="50%" cy="50%" outerRadius="70%">
+        <RadarChart
+          data={data}
+          cx="50%"
+          cy="50%"
+          outerRadius="55%"
+          margin={{ top: 36, right: 72, bottom: 36, left: 72 }}
+        >
           <PolarGrid stroke="rgba(255,255,255,0.15)" />
           <PolarAngleAxis
             dataKey="domain"
-            tick={{ fill: 'rgba(255,255,255,0.65)', fontSize: 10 }}
+            tick={{ fill: 'rgba(255,255,255,0.8)', fontSize: 12 }}
           />
           <PolarRadiusAxis
             angle={30}
@@ -46,6 +54,10 @@ export default function DomainRadar({ domainAverages }: Props) {
               border: '1px solid rgba(255,255,255,0.1)',
               borderRadius: 12,
             }}
+            formatter={(value) => [value, 'متوسط المجال']}
+            labelFormatter={(_, payload) =>
+              String(payload?.[0]?.payload?.fullDomain || '')
+            }
           />
           <Radar
             name="متوسط المجال"

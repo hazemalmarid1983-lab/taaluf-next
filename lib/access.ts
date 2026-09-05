@@ -1,6 +1,6 @@
 /** صلاحيات البوابات والدفع والاشتراك */
 
-export type PortalRole = 'admin' | 'specialist' | 'parent';
+export type PortalRole = 'admin' | 'specialist' | 'parent' | 'scientific_advisor';
 
 export const ENTITLEMENTS_COOKIE = 'taaluf_entitlements';
 
@@ -40,29 +40,25 @@ export const OPEN_ENTITLEMENTS: Entitlements = {
   bookedSlots: ['pilot-open'],
 };
 
-/** رموز اشتراك تجريبية — تجاوز الدفع */
-export const SUBSCRIPTION_CODES = [
-  'TAALUF-VIP',
-  'مشترك-تآلف',
-  'SUB-TAALUF-2026',
-].map((c) => c.trim());
+import { TAALUF_PRICING } from '@/lib/pricingConfig';
 
 export const PRICES = {
-  assessment: { amount: 39, currency: 'USD', label: 'رسوم تقييم تآلف' },
-  booking: { amount: 99, currency: 'USD', label: 'فحص شامل — فريق متعدد التخصصات' },
-  specialistAccess: { amount: 49, currency: 'USD', label: 'دخول بوابة المختص' },
+  assessment: {
+    amount: TAALUF_PRICING.parents[0].priceOMR,
+    currency: 'OMR',
+    label: TAALUF_PRICING.parents[0].name,
+  },
+  booking: {
+    amount: TAALUF_PRICING.clinicLicense.monthlyOMR,
+    currency: 'OMR',
+    label: 'فحص إحالة للعيادة النمائية',
+  },
+  specialistAccess: {
+    amount: TAALUF_PRICING.specialistBundles[1].priceOMR,
+    currency: 'OMR',
+    label: TAALUF_PRICING.specialistBundles[1].name,
+  },
 } as const;
-
-export function normalizeCode(code: string) {
-  return code.trim().replace(/\s+/g, '');
-}
-
-export function isValidSubscriptionCode(code: string) {
-  const n = normalizeCode(code);
-  return SUBSCRIPTION_CODES.some(
-    (c) => normalizeCode(c).toLowerCase() === n.toLowerCase()
-  );
-}
 
 export function canAccessAssessment(e: Entitlements) {
   if (arePaymentsDisabled()) return true;
@@ -72,6 +68,7 @@ export function canAccessAssessment(e: Entitlements) {
 export function canAccessSpecialistPortal(e: Entitlements, role?: string) {
   if (arePaymentsDisabled()) return true;
   if (role === 'admin') return true;
+  if (role === 'scientific_advisor') return true;
   if (role === 'specialist' || role === 'teacher') return true;
   return e.subscriber || e.specialistPaid;
 }
@@ -98,6 +95,7 @@ export function serializeEntitlements(e: Entitlements) {
 
 export function homePathForRole(role?: string) {
   if (role === 'admin') return '/admin';
+  if (role === 'scientific_advisor') return '/hub';
   if (role === 'parent') return '/parent';
   if (role === 'specialist' || role === 'teacher') return '/dashboard';
   return '/login';

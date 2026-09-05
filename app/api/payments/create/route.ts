@@ -8,7 +8,7 @@ import {
   isTapConfigured,
 } from '@/lib/payments';
 import { savePaymentRecord } from '@/lib/paymentStore';
-import { getPrice, type PricingTierId } from '@/lib/pricing';
+import { getPrice, paymentDescription, type PricingTierId } from '@/lib/pricing';
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
@@ -20,7 +20,7 @@ export async function POST(req: Request) {
     const body = await req.json();
     const childId = String(body.childId || '');
     const assessmentType = String(body.assessmentType || body.tierId || 'assessment');
-    const currency = String(body.currency || 'SAR').toUpperCase();
+    const currency = String(body.currency || 'OMR').toUpperCase();
     const amount =
       body.amount != null
         ? Number(body.amount)
@@ -40,14 +40,9 @@ export async function POST(req: Request) {
       process.env.NEXTAUTH_URL ||
       (process.env.VERCEL_URL ? `https://${process.env.VERCEL_URL}` : '');
     const reference = `ord_${Date.now().toString(36)}_${childId.slice(0, 8)}`;
-    const description =
-      assessmentType === 'monitoring'
-        ? 'متابعة شهرية — تآلف'
-        : assessmentType === 'specialist'
-          ? 'بوابة الأخصائي — تآلف'
-          : 'تقييم شامل — تآلف';
+    const description = paymentDescription(assessmentType);
 
-    const redirectUrl = `${base}/payments/callback`;
+    const redirectUrl = `${base}/payments/callback?product=${encodeURIComponent(assessmentType)}`;
 
     const charge = await createCharge({
       amount,

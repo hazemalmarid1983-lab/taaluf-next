@@ -5,8 +5,10 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { getAvailableSlots, type BookingSlot } from '@/lib/booking';
 import { PRICES, type Entitlements } from '@/lib/access';
+import { useLanguage } from '@/components/LanguageProvider';
 
 export default function ParentBookingPage() {
+  const { t } = useLanguage();
   const router = useRouter();
   const [slots, setSlots] = useState<BookingSlot[]>([]);
   const [selected, setSelected] = useState('');
@@ -37,19 +39,19 @@ export default function ParentBookingPage() {
   return (
     <section className="space-y-6">
       <div className="rounded-3xl bg-white p-6 shadow-sm">
-        <h1 className="text-2xl font-bold text-[#0b1f14]">
-          حجز فحص شامل — فريق متعدد التخصصات
-        </h1>
+        <h1 className="text-2xl font-bold text-[#0b1f14]">{t('bookTitle')}</h1>
         <p className="mt-2 text-sm leading-7 text-slate-600">
-          1) اختر موعداً متاحاً → 2) ادفع ({PRICES.booking.amount}{' '}
-          {PRICES.booking.currency}) → 3) يُفعَّل الحجز باسم الطفل.
-          {studentName ? ` الطفل: ${studentName}` : ''}
+          {t('bookLead', {
+            amount: PRICES.booking.amount,
+            currency: PRICES.booking.currency,
+          })}
+          {studentName ? ` ${t('childLabel', { name: studentName })}` : ''}
         </p>
       </div>
 
       {booked.length > 0 && (
         <div className="rounded-3xl border border-emerald-200 bg-emerald-50 p-5 text-sm text-emerald-900">
-          <p className="font-bold">مواعيد مؤكدة ومدفوعة</p>
+          <p className="font-bold">{t('confirmedBookings')}</p>
           <ul className="mt-2 list-disc pr-5">
             {booked.map((id) => (
               <li key={id}>
@@ -82,7 +84,7 @@ export default function ParentBookingPage() {
               <p className="mt-1 text-xs text-slate-500">{slot.team}</p>
               {isBooked && (
                 <p className="mt-2 text-xs font-semibold text-[#2D8B5A]">
-                  محجوز ومدفوع
+                  {t('bookedPaid')}
                 </p>
               )}
             </button>
@@ -97,7 +99,7 @@ export default function ParentBookingPage() {
           router.push(`/parent/booking/pay?slot=${encodeURIComponent(selected)}`)
         }
       >
-        المتابعة للدفع وتأكيد الموعد
+        {t('continuePayBooking')}
       </Button>
     </section>
   );
