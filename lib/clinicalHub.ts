@@ -8,6 +8,7 @@ import type { AdvisorGuideState } from '@/lib/advisorPlatformGuide';
 export const HUB_PATH = '/hub';
 export const HUB_NAME_AR = 'مركز تآلف السريري والبحثي';
 export const HUB_NAME_EN = 'Taaluf Clinical & Research Hub';
+export const HUB_ONBOARDING_POST_ID = 'hub_onboarding_meeting';
 
 export type HubSessionRole = 'admin' | 'scientific_advisor';
 export type HubMemberId = 'hazem' | 'samer';
@@ -121,11 +122,22 @@ export type MouOverallStatus =
   | 'awaiting_samer'
   | 'executed';
 
+export type HubMerhidDirectives = {
+  text: string;
+  updatedAt: string;
+  updatedBy: string;
+};
+
 export type ClinicalHubSnapshot = {
   posts: HubPost[];
   mou: MouState;
   advisorGuide: AdvisorGuideState;
+  merhidDirectives: HubMerhidDirectives;
 };
+
+export function isHubOnboardingPost(post: HubPost) {
+  return post.id === HUB_ONBOARDING_POST_ID;
+}
 
 export type HubActor = {
   memberId: HubMemberId;

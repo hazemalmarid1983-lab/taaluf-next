@@ -4,22 +4,28 @@ import { FormEvent, useState } from 'react';
 import {
   canApproveHubProposal,
   HUB_POST_CATEGORIES,
+  isHubOnboardingPost,
   type HubActor,
+  type HubMerhidDirectives,
   type HubPost,
   type HubPostCategory,
   type HubPostStatus,
 } from '@/lib/clinicalHub';
+import HubOnboardingMeeting from '@/components/hub/HubOnboardingMeeting';
 
 export default function HubMeetingRoom({
   actor,
   posts,
+  merhidDirectives,
   isAr,
   onCreate,
   onReply,
   onToggleStatus,
+  onSaveDirectives,
 }: {
   actor: HubActor;
   posts: HubPost[];
+  merhidDirectives: HubMerhidDirectives;
   isAr: boolean;
   onCreate: (input: {
     category: HubPostCategory;
@@ -28,8 +34,11 @@ export default function HubMeetingRoom({
   }) => Promise<void>;
   onReply: (id: string, reply: string) => Promise<void>;
   onToggleStatus: (id: string, status: HubPostStatus) => Promise<void>;
+  onSaveDirectives: (text: string) => Promise<void>;
 }) {
   const canApprove = canApproveHubProposal(actor.role);
+  const onboarding = posts.find((p) => isHubOnboardingPost(p));
+  const otherPosts = posts.filter((p) => !isHubOnboardingPost(p));
   const [category, setCategory] = useState<HubPostCategory>('clinical_evaluation');
   const [title, setTitle] = useState('');
   const [body, setBody] = useState('');
@@ -53,10 +62,28 @@ export default function HubMeetingRoom({
 
   return (
     <div className="space-y-6">
+      {onboarding ? (
+        <HubOnboardingMeeting
+          post={onboarding}
+          actor={actor}
+          merhidDirectives={merhidDirectives}
+          isAr={isAr}
+          canApprove={canApprove}
+          onReply={onReply}
+          onToggleStatus={onToggleStatus}
+          onSaveDirectives={onSaveDirectives}
+        />
+      ) : null}
+
       <div className="rounded-3xl border border-emerald-100 bg-white p-6">
         <h2 className="text-xl font-bold text-[#0b1f14]">
-          {isAr ? 'غرفة الاجتماعات' : 'Meeting room'}
+          {isAr ? 'مقترحات جديدة' : 'New proposals'}
         </h2>
+        <p className="mt-1 text-sm text-slate-500">
+          {isAr
+            ? 'بعد الاجتماع الأول — قدّم تقييمات سريرية أو ملاحظات بحثية أو مقاييس حسية.'
+            : 'After the first meeting — submit clinical evaluations, research notes, or sensory metrics.'}
+        </p>
 
         <form onSubmit={submit} className="mt-5 space-y-3">
           <div className="grid gap-3 sm:grid-cols-2">
@@ -91,9 +118,6 @@ export default function HubMeetingRoom({
                 onChange={(e) => setTitle(e.target.value)}
                 required
                 className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm"
-                placeholder={
-                  isAr ? 'مثال: مقترح مؤشر هدوء الغرفة المطرية' : 'e.g. Rain room calm index'
-                }
               />
             </label>
           </div>
@@ -107,11 +131,6 @@ export default function HubMeetingRoom({
               required
               rows={4}
               className="w-full rounded-xl border border-slate-200 px-3 py-2.5 text-sm leading-7"
-              placeholder={
-                isAr
-                  ? 'اكتب التقييم أو الملاحظة أو المقياس المقترح…'
-                  : 'Write the evaluation, research note, or proposed metric…'
-              }
             />
           </label>
           {error && <p className="text-sm text-rose-600">{error}</p>}
@@ -120,29 +139,25 @@ export default function HubMeetingRoom({
             disabled={busy}
             className="rounded-xl bg-[#2E7D8E] px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-60"
           >
-            {busy
-              ? isAr
-                ? 'جاري الإرسال…'
-                : 'Sending…'
-              : isAr
-                ? 'إرسال للمراجعة'
-                : 'Submit for review'}
+            {isAr ? 'إرسال للمراجعة' : 'Submit for review'}
           </button>
         </form>
       </div>
 
-      <ul className="space-y-4">
-        {posts.map((post) => (
-          <HubPostCard
-            key={post.id}
-            post={post}
-            isAr={isAr}
-            canApprove={canApprove}
-            onReply={onReply}
-            onToggleStatus={onToggleStatus}
-          />
-        ))}
-      </ul>
+      {otherPosts.length > 0 && (
+        <ul className="space-y-4">
+          {otherPosts.map((post) => (
+            <HubPostCard
+              key={post.id}
+              post={post}
+              isAr={isAr}
+              canApprove={canApprove}
+              onReply={onReply}
+              onToggleStatus={onToggleStatus}
+            />
+          ))}
+        </ul>
+      )}
     </div>
   );
 }
@@ -232,12 +247,6 @@ function HubPostCard({
       <p className="mt-3 whitespace-pre-wrap text-sm leading-7 text-slate-700">
         {post.body}
       </p>
-      <p className="mt-2 text-[11px] text-slate-400">
-        {new Date(post.createdAt).toLocaleString(isAr ? 'ar' : 'en')}
-        {post.statusChangedBy
-          ? ` · ${isAr ? 'الحالة بواسطة' : 'status by'} ${post.statusChangedBy}`
-          : ''}
-      </p>
 
       {post.replies.length > 0 && (
         <ul className="mt-4 space-y-2 border-t border-slate-100 pt-3">
@@ -260,7 +269,7 @@ function HubPostCard({
           value={reply}
           onChange={(e) => setReply(e.target.value)}
           className="flex-1 rounded-xl border border-slate-200 px-3 py-2 text-sm"
-          placeholder={isAr ? 'أضف رداً للنقاش…' : 'Add a discussion reply…'}
+          placeholder={isAr ? 'أضف رداً…' : 'Add a reply…'}
         />
         <button
           type="submit"

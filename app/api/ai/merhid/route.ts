@@ -1,6 +1,7 @@
 import { getServerSession } from 'next-auth';
 import { NextResponse } from 'next/server';
 import type { PortalRole } from '@/lib/access';
+import { buildMerhidPlatformKnowledge } from '@/lib/advisorPlatformGuide';
 import { authOptions } from '@/lib/auth';
 import { merhidLocalReply, merhidSystemPrompt, MERHID_NAME } from '@/lib/merhid';
 import { getOpenAI, isOpenAIConfigured } from '@/lib/openai';
@@ -17,6 +18,17 @@ export async function POST(req: Request) {
   const scope = (body.scope || session.user.role || 'specialist') as
     | PortalRole
     | 'admin';
+  const hubDirectives =
+    body.hubDirectives != null ? String(body.hubDirectives) : undefined;
+  const promptOptions =
+    scope === 'scientific_advisor'
+      ? {
+          hubDirectives,
+          platformKnowledge: buildMerhidPlatformKnowledge(true),
+        }
+      : undefined;
+  const localOptions =
+    scope === 'scientific_advisor' ? { hubDirectives } : undefined;
 
   if (!message) {
     return NextResponse.json({ error: 'EMPTY' }, { status: 400 });
@@ -32,7 +44,7 @@ export async function POST(req: Request) {
       return NextResponse.json({
         ok: true,
         name: MERHID_NAME,
-        reply: merhidLocalReply(scope, message),
+        reply: merhidLocalReply(scope, message, localOptions),
         source: 'guard',
       });
     }
@@ -42,7 +54,7 @@ export async function POST(req: Request) {
     return NextResponse.json({
       ok: true,
       name: MERHID_NAME,
-      reply: merhidLocalReply(scope, message),
+      reply: merhidLocalReply(scope, message, localOptions),
       source: 'local',
     });
   }
@@ -53,12 +65,13 @@ export async function POST(req: Request) {
       model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
       temperature: scope === 'admin' ? 0.6 : 0.35,
       messages: [
-        { role: 'system', content: merhidSystemPrompt(scope) },
+        { role: 'system', content: merhidSystemPrompt(scope, promptOptions) },
         { role: 'user', content: message },
       ],
     });
     const reply = sanitizeDiagnosticLanguage(
-      completion.choices[0]?.message?.content || merhidLocalReply(scope, message)
+      completion.choices[0]?.message?.content ||
+        merhidLocalReply(scope, message, localOptions)
     );
     return NextResponse.json({
       ok: true,
@@ -70,7 +83,7 @@ export async function POST(req: Request) {
     return NextResponse.json({
       ok: true,
       name: MERHID_NAME,
-      reply: merhidLocalReply(scope, message),
+      reply: merhidLocalReply(scope, message, localOptions),
       source: 'local-fallback',
     });
   }

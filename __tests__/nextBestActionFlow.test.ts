@@ -1,4 +1,4 @@
-import { emptyMouState, HUB_MEMBERS, mouOverallStatus } from '../lib/clinicalHub';
+import { emptyMouState, HUB_MEMBERS, HUB_ONBOARDING_POST_ID, mouOverallStatus } from '../lib/clinicalHub';
 import {
   defaultHubTab,
   hubFocusFromQuery,
@@ -40,7 +40,7 @@ describe('nextBestActionFlow', () => {
     ).toBe('/dashboard/games');
   });
 
-  it('sends advisor to MOU when unsigned', () => {
+  it('sends advisor to first meeting when onboarding chat is empty', () => {
     const mou = emptyMouState();
     const action = resolveHubNextAction({
       actor: {
@@ -52,7 +52,62 @@ describe('nextBestActionFlow', () => {
         titleEn: HUB_MEMBERS.samer.titleEn,
       },
       mou,
-      posts: [],
+      posts: [
+        {
+          id: HUB_ONBOARDING_POST_ID,
+          category: 'discussion',
+          title: 'First meeting',
+          body: 'Overview',
+          status: 'approved',
+          authorRole: 'admin',
+          authorName: HUB_MEMBERS.hazem.nameAr,
+          authorMemberId: 'hazem',
+          createdAt: '2026-01-01',
+          updatedAt: '2026-01-01',
+          replies: [],
+        },
+      ],
+    });
+    expect(action.autoRedirect).toBe(true);
+    expect(action.href).toBe('/hub?focus=meeting');
+  });
+
+  it('sends advisor to MOU after onboarding reply', () => {
+    const mou = emptyMouState();
+    const action = resolveHubNextAction({
+      actor: {
+        memberId: 'samer',
+        role: 'scientific_advisor',
+        nameAr: HUB_MEMBERS.samer.nameAr,
+        nameEn: HUB_MEMBERS.samer.nameEn,
+        titleAr: HUB_MEMBERS.samer.titleAr,
+        titleEn: HUB_MEMBERS.samer.titleEn,
+      },
+      mou,
+      posts: [
+        {
+          id: HUB_ONBOARDING_POST_ID,
+          category: 'discussion',
+          title: 'First meeting',
+          body: 'Overview',
+          status: 'approved',
+          authorRole: 'admin',
+          authorName: HUB_MEMBERS.hazem.nameAr,
+          authorMemberId: 'hazem',
+          createdAt: '2026-01-01',
+          updatedAt: '2026-01-01',
+          replies: [
+            {
+              id: 'reply_1',
+              authorRole: 'scientific_advisor',
+              authorName: HUB_MEMBERS.samer.nameAr,
+              authorMemberId: 'samer',
+              body: 'ملاحظاتي الأولى',
+              createdAt: '2026-01-02',
+            },
+          ],
+        },
+      ],
     });
     expect(action.autoRedirect).toBe(true);
     expect(action.href).toBe('/hub?focus=agreement');

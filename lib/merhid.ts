@@ -3,7 +3,10 @@ import { AI_OUTPUT_PREFIX_AR } from '@/lib/legalContent';
 
 export const MERHID_NAME = 'مرشد تآلف';
 
-export function merhidSystemPrompt(scope: PortalRole | 'admin') {
+export function merhidSystemPrompt(
+  scope: PortalRole | 'admin',
+  options?: { hubDirectives?: string; platformKnowledge?: string }
+) {
   if (scope === 'admin') {
     return `${AI_OUTPUT_PREFIX_AR}
 أنت ${MERHID_NAME} في لوحة الإدارة العليا لمنصة تآلف.
@@ -12,11 +15,16 @@ export function merhidSystemPrompt(scope: PortalRole | 'admin') {
   }
 
   if (scope === 'scientific_advisor') {
+    const directives = options?.hubDirectives?.trim();
+    const knowledge = options?.platformKnowledge?.trim();
     return `${AI_OUTPUT_PREFIX_AR}
-أنت ${MERHID_NAME} في المركز السريري والبحثي الخاص لتآلف.
-نطاقك: مساعدة المستشار العلمي على صياغة تقييمات سريرية وملاحظات بحثية ومقترحات مقاييس الغرف الحسية.
-لا تقترح تعديلات هيكلية على المنصة أو نشر إنتاج — ذلك محصور بالمشرف العام.
-ممنوع إصدار تشخيص طبي قاطع. أجب بالعربية الواضحة.`;
+أنت ${MERHID_NAME} في **الاجتماع الأول** — غرفة الاجتماعات بالمركز السريري والبحثي لتآلف.
+**مهم:** أنت تُوجَّه **حصرياً** من الإدارة (حازم). التزم بالتوجيهات أدناه دون تجاوزها.
+${directives ? `\n【توجيهات الإدارة — ملزمة】\n${directives}\n` : ''}
+${knowledge ? `\n【معرفة المنصة — للإجابة عن الأسئلة】\n${knowledge}\n` : ''}
+نطاقك: شرح أقسام المنصة (الفرز، التقييم 36، الدمج، IEP، الغرف الحسية…) ومساعدة المستشار على صياغة ملاحظاته في الدردشة.
+لا تقترح تعديلات هيكلية أو نشر إنتاج — ذلك محصور بالمشرف العام.
+ممنوع إصدار تشخيص طبي قاطع. أجب بالعربية الواضحة والمختصرة.`;
   }
 
   if (scope === 'specialist') {
@@ -39,7 +47,8 @@ export function merhidSystemPrompt(scope: PortalRole | 'admin') {
 
 export function merhidLocalReply(
   scope: PortalRole | 'admin',
-  message: string
+  message: string,
+  options?: { hubDirectives?: string }
 ): string {
   const q = message.trim();
   if (!q) return 'اكتب سؤالك وسأساعدك ضمن نطاق تآلف.';
@@ -49,7 +58,22 @@ export function merhidLocalReply(
   }
 
   if (scope === 'scientific_advisor') {
-    return `【${MERHID_NAME} — المستشار العلمي】\nبخصوص: «${q}»\nصغ مقترحك كبند للمراجعة في غرفة الاجتماعات. الاعتماد النهائي للنشر يبقى لحازم. لا تشخيص طبي قاطع.`;
+    const hint = options?.hubDirectives
+      ? '\n(أعمل ضمن توجيهات الإدارة المحددة في الاجتماع الأول.)'
+      : '';
+    if (/فرز|screening|12/i.test(q)) {
+      return `【${MERHID_NAME}】 الفرز: 12 سؤالاً عبر 4 أبعاد — نقطة دخول ولي الأمر. النتيجة المرتفعة توصي بالتقييم الشامل (36 معياراً).${hint}`;
+    }
+    if (/36|معيار|تقييم|canon/i.test(q)) {
+      return `【${MERHID_NAME}】 التقييم الشامل: 36 معياراً · 8 مجالات · مقياس 0–3. يُدمج مع استبيان الأهل والألعاب في تقرير واحد.${hint}`;
+    }
+    if (/حسية|sensory|غرف/i.test(q)) {
+      return `【${MERHID_NAME}】 الغرف الحسية: 9 بيئات تجريبية مع مقاييس جلسة — محور الدراسة الميدانية في شراكتك.${hint}`;
+    }
+    if (/iep|هدف|goal/i.test(q)) {
+      return `【${MERHID_NAME}】 الأهداف: تُولَّد من البنود ≥2 كـ SMART أسبوعية — أنت المرجع لاعتماد منطق IEP.${hint}`;
+    }
+    return `【${MERHID_NAME} — الاجتماع الأول】\nبخصوص: «${q}»\nراجع القسم المناسب في محتوى الاجتماع، ثم اكتب ملاحظتك في الدردشة. الاعتماد النهائي للإدارة.${hint}`;
   }
 
   if (scope === 'specialist') {

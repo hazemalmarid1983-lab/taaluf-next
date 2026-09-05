@@ -12,9 +12,13 @@ type Msg = { role: 'user' | 'assistant'; text: string };
 export default function MerhidChat({
   scope,
   compact = false,
+  embedded = false,
+  hubDirectives,
 }: {
   scope: PortalRole | 'admin';
   compact?: boolean;
+  embedded?: boolean;
+  hubDirectives?: string;
 }) {
   const { t, dir } = useLanguage();
   const merhidName = t('merhidName');
@@ -26,7 +30,7 @@ export default function MerhidChat({
         : scope === 'specialist'
           ? t('merhidHintSpecialist')
           : t('merhidHintParent');
-  const [open, setOpen] = useState(!compact);
+  const [open, setOpen] = useState(!compact || embedded);
   const [input, setInput] = useState('');
   const [busy, setBusy] = useState(false);
   const [messages, setMessages] = useState<Msg[]>([
@@ -56,7 +60,7 @@ export default function MerhidChat({
       const res = await fetch('/api/ai/merhid', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: text, scope }),
+        body: JSON.stringify({ message: text, scope, hubDirectives }),
       });
       const data = await res.json();
       setMessages((m) => [
@@ -78,7 +82,7 @@ export default function MerhidChat({
 
   const align = dir === 'rtl' ? 'text-right' : 'text-left';
 
-  if (compact && !open) {
+  if (compact && !embedded && !open) {
     return (
       <button
         type="button"
@@ -96,7 +100,9 @@ export default function MerhidChat({
     <div
       dir={dir}
       className={
-        compact
+        embedded
+          ? `flex h-[380px] flex-col rounded-2xl border border-slate-200 bg-white shadow-sm ${align}`
+          : compact
           ? `fixed bottom-5 start-5 z-40 flex h-[420px] w-[min(100%-2rem,360px)] flex-col rounded-3xl border border-white/90 bg-white/85 shadow-2xl backdrop-blur-xl print:hidden ${align}`
           : `flex h-[420px] flex-col rounded-3xl border border-white/90 bg-white/85 backdrop-blur-xl ${align}`
       }
@@ -106,7 +112,7 @@ export default function MerhidChat({
           <p className="font-bold text-[#2E7D8E]">{merhidName}</p>
           <p className="text-[11px] text-slate-400">{hint}</p>
         </div>
-        {compact && (
+        {compact && !embedded && (
           <button
             type="button"
             className="text-xs text-slate-400"

@@ -1,72 +1,60 @@
-import {
-  advisorGuideProgress,
-  emptyAdvisorGuideState,
-  isAdvisorGuideComplete,
-  nextUnacknowledgedSectionId,
-} from '../lib/advisorPlatformGuide';
+import { HUB_ONBOARDING_POST_ID } from '../lib/clinicalHub';
 import { defaultHubTab } from '../lib/nextBestActionFlow';
-import { emptyMouState } from '../lib/clinicalHub';
 
-describe('advisor platform guide', () => {
-  it('tracks progress across sections', () => {
-    const state = emptyAdvisorGuideState();
-    expect(advisorGuideProgress(state)).toEqual({
-      completed: 0,
-      total: 10,
-      percent: 0,
-    });
-    state.sections.welcome = {
-      sectionId: 'welcome',
-      acknowledged: true,
-      acknowledgedAt: '2026-01-01',
-      signerName: 'د. سامر',
-    };
-    expect(advisorGuideProgress(state).completed).toBe(1);
-    expect(isAdvisorGuideComplete(state)).toBe(false);
-  });
-
-  it('finds next unacknowledged section', () => {
-    const state = emptyAdvisorGuideState();
-    expect(nextUnacknowledgedSectionId(state)).toBe('welcome');
-    state.sections.welcome = {
-      sectionId: 'welcome',
-      acknowledged: true,
-    };
-    expect(nextUnacknowledgedSectionId(state)).toBe('nature');
-  });
-
-  it('opens guide tab first for advisor with incomplete guide', () => {
+describe('hub onboarding meeting tab', () => {
+  it('opens meeting tab first for advisor without onboarding reply', () => {
     const tab = defaultHubTab({
       mouStatus: 'pending',
       pendingCount: 0,
       actorRole: 'scientific_advisor',
-      advisorGuide: emptyAdvisorGuideState(),
+      posts: [
+        {
+          id: HUB_ONBOARDING_POST_ID,
+          category: 'discussion',
+          title: 'First meeting',
+          body: 'Read me',
+          status: 'approved',
+          authorRole: 'admin',
+          authorName: 'حازم',
+          authorMemberId: 'hazem',
+          createdAt: '2026-01-01',
+          updatedAt: '2026-01-01',
+          replies: [],
+        },
+      ],
     });
-    expect(tab).toBe('guide');
+    expect(tab).toBe('meeting');
   });
 
-  it('opens agreement after guide is complete', () => {
-    const guide = emptyAdvisorGuideState();
-    for (const id of [
-      'welcome',
-      'nature',
-      'roles',
-      'screening',
-      'assessment',
-      'fusion',
-      'goals',
-      'sensory',
-      'classroom',
-      'advisor_workflow',
-    ] as const) {
-      guide.sections[id] = { sectionId: id, acknowledged: true };
-    }
-    expect(isAdvisorGuideComplete(guide)).toBe(true);
+  it('opens agreement after advisor replied to onboarding', () => {
     const tab = defaultHubTab({
       mouStatus: 'pending',
       pendingCount: 0,
       actorRole: 'scientific_advisor',
-      advisorGuide: guide,
+      posts: [
+        {
+          id: HUB_ONBOARDING_POST_ID,
+          category: 'discussion',
+          title: 'First meeting',
+          body: 'Read me',
+          status: 'approved',
+          authorRole: 'admin',
+          authorName: 'حازem',
+          authorMemberId: 'hazem',
+          createdAt: '2026-01-01',
+          updatedAt: '2026-01-01',
+          replies: [
+            {
+              id: 'r1',
+              authorRole: 'scientific_advisor',
+              authorName: 'د. سامer',
+              authorMemberId: 'samer',
+              body: 'ملاحظاتي',
+              createdAt: '2026-01-02',
+            },
+          ],
+        },
+      ],
     });
     expect(tab).toBe('agreement');
   });

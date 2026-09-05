@@ -3,7 +3,6 @@ import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
 import TaalufLogo from '@/components/branding/TaalufLogo';
 import { LanguageToggleBtn } from '@/components/LanguageProvider';
-import MerhidChat from '@/components/merhid/MerhidChat';
 import { homePathForRole } from '@/lib/access';
 import { authOptions } from '@/lib/auth';
 import {
@@ -29,8 +28,6 @@ export default async function HubLayout({
   }
 
   const role = session.user?.role;
-  const isAdvisor = isScientificAdvisorRole(role);
-  const merhidScope = isAdvisor ? 'scientific_advisor' : 'admin';
 
   return (
     <div className="min-h-screen bg-[linear-gradient(180deg,#07140e_0%,#0f2a1c_32%,#f3f7f4_32%)]">
@@ -45,7 +42,7 @@ export default async function HubLayout({
           </div>
           <nav className="flex flex-wrap items-center gap-2 text-sm">
             <LanguageToggleBtn className="border-white/20 bg-white/10 text-white hover:bg-white/20" />
-            {!isAdvisor && (
+            {!isScientificAdvisorRole(role) && (
               <Link href="/admin" className="rounded-xl bg-white/10 px-3 py-2">
                 الإدارة
               </Link>
@@ -66,7 +63,6 @@ export default async function HubLayout({
         </header>
         {children}
       </div>
-      <MerhidChat scope={merhidScope} compact />
     </div>
   );
 }

@@ -35,16 +35,16 @@ export const ADVISOR_PLATFORM_SECTIONS: readonly AdvisorGuideSection[] = [
     bodyEn:
       '**Taaluf** is a **digital educational and rehabilitative assessment platform** for children (3–12) with **autism spectrum conditions** and **developmental disabilities**, based in the Sultanate of Oman. The goal is to turn observable behavioral indicators into **clear profiles** and **actionable strategies** for home and school. As **Chief Advisory & Clinical Council Chair**, you are the primary scientific authority for approving assessment tools, developmental metrics, and Individualized Education Plans (IEPs) on the Platform.',
     methodologyAr: [
-      'تسجيل الدخول عبر بوابة المستشار: /login?portal=hub',
-      'قراءة هذا الدليل قسماً قسماً والاعتماد على كل قسم',
-      'توقيع اتفاقية الشراكة في تبويب «الشراكة والمذكرة»',
-      'بدء العمل عبر غرفة الاجتماعات وبيئات الاختبار',
+      'الاجتماع الأول في غرفة الاجتماعات — اقرأ محتوى المنصة كاملاً',
+      'استخدم الدردشة ومرشد تآلف (بتوجيه الإدارة) لأي استفسار',
+      'قدّم ملاحظاتك واقتراحاتك في خانة النقاش',
+      'بعد ذلك: توقيع اتفاقية الشراكة وبدء المقترحات',
     ],
     methodologyEn: [
-      'Sign in via the advisor portal: /login?portal=hub',
-      'Read this guide section by section and acknowledge each',
-      'Sign the partnership agreement under Partnership & MOU',
-      'Begin work via the meeting room and test environments',
+      'First meeting in the meeting room — read the full platform overview',
+      'Use the discussion thread and Merhid (admin-directed) for questions',
+      'Submit your notes and proposals in the chat thread',
+      'Then: sign the partnership agreement and begin proposals',
     ],
     advisorRoleAr:
       'اقرأ هذا القسم لتكوين صورة شاملة عن هوية المنصة ودورك الاستشاري قبل أي مراجعة علمية.',
@@ -383,4 +383,28 @@ export function nextUnacknowledgedSectionId(
     if (!state.sections[section.id]?.acknowledged) return section.id;
   }
   return null;
+}
+
+export const DEFAULT_HUB_MERHID_DIRECTIVES_AR = `توجيهات الإدارة لمرشد تآلف في الاجتماع الأول:
+• اشرح أقسام المنصة (الفرز، التقييم 36، الدمج، IEP، الغرف الحسية، الصف المنزلي) بوضوح علمي.
+• ساعد د. سامر على صياغة ملاحظاته واقتراحاته في الدردشة — لا تعدّل المنصة مباشرة.
+• لا تقترح تعديلات هيكلية أو نشر إنتاج — ذلك محصور بحازم (الإدارة).
+• ممنوع التشخيص الطبي القاطع — لغة تربوية وتأهيلية فقط.
+• عند السؤال عن آلية عمل قسم، اربط الإجابة بمسار المستخدم (ولي أمر / مختص / مستشار).`;
+
+export const DEFAULT_HUB_MERHID_DIRECTIVES_EN = `Admin directives for Merhid in the first meeting:
+• Explain platform sections (screening, Canon 36, fusion, IEP, sensory rooms, home classroom) with scientific clarity.
+• Help Dr. Samer draft notes and proposals in the chat — do not modify the platform directly.
+• Do not propose structural changes or production deploy — reserved for Hazem (Admin).
+• No definitive medical diagnosis — educational/rehabilitative language only.
+• When asked how a module works, tie answers to user paths (parent / specialist / advisor).`;
+
+/** ملخص مضغوط لحقنّه في prompt مرشد تآلف داخل Hub */
+export function buildMerhidPlatformKnowledge(isAr: boolean) {
+  return ADVISOR_PLATFORM_SECTIONS.map((s, i) => {
+    const title = isAr ? s.titleAr : s.titleEn;
+    const summary = isAr ? s.summaryAr : s.summaryEn;
+    const role = isAr ? s.advisorRoleAr : s.advisorRoleEn;
+    return `${i + 1}. ${title}: ${summary} — ${role}`;
+  }).join('\n');
 }

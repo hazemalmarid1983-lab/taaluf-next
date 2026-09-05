@@ -11,6 +11,7 @@ import {
 import { loadStoredAssessments } from '@/lib/assessmentHelpers';
 import { homePathForRole } from '@/lib/access';
 import {
+  HUB_ONBOARDING_POST_ID,
   mouOverallStatus,
   type HubActor,
   type HubPost,
@@ -18,8 +19,6 @@ import {
   type MouState,
 } from '@/lib/clinicalHub';
 import {
-  advisorGuideProgress,
-  isAdvisorGuideComplete,
   type AdvisorGuideState,
 } from '@/lib/advisorPlatformGuide';
 import { loadGoalsLocal } from '@/lib/goalsStore';
@@ -244,6 +243,11 @@ export function resolveSpecialistNextAction(
   return fromSpecialistAction(getNextRecommendedAction(ctx));
 }
 
+function advisorCompletedOnboardingBriefing(posts: HubPost[]) {
+  const onboarding = posts.find((p) => p.id === HUB_ONBOARDING_POST_ID);
+  return onboarding?.replies.some((r) => r.authorMemberId === 'samer') ?? false;
+}
+
 export function resolveHubNextAction(input: {
   actor: HubActor;
   mou: MouState;
@@ -256,29 +260,28 @@ export function resolveHubNextAction(input: {
     input.actor.memberId === 'hazem'
       ? input.mou.hazem.signed
       : input.mou.samer.signed;
-  const guide = input.advisorGuide;
-  const guideDone = guide ? isAdvisorGuideComplete(guide) : true;
-  const guideProgress = guide ? advisorGuideProgress(guide) : null;
+  const onboardingDone = advisorCompletedOnboardingBriefing(input.posts);
 
   if (
     input.actor.role === 'scientific_advisor' &&
-    guide &&
-    !guideDone
+    !onboardingDone
   ) {
     return {
-      id: 'hub_guide_review',
+      id: 'hub_onboarding_meeting',
       stage: 'onboarding',
       priority: 'critical',
-      emoji: '📘',
-      titleAr: 'راجع دليل المنصة واعتمد كل قسم',
-      titleEn: 'Review the platform guide & acknowledge each section',
-      bodyAr: `أكملت ${guideProgress?.completed ?? 0} من ${guideProgress?.total ?? 0} أقسام — اقرأ منهجية المنصة واعتماد كل قسم قبل المذكرة والعمل.`,
-      bodyEn: `Completed ${guideProgress?.completed ?? 0} of ${guideProgress?.total ?? 0} sections — read the platform methodology and acknowledge each before the MOU and work.`,
-      href: '/hub?focus=guide',
-      ctaAr: 'افتح دليل المنصة',
-      ctaEn: 'Open platform guide',
-      stepLabelAr: 'دليل المنصة',
-      stepLabelEn: 'Platform guide',
+      emoji: '📋',
+      titleAr: 'الاجتماع الأول — تعرّف على منصة تآلف',
+      titleEn: 'First meeting — learn the Taaluf platform',
+      bodyAr:
+        'اقرأ محتوى المنصة كاملاً في غرفة الاجتماعات، استخدم مرشد تآلف (بتوجيه الإدارة)، ثم شارك ملاحظاتك في الدردشة.',
+      bodyEn:
+        'Read the full platform overview in the meeting room, use Merhid (admin-directed), then share your notes in the chat.',
+      href: '/hub?focus=meeting',
+      ctaAr: 'افتح الاجتماع الأول',
+      ctaEn: 'Open first meeting',
+      stepLabelAr: 'غرفة الاجتماعات',
+      stepLabelEn: 'Meeting room',
       autoRedirect: true,
     };
   }
@@ -490,12 +493,11 @@ export function resolvePostLoginDestination(
 
 export function hubFocusFromQuery(
   focus: string | null | undefined
-): 'overview' | 'guide' | 'meeting' | 'agreement' | null {
+): 'overview' | 'meeting' | 'agreement' | null {
   if (
     focus === 'meeting' ||
     focus === 'agreement' ||
-    focus === 'overview' ||
-    focus === 'guide'
+    focus === 'overview'
   ) {
     return focus;
   }
@@ -506,14 +508,14 @@ export function defaultHubTab(input: {
   mouStatus: MouOverallStatus;
   pendingCount: number;
   actorRole: HubActor['role'];
-  advisorGuide?: AdvisorGuideState;
-}): 'overview' | 'guide' | 'meeting' | 'agreement' {
+  posts?: HubPost[];
+}): 'overview' | 'meeting' | 'agreement' {
   if (
     input.actorRole === 'scientific_advisor' &&
-    input.advisorGuide &&
-    !isAdvisorGuideComplete(input.advisorGuide)
+    input.posts &&
+    !advisorCompletedOnboardingBriefing(input.posts)
   ) {
-    return 'guide';
+    return 'meeting';
   }
   if (input.mouStatus !== 'executed') return 'agreement';
   if (input.actorRole === 'admin' && input.pendingCount > 0) return 'meeting';

@@ -2,6 +2,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import { getHubDataDir } from '@/lib/hubDataDir';
 import {
+  DEFAULT_HUB_MERHID_DIRECTIVES_AR,
   emptyAdvisorGuideState,
   isAdvisorGuideComplete,
   type AdvisorGuideSectionId,
@@ -9,8 +10,10 @@ import {
 import {
   emptyMouState,
   HUB_MEMBERS,
+  HUB_ONBOARDING_POST_ID,
   type ClinicalHubSnapshot,
   type HubMemberId,
+  type HubMerhidDirectives,
   type HubPost,
   type HubPostCategory,
   type HubPostStatus,
@@ -26,6 +29,11 @@ const memory: ClinicalHubSnapshot = {
   posts: [],
   mou: emptyMouState(),
   advisorGuide: emptyAdvisorGuideState(),
+  merhidDirectives: {
+    text: DEFAULT_HUB_MERHID_DIRECTIVES_AR,
+    updatedAt: new Date(0).toISOString(),
+    updatedBy: HUB_MEMBERS.hazem.nameAr,
+  },
 };
 
 let loaded = false;
@@ -34,19 +42,28 @@ function nowIso() {
   return new Date().toISOString();
 }
 
+function defaultMerhidDirectives(): HubMerhidDirectives {
+  const createdAt = nowIso();
+  return {
+    text: DEFAULT_HUB_MERHID_DIRECTIVES_AR,
+    updatedAt: createdAt,
+    updatedBy: HUB_MEMBERS.hazem.nameAr,
+  };
+}
+
 function makeId(prefix: string) {
   return `${prefix}_${Date.now().toString(36)}_${Math.random()
     .toString(36)
     .slice(2, 8)}`;
 }
 
-function seedWelcomePost(): HubPost {
+function seedOnboardingMeetingPost(): HubPost {
   const createdAt = nowIso();
   return {
-    id: 'hub_welcome',
+    id: HUB_ONBOARDING_POST_ID,
     category: 'discussion',
-    title: 'افتتاح غرفة الاجتماعات',
-    body: 'مساحة خاصة غير متزامنة بين حازم ود. سامر: تقييمات سريرية، ملاحظات بحثية، ومقترحات مقاييس الغرف الحسية. المقترحات تبدأ «قيد المراجعة» حتى يعتمدها المشرف العام.',
+    title: 'الاجتماع الأول — تعريف شامل بمنصة تآلف ومحتواها',
+    body: 'اقرأ الأقسام أدناه ثم شارك ملاحظاتك واقتراحاتك في خانة الدردشة. مرشد تآلف متاح بجوارك (بتوجيه الإدارة) للإجابة عن أي سؤال يخص المنصة.',
     status: 'approved',
     authorRole: 'admin',
     authorName: HUB_MEMBERS.hazem.nameAr,
@@ -57,6 +74,25 @@ function seedWelcomePost(): HubPost {
     statusChangedAt: createdAt,
     replies: [],
   };
+}
+
+function ensureOnboardingPost() {
+  const idx = memory.posts.findIndex((p) => p.id === HUB_ONBOARDING_POST_ID);
+  const onboarding = seedOnboardingMeetingPost();
+  if (idx >= 0) {
+    memory.posts[idx] = {
+      ...onboarding,
+      replies: memory.posts[idx].replies,
+      createdAt: memory.posts[idx].createdAt,
+    };
+  } else {
+    memory.posts = [onboarding, ...memory.posts.filter((p) => p.id !== 'hub_welcome')];
+  }
+  memory.posts.sort((a, b) => {
+    if (a.id === HUB_ONBOARDING_POST_ID) return -1;
+    if (b.id === HUB_ONBOARDING_POST_ID) return 1;
+    return b.createdAt.localeCompare(a.createdAt);
+  });
 }
 
 async function ensureLoaded() {
@@ -92,14 +128,23 @@ async function ensureLoaded() {
             ...(storedGuide?.sections || {}),
           },
         };
+    const dirBase = defaultMerhidDirectives();
+    memory.merhidDirectives = {
+      ...dirBase,
+      ...(parsed.merhidDirectives || {}),
+      text: parsed.merhidDirectives?.text?.trim() || dirBase.text,
+    };
+    ensureOnboardingPost();
   } catch {
-    memory.posts = [seedWelcomePost()];
+    memory.posts = [];
     memory.mou = emptyMouState();
     memory.advisorGuide = emptyAdvisorGuideState();
+    memory.merhidDirectives = defaultMerhidDirectives();
+    ensureOnboardingPost();
     await persist();
   }
-  if (!memory.posts.length) {
-    memory.posts = [seedWelcomePost()];
+  if (!memory.posts.some((p) => p.id === HUB_ONBOARDING_POST_ID)) {
+    ensureOnboardingPost();
     await persist();
   }
 }
@@ -240,4 +285,18 @@ export async function resetAdvisorGuide(): Promise<ClinicalHubSnapshot['advisorG
   memory.advisorGuide = emptyAdvisorGuideState();
   await persist();
   return JSON.parse(JSON.stringify(memory.advisorGuide));
+}
+
+export async function updateHubMerhidDirectives(
+  text: string,
+  updatedBy: string
+): Promise<HubMerhidDirectives> {
+  await ensureLoaded();
+  memory.merhidDirectives = {
+    text: text.trim(),
+    updatedAt: nowIso(),
+    updatedBy: updatedBy.trim(),
+  };
+  await persist();
+  return JSON.parse(JSON.stringify(memory.merhidDirectives));
 }
