@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useLanguage } from '@/components/LanguageProvider';
-import { PARENT_ROUTES, saveActiveChild, parentScreeningEntryHref } from '@/lib/parentJourney';
+import { saveActiveChild, parentScreeningEntryHref } from '@/lib/parentJourney';
 
 function toWesternDigits(value: string) {
   const map: Record<string, string> = {

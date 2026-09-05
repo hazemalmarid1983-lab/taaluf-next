@@ -52,15 +52,27 @@ export async function POST(req: Request) {
       });
     }
 
-    const ai = await analyzeAssessmentWithGemini({
-      studentName: body.studentName,
-      childAge: body.childAge,
-      parentNotes: body.parentNotes,
-      scores,
-      result,
-    });
-
-    return NextResponse.json({ ok: true, ai, result, source: 'gemini' });
+    try {
+      const ai = await analyzeAssessmentWithGemini({
+        studentName: body.studentName,
+        childAge: body.childAge,
+        parentNotes: body.parentNotes,
+        scores,
+        result,
+      });
+      return NextResponse.json({ ok: true, ai, result, source: 'gemini' });
+    } catch (geminiErr) {
+      const message =
+        geminiErr instanceof Error ? geminiErr.message : 'GEMINI_FAILED';
+      const ai = buildLocalAiAnalysis(result, scores);
+      return NextResponse.json({
+        ok: true,
+        ai,
+        result,
+        source: 'local-fallback',
+        message,
+      });
+    }
   } catch (err) {
     const message = err instanceof Error ? err.message : 'GEMINI_FAILED';
     return NextResponse.json({ error: message }, { status: 500 });

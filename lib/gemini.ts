@@ -25,8 +25,26 @@ function extractJson(text: string): AiAnalysisPayload {
   const fenced = trimmed.match(/```(?:json)?\s*([\s\S]*?)```/i);
   const raw = fenced?.[1]?.trim() || trimmed;
   const start = raw.indexOf('{');
-  const end = raw.lastIndexOf('}');
-  const slice = start >= 0 && end > start ? raw.slice(start, end + 1) : raw;
+  if (start < 0) {
+    throw new Error('GEMINI_JSON_MISSING');
+  }
+
+  let depth = 0;
+  let end = -1;
+  for (let i = start; i < raw.length; i += 1) {
+    const ch = raw[i];
+    if (ch === '{') depth += 1;
+    else if (ch === '}') {
+      depth -= 1;
+      if (depth === 0) {
+        end = i;
+        break;
+      }
+    }
+  }
+
+  const slice =
+    end > start ? raw.slice(start, end + 1) : raw.slice(start, raw.lastIndexOf('}') + 1);
   return JSON.parse(slice) as AiAnalysisPayload;
 }
 
