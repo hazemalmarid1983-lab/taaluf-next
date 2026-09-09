@@ -245,12 +245,22 @@ export function saveTrainingPlanFromBuilder(input: {
     throw new PlanBuilderError('خطط نشطة متعددة لنفس الطفل');
   }
 
-  resolvePlanBuilderGoalViews(input.childId, input.selectedGoalIds);
+  const views = resolvePlanBuilderGoalViews(
+    input.childId,
+    input.selectedGoalIds
+  );
+  const mediaOptions = buildMediaOptionsFromGoalViews(views);
+  const goalIdsByMedia = new Map(
+    mediaOptions.map((option) => [option.mediaId, option.relatedGoalIds])
+  );
 
   const assignments = buildOrderedAssignments(
     input.orderedMediaIds,
     input.difficulties
-  );
+  ).map((assignment) => ({
+    ...assignment,
+    goalIds: goalIdsByMedia.get(assignment.mediaId) ?? [],
+  }));
 
   const plan = createTrainingPlan({
     childId: input.childId,

@@ -9,6 +9,8 @@ import {
   type TrainingPlanLaunchContext,
 } from '@/lib/training/planLaunchContext';
 import type { TrainingDifficulty } from '@/lib/training/types';
+import { getTrainingPlan } from '@/lib/training/storage/planStore';
+import { findAssignmentByOrder } from '@/lib/training/validatePlan';
 import {
   readActiveTrainingChildId,
   readTrainingChildId,
@@ -29,6 +31,7 @@ export type PreparePlanActivityBeginSuccess = {
   childId: string;
   planId?: string;
   sessionDifficulty?: TrainingDifficulty;
+  goalIds: string[];
 };
 
 export type PreparePlanActivityBeginFailure = {
@@ -99,6 +102,16 @@ export function resolveTrainingActivityCompletionHref(planId?: string): string {
   return planId ? '/dashboard/training' : '/dashboard/games';
 }
 
+function resolveAssignmentGoalIds(planId: string, order: number): string[] {
+  const plan = getTrainingPlan(planId);
+  if (!plan) return [];
+
+  const assignment = findAssignmentByOrder(plan, order);
+  if (!assignment?.goalIds?.length) return [];
+
+  return [...new Set(assignment.goalIds)];
+}
+
 export function preparePlanActivityBegin(
   input: PreparePlanActivityBeginInput
 ): PreparePlanActivityBeginResult {
@@ -128,6 +141,7 @@ export function preparePlanActivityBegin(
       childId: activeChildId,
       planId: launch.planId,
       sessionDifficulty: launch.difficulty,
+      goalIds: resolveAssignmentGoalIds(launch.planId, launch.order),
     };
   }
 
@@ -146,12 +160,14 @@ export function preparePlanActivityBegin(
       childId: activeChildId,
       planId: recovery.planId,
       sessionDifficulty: recovery.difficulty,
+      goalIds: resolveAssignmentGoalIds(recovery.planId, recovery.order),
     };
   }
 
   return {
     ok: true,
     childId: readTrainingChildId(),
+    goalIds: [],
   };
 }
 

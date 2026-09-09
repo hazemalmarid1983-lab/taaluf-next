@@ -143,7 +143,7 @@ describe('planActivitySafety', () => {
   describe('preparePlanActivityBegin', () => {
     it('starts standalone session with child_local when no plan context exists', () => {
       const result = preparePlanActivityBegin({ pageMediaId: 'follow-star' });
-      expect(result).toEqual({ ok: true, childId: 'child_local' });
+      expect(result).toEqual({ ok: true, childId: 'child_local', goalIds: [] });
     });
 
     it('starts plan-linked session when launch mediaId matches page media', () => {
@@ -156,6 +156,7 @@ describe('planActivitySafety', () => {
         childId: 'child_1',
         planId: 'plan_1',
         sessionDifficulty: 2,
+        goalIds: [],
       });
       expect(peekTrainingPlanLaunchContext()).toBeNull();
       expect(peekPlanActivityRecovery()?.planId).toBe('plan_1');
@@ -195,6 +196,7 @@ describe('planActivitySafety', () => {
         childId: 'child_1',
         planId: 'plan_1',
         sessionDifficulty: 3,
+        goalIds: [],
       });
       expect(peekPlanActivityRecovery()?.planId).toBe('plan_1');
     });
@@ -228,6 +230,7 @@ describe('planActivitySafety', () => {
         childId: 'child_1',
         planId: 'plan_1',
         sessionDifficulty: 2,
+        goalIds: [],
       });
     });
 
@@ -242,7 +245,7 @@ describe('planActivitySafety', () => {
       });
 
       const result = preparePlanActivityBegin({ pageMediaId: 'follow-star' });
-      expect(result).toEqual({ ok: true, childId: 'child_local' });
+      expect(result).toEqual({ ok: true, childId: 'child_local', goalIds: [] });
     });
   });
 

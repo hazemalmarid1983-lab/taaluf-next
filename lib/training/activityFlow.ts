@@ -31,6 +31,7 @@ export type BeginTrainingActivityInput = {
   chapterId: string;
   media: TrainingMedia;
   planId?: string;
+  goalIds?: string[];
   /** صعوبة مُخصّصة من الخطة — تتجاوز إعدادات الوسيلة الافتراضية */
   sessionDifficulty?: TrainingDifficulty;
 };
@@ -66,6 +67,7 @@ export function createTrainingActivityFlow<TSettings>(
         chapterId: beginInput.chapterId,
         media: beginInput.media,
         planId: beginInput.planId,
+        goalIds: beginInput.goalIds,
         difficulty,
       });
 

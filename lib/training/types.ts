@@ -174,6 +174,8 @@ export type TrainingSession = {
   chapterId: string;
   mediaId: string;
   planId?: string;
+  /** مراجع TrackedGoal.id من assignment الخطة — اختياري للتوافق مع جلسات قديمة */
+  goalIds?: string[];
   difficulty: TrainingDifficulty;
   startedAt: string;
   endedAt?: string;
@@ -199,6 +201,8 @@ export type TrainingPlanAssignment = {
   mediaId: string;
   difficulty: TrainingDifficulty;
   order: number;
+  /** مراجع TrackedGoal.id المرتبطة بهذه المهمة — اختياري للخطط القديمة */
+  goalIds?: string[];
 };
 
 /** مؤشر التقدم داخل الخطة — nextOrder يطابق TrainingPlanAssignment.order */

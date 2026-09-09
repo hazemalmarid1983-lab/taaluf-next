@@ -28,6 +28,7 @@ export type CreateTrainingSessionInput = {
   media: TrainingMedia;
   difficulty?: TrainingDifficulty;
   planId?: string;
+  goalIds?: string[];
   startedAt?: string;
 };
 

@@ -53,6 +53,14 @@ function validateAssignment(
     errors.push(`assignments[${index}].order يجب أن يكون عدداً صحيحاً موجباً`);
   }
 
+  if (assignment.goalIds !== undefined) {
+    if (!isStringArray(assignment.goalIds)) {
+      errors.push(`assignments[${index}].goalIds يجب أن يكون مصفوفة نصوص`);
+    } else if (new Set(assignment.goalIds).size !== assignment.goalIds.length) {
+      errors.push(`assignments[${index}].goalIds يجب أن تكون فريدة`);
+    }
+  }
+
   return errors.length === 0;
 }
 

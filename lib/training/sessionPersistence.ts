@@ -5,6 +5,7 @@
 import { calculateSessionMetrics } from '@/lib/training/engine/metrics';
 import type { TrainingSessionMetrics } from '@/lib/training/engine/types';
 import type { TrainingSessionRuntime } from '@/lib/training/engine/types';
+import { applyTrainingSessionToTrackedGoals } from '@/lib/training/goalFeedback';
 import {
   getTrainingProgress,
   saveTrainingProgress,
@@ -84,6 +85,7 @@ export function persistCompletedTrainingSession(
   );
   const progress = buildUpdatedTrainingProgress(existing, session, metrics);
   saveTrainingProgress(progress);
+  applyTrainingSessionToTrackedGoals(session, metrics);
 
   return { session, progress, metrics };
 }

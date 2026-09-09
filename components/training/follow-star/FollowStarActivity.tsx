@@ -67,6 +67,7 @@ export default function FollowStarActivity() {
       chapterId: ATTENTION_FOCUS_CHAPTER_ID,
       media,
       planId: begin.planId,
+      goalIds: begin.goalIds,
       sessionDifficulty: begin.sessionDifficulty,
     });
     const started = startFollowStarTrial(bundle.session);

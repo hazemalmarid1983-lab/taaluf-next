@@ -18,6 +18,7 @@ export type CreateTrainingPlanAssignmentInput = {
   mediaId: string;
   difficulty?: TrainingDifficulty;
   order?: number;
+  goalIds?: string[];
 };
 
 export type CreateTrainingPlanInput = {
@@ -53,11 +54,15 @@ export function buildTrainingPlanAssignments(
       throw new Error(`assignments[${index}].difficulty غير صالح`);
     }
 
-    return {
+    const assignment: TrainingPlanAssignment = {
       mediaId: item.mediaId.trim(),
       difficulty,
       order: item.order ?? index + 1,
     };
+    if (item.goalIds !== undefined) {
+      assignment.goalIds = [...new Set(item.goalIds)];
+    }
+    return assignment;
   });
 }
 

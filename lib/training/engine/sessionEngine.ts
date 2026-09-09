@@ -45,6 +45,7 @@ export function createTrainingSession(
     chapterId: input.chapterId,
     mediaId: input.media.mediaId,
     planId: input.planId,
+    ...(input.goalIds?.length ? { goalIds: [...new Set(input.goalIds)] } : {}),
     difficulty: runtimeConfig.difficulty,
     startedAt: input.startedAt ?? new Date().toISOString(),
     trials: [],

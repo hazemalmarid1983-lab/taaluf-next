@@ -149,7 +149,7 @@ describe('planBuilder save rules', () => {
       difficulties: { 'follow-star': 1 },
     });
 
-    expect(plan.goalIds).toEqual(['goal_a', 'goal_b']);
+    expect(plan.assignments[0].goalIds).toEqual(['goal_a', 'goal_b']);
     expect(plan.assignments).toHaveLength(1);
   });
 

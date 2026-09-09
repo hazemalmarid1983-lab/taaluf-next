@@ -159,6 +159,16 @@ export function validateTrainingSession(input: unknown): TrainingValidationResul
     }
   }
 
+  if (input.goalIds !== undefined) {
+    if (!Array.isArray(input.goalIds)) {
+      errors.push('goalIds يجب أن يكون مصفوفة');
+    } else if (!input.goalIds.every((item) => typeof item === 'string')) {
+      errors.push('goalIds يجب أن يكون مصفوفة نصوص');
+    } else if (new Set(input.goalIds).size !== input.goalIds.length) {
+      errors.push('goalIds يجب أن تكون فريدة');
+    }
+  }
+
   return { valid: errors.length === 0, errors };
 }
 

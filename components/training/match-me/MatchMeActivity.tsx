@@ -66,6 +66,7 @@ export default function MatchMeActivity() {
       chapterId: ATTENTION_FOCUS_CHAPTER_ID,
       media,
       planId: begin.planId,
+      goalIds: begin.goalIds,
       sessionDifficulty: begin.sessionDifficulty,
     });
     const started = startMatchMeTrial(bundle.session);
