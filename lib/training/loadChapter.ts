@@ -3,6 +3,7 @@
  */
 
 import attentionFocusRaw from '@/data/training/chapters/attention-focus.json';
+import communicationLanguageRaw from '@/data/training/chapters/communication-language.json';
 import {
   assertValidTrainingChapterDocument,
   validateTrainingChapterDocument,
@@ -10,6 +11,7 @@ import {
 import type { TrainingChapterDocument } from '@/lib/training/types';
 
 export const ATTENTION_FOCUS_CHAPTER_ID = 'attention-focus';
+export const COMMUNICATION_LANGUAGE_CHAPTER_ID = 'communication-language';
 
 /** مستند خام — يُتحقق منه عند التحميل */
 export const ATTENTION_FOCUS_CHAPTER_RAW: unknown = attentionFocusRaw;
@@ -26,11 +28,40 @@ export function validateAttentionFocusChapter() {
 }
 
 /** تحميل فصل بالمعرّف بعد التحقق */
-export function loadChapterById(chapterId: string): TrainingChapterDocument {
-  if (chapterId === ATTENTION_FOCUS_CHAPTER_ID) {
-    return loadAttentionFocusChapter();
+export function loadCommunicationLanguageChapter(): TrainingChapterDocument {
+  assertValidTrainingChapterDocument(communicationLanguageRaw);
+  return communicationLanguageRaw as TrainingChapterDocument;
+}
+
+export function validateCommunicationLanguageChapter() {
+  return validateTrainingChapterDocument(communicationLanguageRaw);
+}
+
+const CHAPTER_LOADERS: Record<string, () => TrainingChapterDocument> = {
+  [ATTENTION_FOCUS_CHAPTER_ID]: loadAttentionFocusChapter,
+  [COMMUNICATION_LANGUAGE_CHAPTER_ID]: loadCommunicationLanguageChapter,
+};
+
+export function listTrainingChapterIds(): string[] {
+  return Object.keys(CHAPTER_LOADERS);
+}
+
+export function findChapterIdForMedia(mediaId: string): string | null {
+  for (const chapterId of listTrainingChapterIds()) {
+    const doc = CHAPTER_LOADERS[chapterId]();
+    if (doc.media.some((item) => item.mediaId === mediaId)) {
+      return chapterId;
+    }
   }
-  throw new Error(`فصل تدريب غير معروف: ${chapterId}`);
+  return null;
+}
+
+export function loadChapterById(chapterId: string): TrainingChapterDocument {
+  const load = CHAPTER_LOADERS[chapterId];
+  if (!load) {
+    throw new Error(`فصل تدريب غير معروف: ${chapterId}`);
+  }
+  return load();
 }
 
 /** إيجاد وسيلة بالمعرّف داخل مستند الفصل */

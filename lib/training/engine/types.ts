@@ -3,6 +3,7 @@
  */
 
 import type {
+  TapToRequestResponseMode,
   TrainingDifficulty,
   TrainingMedia,
   TrainingMediaConfig,
@@ -30,6 +31,7 @@ export type CreateTrainingSessionInput = {
   planId?: string;
   goalIds?: string[];
   startedAt?: string;
+  protocolRevision?: string;
 };
 
 export type RecordTrainingTrialInput = {
@@ -37,6 +39,9 @@ export type RecordTrainingTrialInput = {
   promptLevel: TrainingPromptLevel;
   responseTimeMs?: number;
   recordedAt?: string;
+  targetId?: string;
+  responseChoiceId?: string | null;
+  responseMode?: TapToRequestResponseMode;
 };
 
 export type ResolvedMediaConfig = {

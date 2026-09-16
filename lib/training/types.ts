@@ -49,6 +49,8 @@ export const TRAINING_ENGINE_TYPES = [
   'visual_memory',
   'visual_search',
   'response_control',
+  'expressive_choice',
+  'receptive_choice',
 ] as const;
 
 export type TrainingEngineType = (typeof TRAINING_ENGINE_TYPES)[number];
@@ -64,6 +66,11 @@ export const TRAINING_GOAL_TYPES = [
   'response_inhibition',
   'waiting',
   'task_completion',
+  'functional_request',
+  'symbol_request',
+  'receptive_instruction',
+  'communicative_point',
+  'name_orienting',
 ] as const;
 
 export type TrainingGoalType = (typeof TRAINING_GOAL_TYPES)[number];
@@ -158,6 +165,11 @@ export type TrainingChapterDocument = {
   media: TrainingMedia[];
 };
 
+/** tap-to-request — Data Contract v1 */
+export type TapToRequestResponseMode = 'child_tap' | 'observer_no_response';
+
+export const TAP_TO_REQUEST_PROTOCOL_REVISION = 'tap-to-request-v1';
+
 /** محاولة واحدة داخل جلسة تدريب */
 export type TrainingTrial = {
   trialNumber: number;
@@ -165,6 +177,10 @@ export type TrainingTrial = {
   promptLevel: TrainingPromptLevel;
   responseTimeMs?: number;
   recordedAt: string;
+  /** tap-to-request v1 — اختياري للتوافق مع جلسات قديمة */
+  targetId?: string;
+  responseChoiceId?: string | null;
+  responseMode?: TapToRequestResponseMode;
 };
 
 /** جلسة تدريب — للاستخدام في مراحل لاحقة */
@@ -182,6 +198,8 @@ export type TrainingSession = {
   trials: TrainingTrial[];
   independenceRate?: number;
   metrics?: Record<string, number>;
+  /** tap-to-request v1 — اختياري */
+  protocolRevision?: string;
 };
 
 /** تقدم الطفل في وسيلة/فصل — للاستخدام في مراحل لاحقة */

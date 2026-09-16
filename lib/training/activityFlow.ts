@@ -12,13 +12,22 @@ import {
 } from '@/lib/training/engine';
 import type { ResolvedMediaConfig } from '@/lib/training/engine/types';
 import type { TrainingSessionRuntime } from '@/lib/training/engine/types';
-import type { TrainingDifficulty, TrainingMedia, TrainingPromptLevel } from '@/lib/training/types';
+import {
+  TAP_TO_REQUEST_PROTOCOL_REVISION,
+  type TapToRequestResponseMode,
+  type TrainingDifficulty,
+  type TrainingMedia,
+  type TrainingPromptLevel,
+} from '@/lib/training/types';
 
 /** شكل موحّد لنتيجة المحاولة — متوافق مع follow-star و match-me */
 export type TrainingTrialOutcome = {
   correct: boolean;
   promptLevel: TrainingPromptLevel;
   responseTimeMs: number;
+  targetId?: string;
+  responseChoiceId?: string | null;
+  responseMode?: TapToRequestResponseMode;
 };
 
 export type TrainingActivityBundle<TSettings> = {
@@ -69,6 +78,10 @@ export function createTrainingActivityFlow<TSettings>(
         planId: beginInput.planId,
         goalIds: beginInput.goalIds,
         difficulty,
+        protocolRevision:
+          beginInput.media.mediaId === 'tap-to-request'
+            ? TAP_TO_REQUEST_PROTOCOL_REVISION
+            : undefined,
       });
 
       return { session, settings };
@@ -86,6 +99,13 @@ export function createTrainingActivityFlow<TSettings>(
         correct: outcome.correct,
         promptLevel: outcome.promptLevel,
         responseTimeMs: outcome.responseTimeMs,
+        ...(outcome.targetId !== undefined ? { targetId: outcome.targetId } : {}),
+        ...(outcome.responseChoiceId !== undefined
+          ? { responseChoiceId: outcome.responseChoiceId }
+          : {}),
+        ...(outcome.responseMode !== undefined
+          ? { responseMode: outcome.responseMode }
+          : {}),
       });
     },
 

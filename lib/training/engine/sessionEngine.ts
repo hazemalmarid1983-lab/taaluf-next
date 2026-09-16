@@ -51,6 +51,9 @@ export function createTrainingSession(
     trials: [],
     status: 'active',
     targetTrialCount: runtimeConfig.trialCount,
+    ...(input.protocolRevision
+      ? { protocolRevision: input.protocolRevision }
+      : {}),
   };
 
   const validation = validateTrainingSessionRuntime(session);
@@ -106,6 +109,13 @@ export function recordTrial(
     promptLevel: input.promptLevel,
     responseTimeMs: input.responseTimeMs,
     recordedAt: input.recordedAt ?? new Date().toISOString(),
+    ...(input.targetId !== undefined ? { targetId: input.targetId } : {}),
+    ...(input.responseChoiceId !== undefined
+      ? { responseChoiceId: input.responseChoiceId }
+      : {}),
+    ...(input.responseMode !== undefined
+      ? { responseMode: input.responseMode }
+      : {}),
   };
 
   assertValidTrainingTrial(trial);

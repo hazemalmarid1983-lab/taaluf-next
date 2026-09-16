@@ -20,6 +20,40 @@ function isIsoTimestamp(value: unknown): value is string {
   return !Number.isNaN(Date.parse(value));
 }
 
+const TAP_TO_REQUEST_RESPONSE_MODES = new Set([
+  'child_tap',
+  'observer_no_response',
+]);
+
+function validateOptionalTapToRequestTrialFields(
+  input: Record<string, unknown>,
+  errors: string[]
+) {
+  if (input.targetId !== undefined) {
+    if (typeof input.targetId !== 'string' || !input.targetId.trim()) {
+      errors.push('targetId يجب أن يكون نصاً غير فارغ');
+    }
+  }
+
+  if (input.responseChoiceId !== undefined && input.responseChoiceId !== null) {
+    if (
+      typeof input.responseChoiceId !== 'string' ||
+      !input.responseChoiceId.trim()
+    ) {
+      errors.push('responseChoiceId يجب أن يكون null أو نصاً غير فارغ');
+    }
+  }
+
+  if (input.responseMode !== undefined) {
+    if (
+      typeof input.responseMode !== 'string' ||
+      !TAP_TO_REQUEST_RESPONSE_MODES.has(input.responseMode)
+    ) {
+      errors.push('responseMode غير صالح');
+    }
+  }
+}
+
 export function validateTrainingTrial(input: unknown): TrainingValidationResult {
   const errors: string[] = [];
 
@@ -53,6 +87,8 @@ export function validateTrainingTrial(input: unknown): TrainingValidationResult 
   if (!isIsoTimestamp(input.recordedAt)) {
     errors.push('recordedAt يجب أن يكون طابعاً زمنياً ISO صالحاً');
   }
+
+  validateOptionalTapToRequestTrialFields(input, errors);
 
   return { valid: errors.length === 0, errors };
 }
@@ -90,6 +126,8 @@ export function validateRecordTrainingTrialInput(
   ) {
     errors.push('recordedAt يجب أن يكون طابعاً زمنياً ISO صالحاً');
   }
+
+  validateOptionalTapToRequestTrialFields(input, errors);
 
   return { valid: errors.length === 0, errors };
 }
@@ -166,6 +204,15 @@ export function validateTrainingSession(input: unknown): TrainingValidationResul
       errors.push('goalIds يجب أن يكون مصفوفة نصوص');
     } else if (new Set(input.goalIds).size !== input.goalIds.length) {
       errors.push('goalIds يجب أن تكون فريدة');
+    }
+  }
+
+  if (input.protocolRevision !== undefined) {
+    if (
+      typeof input.protocolRevision !== 'string' ||
+      !input.protocolRevision.trim()
+    ) {
+      errors.push('protocolRevision يجب أن يكون نصاً غير فارغ');
     }
   }
 
