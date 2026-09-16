@@ -98,6 +98,7 @@ export default withAuth(
         path.startsWith('/dashboard/screening') ||
         path.startsWith('/dashboard/parent-assessment') ||
         path.startsWith('/dashboard/games') ||
+        path.startsWith('/dashboard/training') ||
         path.startsWith('/dashboard/home-classroom') ||
         path.startsWith('/dashboard/tools-bank') ||
         path.startsWith('/dashboard/messages') ||
@@ -111,6 +112,7 @@ export default withAuth(
       const paidParentPath =
         path.startsWith('/dashboard/parent-assessment') ||
         path.startsWith('/dashboard/games') ||
+        path.startsWith('/dashboard/training') ||
         path.startsWith('/dashboard/goals');
 
       if (

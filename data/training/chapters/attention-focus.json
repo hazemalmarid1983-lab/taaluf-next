@@ -1,0 +1,272 @@
+{
+  "version": "1.0",
+  "platform": "تآلف",
+  "chapter": {
+    "chapterId": "attention-focus",
+    "titleAr": "الانتباه والتركيز",
+    "titleEn": "Attention & Focus",
+    "descriptionAr": "فصل تدريبي يطوّر الانتباه المشترك، التتبع البصري، الذاكرة البصرية، البحث البصري، وضبط الاستجابة والانتظار.",
+    "descriptionEn": "A training chapter developing joint attention, visual tracking, visual memory, visual search, and response control with waiting.",
+    "domain": "cognitive",
+    "skillIds": [
+      "skill-visual-tracking",
+      "skill-identical-matching",
+      "skill-visual-memory",
+      "skill-visual-search",
+      "skill-response-control"
+    ],
+    "criterionIds": ["C11", "C25"],
+    "ageBands": ["3-4", "5-6", "7-9", "10-12"],
+    "difficultyLevels": [1, 2, 3],
+    "orderedMedia": [
+      "follow-star",
+      "match-me",
+      "where-did-it-go",
+      "find-the-target",
+      "wait-then-touch"
+    ]
+  },
+  "skills": [
+    {
+      "skillId": "skill-visual-tracking",
+      "domainId": "cognitive",
+      "titleAr": "التتبع البصري",
+      "titleEn": "Visual Tracking",
+      "descriptionAr": "متابعة هدف متحرك بالعينين والإشارة إليه.",
+      "descriptionEn": "Follow a moving target with the eyes and indicate it.",
+      "criterionIds": ["C11", "C25"]
+    },
+    {
+      "skillId": "skill-identical-matching",
+      "domainId": "cognitive",
+      "titleAr": "المطابقة المتطابقة",
+      "titleEn": "Identical Matching",
+      "descriptionAr": "مطابقة عنصر بصورة أو نموذج مطابق.",
+      "descriptionEn": "Match an item to an identical picture or model.",
+      "criterionIds": ["C25"]
+    },
+    {
+      "skillId": "skill-visual-memory",
+      "domainId": "cognitive",
+      "titleAr": "الذاكرة البصرية",
+      "titleEn": "Visual Memory",
+      "descriptionAr": "تذكّر موقع أو شكل عنصر بعد إخفائه.",
+      "descriptionEn": "Recall the location or shape of an item after it is hidden.",
+      "criterionIds": ["C25"]
+    },
+    {
+      "skillId": "skill-visual-search",
+      "domainId": "cognitive",
+      "titleAr": "البحث البصري",
+      "titleEn": "Visual Search",
+      "descriptionAr": "إيجاد هدف بين مشتتات بصرية.",
+      "descriptionEn": "Find a target among visual distractors.",
+      "criterionIds": ["C25"]
+    },
+    {
+      "skillId": "skill-response-control",
+      "domainId": "cognitive",
+      "titleAr": "ضبط الاستجابة والانتظار",
+      "titleEn": "Response Control & Waiting",
+      "descriptionAr": "الانتظار حتى الإشارة ثم الاستجابة بشكل منضبط.",
+      "descriptionEn": "Wait for the cue then respond in a controlled way.",
+      "criterionIds": ["C25"]
+    }
+  ],
+  "media": [
+    {
+      "mediaId": "follow-star",
+      "titleAr": "اتبع النجمة",
+      "titleEn": "Follow the Star",
+      "descriptionAr": "يتتبع الطفل نجمة متحركة على الشاشة ويلمسها عند توقفها.",
+      "descriptionEn": "The child tracks a moving star on screen and taps it when it stops.",
+      "engineType": "visual_tracking",
+      "skillIds": ["skill-visual-tracking"],
+      "goalLinks": [
+        {
+          "goalType": "visual_tracking",
+          "labelAr": "تتبع هدف بصري متحرك",
+          "labelEn": "Track a moving visual target",
+          "skillIds": ["skill-visual-tracking"],
+          "criterionIds": ["C11", "C25"]
+        },
+        {
+          "goalType": "joint_attention",
+          "labelAr": "مشاركة الانتباه مع الهدف المتحرك",
+          "labelEn": "Share attention with the moving target",
+          "skillIds": ["skill-visual-tracking"],
+          "criterionIds": ["C11"]
+        }
+      ],
+      "criterionIds": ["C11", "C25"],
+      "ageBands": ["3-4", "5-6", "7-9", "10-12"],
+      "difficultyLevels": [1, 2, 3],
+      "config": {
+        "trialCount": 10,
+        "displayDurationMs": 3000,
+        "movementSpeed": 1,
+        "difficulty": 1,
+        "prompting": true,
+        "reinforcement": true,
+        "reinforcementType": "animation",
+        "distractorCount": 0,
+        "content": {
+          "background": "calm"
+        }
+      }
+    },
+    {
+      "mediaId": "match-me",
+      "titleAr": "طابق مثلي",
+      "titleEn": "Match Like Me",
+      "descriptionAr": "يختار الطفل الصورة المطابقة للنموذج المعروض.",
+      "descriptionEn": "The child selects the picture that matches the shown model.",
+      "engineType": "matching",
+      "skillIds": ["skill-identical-matching"],
+      "goalLinks": [
+        {
+          "goalType": "identical_matching",
+          "labelAr": "مطابقة صورة مطابقة للنموذج",
+          "labelEn": "Match an identical picture to the model",
+          "skillIds": ["skill-identical-matching"],
+          "criterionIds": ["C25", "C26"]
+        }
+      ],
+      "criterionIds": ["C25"],
+      "ageBands": ["3-4", "5-6", "7-9", "10-12"],
+      "difficultyLevels": [1, 2, 3],
+      "config": {
+        "trialCount": 10,
+        "choices": 2,
+        "difficulty": 1,
+        "matchLevel": 1,
+        "prompting": true,
+        "reinforcement": true,
+        "reinforcementType": "praise",
+        "distractorCount": 1,
+        "responseWindowMs": 8000,
+        "content": {
+          "category": "basic_shapes",
+          "itemPool": "basic_shapes"
+        }
+      }
+    },
+    {
+      "mediaId": "where-did-it-go",
+      "titleAr": "أين اختفت؟",
+      "titleEn": "Where Did It Go?",
+      "descriptionAr": "يشاهد الطفل عنصراً ثم يحدد مكانه بعد إخفائه.",
+      "descriptionEn": "The child watches an item then identifies where it was hidden.",
+      "engineType": "visual_memory",
+      "skillIds": ["skill-visual-memory"],
+      "goalLinks": [
+        {
+          "goalType": "visual_memory",
+          "labelAr": "تذكّر موقع عنصر مخفي",
+          "labelEn": "Recall the location of a hidden item",
+          "skillIds": ["skill-visual-memory"],
+          "criterionIds": ["C25", "C26"]
+        }
+      ],
+      "criterionIds": ["C25"],
+      "ageBands": ["3-4", "5-6", "7-9", "10-12"],
+      "difficultyLevels": [1, 2, 3],
+      "config": {
+        "trialCount": 8,
+        "choices": 2,
+        "difficulty": 1,
+        "prompting": true,
+        "reinforcement": true,
+        "reinforcementType": "sound",
+        "responseWindowMs": 8000,
+        "distractorCount": 1,
+        "content": {
+          "hideAnimation": "fade",
+          "itemPool": "basic_shapes"
+        }
+      }
+    },
+    {
+      "mediaId": "find-the-target",
+      "titleAr": "ابحث عن الهدف",
+      "titleEn": "Find the Target",
+      "descriptionAr": "يجد الطفل هدفاً محدداً بين عدة عناصر على الشاشة.",
+      "descriptionEn": "The child finds a specified target among several items on screen.",
+      "engineType": "visual_search",
+      "skillIds": ["skill-visual-search"],
+      "goalLinks": [
+        {
+          "goalType": "visual_search",
+          "labelAr": "إيجاد هدف بين مشتتات",
+          "labelEn": "Find a target among distractors",
+          "skillIds": ["skill-visual-search"],
+          "criterionIds": ["C25"]
+        },
+        {
+          "goalType": "attention_sustain",
+          "labelAr": "الحفاظ على الانتباه أثناء البحث",
+          "labelEn": "Sustain attention during search",
+          "skillIds": ["skill-visual-search"],
+          "criterionIds": ["C25"]
+        }
+      ],
+      "criterionIds": ["C25"],
+      "ageBands": ["3-4", "5-6", "7-9", "10-12"],
+      "difficultyLevels": [1, 2, 3],
+      "config": {
+        "trialCount": 10,
+        "difficulty": 1,
+        "prompting": true,
+        "reinforcement": true,
+        "reinforcementType": "token",
+        "responseWindowMs": 10000,
+        "content": {
+          "itemPool": "basic_shapes",
+          "layout": "scatter"
+        }
+      }
+    },
+    {
+      "mediaId": "wait-then-touch",
+      "titleAr": "انتظر ثم المس",
+      "titleEn": "Wait Then Touch",
+      "descriptionAr": "ينتظر الطفل حتى إشارة واضحة ثم يلمس الهدف دون استجابة مبكرة.",
+      "descriptionEn": "The child waits for a clear cue then touches the target without responding early.",
+      "engineType": "response_control",
+      "skillIds": ["skill-response-control"],
+      "goalLinks": [
+        {
+          "goalType": "waiting",
+          "labelAr": "الانتظار حتى الإشارة",
+          "labelEn": "Wait until the cue",
+          "skillIds": ["skill-response-control"],
+          "criterionIds": ["C25"]
+        },
+        {
+          "goalType": "response_inhibition",
+          "labelAr": "كبح الاستجابة المبكرة",
+          "labelEn": "Inhibit premature responses",
+          "skillIds": ["skill-response-control"],
+          "criterionIds": ["C25"]
+        }
+      ],
+      "criterionIds": ["C25"],
+      "ageBands": ["3-4", "5-6", "7-9", "10-12"],
+      "difficultyLevels": [1, 2, 3],
+      "config": {
+        "trialCount": 10,
+        "difficulty": 1,
+        "prompting": true,
+        "reinforcement": true,
+        "reinforcementType": "animation",
+        "responseWindowMs": 6000,
+        "prematureResponseAllowed": false,
+        "content": {
+          "itemPool": "basic_shapes",
+          "goCueStyle": "scale",
+          "waitIndicator": "mute_to_active"
+        }
+      }
+    }
+  ]
+}
