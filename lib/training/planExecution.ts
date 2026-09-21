@@ -9,12 +9,18 @@ import { findMediaInChapter, loadChapterById } from '@/lib/training/loadChapter'
 import { clearPlanActivityRecoveryAfterPlanSessionComplete } from '@/lib/training/planActivitySafety';
 import { persistCompletedTrainingSession } from '@/lib/training/sessionPersistence';
 import {
+  getCompletionApplyRecord,
+  inferLegacyCompletionFullyApplied,
+  markCompletionPlanAdvanceApplied,
+} from '@/lib/training/storage/completionApplyStore';
+import {
   getActiveTrainingPlan,
   getLatestCompletedTrainingPlan,
   getTrainingPlan,
   MULTIPLE_ACTIVE_TRAINING_PLANS,
   saveTrainingPlan,
 } from '@/lib/training/storage/planStore';
+import { getTrainingSession } from '@/lib/training/storage/sessionStore';
 import type {
   TrainingDifficulty,
   TrainingMedia,
@@ -201,15 +207,33 @@ export function advanceTrainingPlan(
   return saveTrainingPlan(updated);
 }
 
+function planAdvanceAlreadyApplied(session: TrainingSessionRuntime): boolean {
+  const ledger = getCompletionApplyRecord(session.id);
+  if (ledger) {
+    return ledger.planAdvanceApplied;
+  }
+  const stored = getTrainingSession(session.id);
+  return (
+    Boolean(session.planId) &&
+    inferLegacyCompletionFullyApplied(
+      session.id,
+      stored?.status === 'completed'
+    )
+  );
+}
+
 /** بعد اكتمال الجلسة بنجاح — يحفظ التقدم ويقدّم مؤشر الخطة */
 export function persistSessionAndAdvancePlan(
   session: TrainingSessionRuntime
 ) {
   const result = persistCompletedTrainingSession(session);
   if (session.planId) {
-    advanceTrainingPlan(session.planId, {
-      completedMediaId: session.mediaId,
-    });
+    if (!planAdvanceAlreadyApplied(session)) {
+      advanceTrainingPlan(session.planId, {
+        completedMediaId: session.mediaId,
+      });
+      markCompletionPlanAdvanceApplied(session.id);
+    }
     clearPlanActivityRecoveryAfterPlanSessionComplete();
   }
   return result;

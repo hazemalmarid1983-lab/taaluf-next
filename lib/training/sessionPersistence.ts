@@ -7,7 +7,13 @@ import type { TrainingSessionMetrics } from '@/lib/training/engine/types';
 import type { TrainingSessionRuntime } from '@/lib/training/engine/types';
 import { applyTrainingSessionToTrackedGoals } from '@/lib/training/goalFeedback';
 import {
+  ensureCompletionApplyRecord,
+  getCompletionApplyRecord,
   getTrainingProgress,
+  getTrainingSession,
+  inferLegacyCompletionFullyApplied,
+  markCompletionGoalsApplied,
+  markCompletionProgressApplied,
   saveTrainingProgress,
   saveTrainingSession,
 } from '@/lib/training/storage';
@@ -65,29 +71,79 @@ export function buildUpdatedTrainingProgress(
   };
 }
 
-export function persistCompletedTrainingSession(
-  session: TrainingSessionRuntime
-): {
+export type PersistCompletedTrainingSessionResult = {
   session: TrainingSessionRuntime;
   progress: TrainingProgress;
   metrics: TrainingSessionMetrics;
-} {
+  /** false when completion side effects were already applied for this session.id */
+  applied: boolean;
+};
+
+function completionEffectsAlreadyApplied(sessionId: string): boolean {
+  const ledger = getCompletionApplyRecord(sessionId);
+  if (ledger) {
+    return ledger.progressApplied && ledger.goalsApplied;
+  }
+  const stored = getTrainingSession(sessionId);
+  return inferLegacyCompletionFullyApplied(
+    sessionId,
+    stored?.status === 'completed'
+  );
+}
+
+export function persistCompletedTrainingSession(
+  session: TrainingSessionRuntime
+): PersistCompletedTrainingSessionResult {
   if (session.status !== 'completed') {
     throw new Error('لا يمكن حفظ جلسة غير مكتملة');
   }
 
-  saveTrainingSession(session);
   const metrics = calculateSessionMetrics(session.trials);
-  const existing = getTrainingProgress(
-    session.childId,
-    session.chapterId,
-    session.mediaId
-  );
-  const progress = buildUpdatedTrainingProgress(existing, session, metrics);
-  saveTrainingProgress(progress);
-  applyTrainingSessionToTrackedGoals(session, metrics);
 
-  return { session, progress, metrics };
+  if (completionEffectsAlreadyApplied(session.id)) {
+    const stored =
+      getTrainingSession(session.id) ??
+      saveTrainingSession(session);
+    const progress =
+      getTrainingProgress(
+        session.childId,
+        session.chapterId,
+        session.mediaId
+      ) ??
+      buildUpdatedTrainingProgress(null, session, metrics);
+    return { session: stored, progress, metrics, applied: false };
+  }
+
+  ensureCompletionApplyRecord(session.id);
+  const ledger = getCompletionApplyRecord(session.id)!;
+
+  saveTrainingSession(session);
+
+  let progress: TrainingProgress;
+  if (!ledger.progressApplied) {
+    const existing = getTrainingProgress(
+      session.childId,
+      session.chapterId,
+      session.mediaId
+    );
+    progress = buildUpdatedTrainingProgress(existing, session, metrics);
+    saveTrainingProgress(progress);
+    markCompletionProgressApplied(session.id);
+  } else {
+    progress =
+      getTrainingProgress(
+        session.childId,
+        session.chapterId,
+        session.mediaId
+      ) ?? buildUpdatedTrainingProgress(null, session, metrics);
+  }
+
+  if (!getCompletionApplyRecord(session.id)?.goalsApplied) {
+    applyTrainingSessionToTrackedGoals(session, metrics);
+    markCompletionGoalsApplied(session.id);
+  }
+
+  return { session, progress, metrics, applied: true };
 }
 
 export function readActiveTrainingChildId(): string | null {

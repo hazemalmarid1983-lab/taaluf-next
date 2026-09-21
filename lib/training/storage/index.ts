@@ -52,6 +52,17 @@ export {
   saveTrainingProgress,
 } from '@/lib/training/storage/progressStore';
 
+export {
+  clearCompletionApplyRecords,
+  ensureCompletionApplyRecord,
+  getCompletionApplyRecord,
+  inferLegacyCompletionFullyApplied,
+  markCompletionGoalsApplied,
+  markCompletionPlanAdvanceApplied,
+  markCompletionProgressApplied,
+} from '@/lib/training/storage/completionApplyStore';
+
+import { clearCompletionApplyRecords } from '@/lib/training/storage/completionApplyStore';
 import { clearTrainingPlans } from '@/lib/training/storage/planStore';
 import { clearTrainingProgress } from '@/lib/training/storage/progressStore';
 import { clearTrainingSessions } from '@/lib/training/storage/sessionStore';
@@ -60,4 +71,5 @@ export function clearAllTrainingStorage() {
   clearTrainingPlans();
   clearTrainingSessions();
   clearTrainingProgress();
+  clearCompletionApplyRecords();
 }
