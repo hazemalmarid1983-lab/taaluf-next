@@ -25,6 +25,7 @@ import {
   type PlanBuilderGoalView,
 } from '@/lib/training/planBuilder';
 import type { TrainingDifficulty, TrainingPlan } from '@/lib/training/types';
+import { syncActiveTrainingStudentAfterPlanSave } from '@/lib/training/trainingActiveChildUx';
 
 type BuilderStep =
   | 'child'
@@ -190,6 +191,12 @@ export default function TrainingPlanBuilder() {
         selectedGoalIds,
         orderedMediaIds: selectedMediaIds,
         difficulties,
+      });
+      syncActiveTrainingStudentAfterPlanSave({
+        id: selectedChild.id,
+        name: selectedChild.name || selectedChild.id,
+        age: selectedChild.age,
+        dob: selectedChild.dob,
       });
       setSavedPlan(plan);
       setSavedSummary(describeSavedPlan(plan));
