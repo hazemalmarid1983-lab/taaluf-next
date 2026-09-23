@@ -11,5 +11,5 @@ export default function PromptSelectionOverlay({
   isAr: boolean;
   onSelect: (level: PromptHierarchyLevel) => void;
 }) {
-  return <PromptRecordingBar isAr visible onRecord={onSelect} />;
+  return <PromptRecordingBar isAr={isAr} visible onRecord={onSelect} />;
 }
