@@ -591,15 +591,9 @@ export default function TapToRequestPlayArea({
         <div className="mx-auto max-w-2xl">
 
           <PromptRecordingBar
-
             isAr
-
             visible={showObserverBar}
-
-            suggestedLevel={null}
-
             onRecord={handleObserverRecord}
-
           />
 
         </div>

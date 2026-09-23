@@ -1,7 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import FieldPromptRecordBar from '@/components/training/FieldPromptRecordBar';
 import MatchVisual, { matchVisualAriaLabel } from '@/components/training/match-me/MatchVisual';
+import type { PromptHierarchyLevel } from '@/lib/promptHierarchy';
 import type { TrainingAssistanceStage } from '@/lib/training/assistanceSemantics';
 import {
   buildWaitThenTouchTrialSpec,
@@ -43,6 +45,8 @@ export default function WaitThenTouchPlayArea({
     'success' | 'premature' | 'timeout' | null
   >(null);
   const [reducedMotion, setReducedMotion] = useState(false);
+  const [pendingOutcome, setPendingOutcome] =
+    useState<WaitThenTouchTrialOutcome | null>(null);
 
   useEffect(() => {
     setReducedMotion(
@@ -75,16 +79,17 @@ export default function WaitThenTouchPlayArea({
             ? 'premature'
             : 'timeout'
       );
+      setPendingOutcome(outcome);
       setPhase('feedback');
-
-      const delay = settings.reinforcement ? 700 : 220;
-      window.setTimeout(() => {
-        onTrialComplete(outcome);
-        completedRef.current = false;
-      }, reducedMotion ? Math.min(delay, 150) : delay);
     },
-    [onTrialComplete, reducedMotion, settings, spec.responseWindowMs]
+    [settings, spec.responseWindowMs]
   );
+
+  const recordPrompt = (level: PromptHierarchyLevel) => {
+    if (!pendingOutcome) return;
+    onTrialComplete({ ...pendingOutcome, promptLevel: level });
+    setPendingOutcome(null);
+  };
 
   useEffect(() => {
     completedRef.current = false;
@@ -93,6 +98,7 @@ export default function WaitThenTouchPlayArea({
     setPhase('ready');
     setAssistanceStage('none');
     setFeedback(null);
+    setPendingOutcome(null);
 
     const readyMs = reducedMotion
       ? Math.min(spec.readyDurationMs, 350)
@@ -294,6 +300,11 @@ export default function WaitThenTouchPlayArea({
             حاول مرة أخرى
           </p>
         )}
+        {pendingOutcome ? (
+          <div className="mt-4 flex justify-center px-2">
+            <FieldPromptRecordBar onRecord={recordPrompt} />
+          </div>
+        ) : null}
       </div>
     </div>
   );

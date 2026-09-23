@@ -1,7 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import FieldPromptRecordBar from '@/components/training/FieldPromptRecordBar';
 import FollowStarVisual from '@/components/training/follow-star/FollowStarVisual';
+import type { PromptHierarchyLevel } from '@/lib/promptHierarchy';
 import {
   getFollowStarPath,
   getFollowStarTargetPoint,
@@ -45,6 +47,8 @@ export default function FollowStarPlayArea({
   const [assistanceStage, setAssistanceStage] =
     useState<TrainingAssistanceStage>('none');
   const [feedback, setFeedback] = useState<'success' | 'miss' | null>(null);
+  const [pendingOutcome, setPendingOutcome] =
+    useState<FollowStarTrialOutcome | null>(null);
   const [reducedMotion, setReducedMotion] = useState(false);
 
   useEffect(() => {
@@ -75,15 +79,17 @@ export default function FollowStarPlayArea({
       });
 
       setFeedback(input.hit ? 'success' : 'miss');
+      setPendingOutcome(outcome);
       setPhase('feedback');
-
-      window.setTimeout(() => {
-        onTrialComplete(outcome);
-        completedRef.current = false;
-      }, settings.reinforcement ? 650 : 200);
     },
-    [onTrialComplete, reducedMotion, settings.prompting, settings.reinforcement]
+    [reducedMotion, settings.prompting]
   );
+
+  const recordPrompt = (level: PromptHierarchyLevel) => {
+    if (!pendingOutcome) return;
+    onTrialComplete({ ...pendingOutcome, promptLevel: level });
+    setPendingOutcome(null);
+  };
 
   useEffect(() => {
     const pathForTrial = getFollowStarPath(trialNumber, pathOrderSeed);
@@ -95,6 +101,7 @@ export default function FollowStarPlayArea({
     setStarPoint(start);
     setAssistanceStage('none');
     setFeedback(null);
+    setPendingOutcome(null);
     movementStartedAt.current = Date.now();
 
     if (reducedMotion) {
@@ -227,6 +234,11 @@ export default function FollowStarPlayArea({
           </div>
         )}
       </div>
+      {pendingOutcome ? (
+        <div className="px-4 pb-4 sm:px-8">
+          <FieldPromptRecordBar onRecord={recordPrompt} />
+        </div>
+      ) : null}
     </div>
   );
 }

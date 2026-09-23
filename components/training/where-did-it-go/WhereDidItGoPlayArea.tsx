@@ -1,7 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import FieldPromptRecordBar from '@/components/training/FieldPromptRecordBar';
 import MatchVisual, { matchVisualAriaLabel } from '@/components/training/match-me/MatchVisual';
+import type { PromptHierarchyLevel } from '@/lib/promptHierarchy';
 import type { TrainingAssistanceStage } from '@/lib/training/assistanceSemantics';
 import {
   buildWhereDidItGoTrialSpec,
@@ -43,6 +45,8 @@ export default function WhereDidItGoPlayArea({
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<'success' | 'miss' | null>(null);
   const [reducedMotion, setReducedMotion] = useState(false);
+  const [pendingOutcome, setPendingOutcome] =
+    useState<WhereDidItGoTrialOutcome | null>(null);
   const [targetVisible, setTargetVisible] = useState(true);
 
   useEffect(() => {
@@ -71,16 +75,17 @@ export default function WhereDidItGoPlayArea({
       });
 
       setFeedback(outcome.correct ? 'success' : 'miss');
+      setPendingOutcome(outcome);
       setPhase('feedback');
-
-      const delay = settings.reinforcement ? 700 : 220;
-      window.setTimeout(() => {
-        onTrialComplete(outcome);
-        completedRef.current = false;
-      }, reducedMotion ? Math.min(delay, 150) : delay);
     },
-    [onTrialComplete, reducedMotion, settings, trialNumber]
+    [settings, trialNumber]
   );
+
+  const recordPrompt = (level: PromptHierarchyLevel) => {
+    if (!pendingOutcome) return;
+    onTrialComplete({ ...pendingOutcome, promptLevel: level });
+    setPendingOutcome(null);
+  };
 
   useEffect(() => {
     completedRef.current = false;
@@ -89,6 +94,7 @@ export default function WhereDidItGoPlayArea({
     setAssistanceStage('none');
     setSelectedId(null);
     setFeedback(null);
+    setPendingOutcome(null);
     setTargetVisible(true);
 
     const freshSpec = buildWhereDidItGoTrialSpec(settings, trialNumber);
@@ -284,6 +290,11 @@ export default function WhereDidItGoPlayArea({
             حاول مرة أخرى
           </p>
         )}
+        {pendingOutcome ? (
+          <div className="mt-4 flex justify-center px-2">
+            <FieldPromptRecordBar onRecord={recordPrompt} />
+          </div>
+        ) : null}
       </div>
     </div>
   );

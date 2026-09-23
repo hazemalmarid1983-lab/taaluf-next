@@ -8,7 +8,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { LEGAL_DISCLAIMERS } from '@/lib/legalContent';
 import { SOURCE_LABEL_AR } from '@/lib/fusion';
-import type { ProposedGoal } from '@/lib/goalsEngine';
+import {
+  buildRoutineEnhancementGoals,
+  type ProposedGoal,
+} from '@/lib/goalsEngine';
+import Link from 'next/link';
+import { LayoutDashboard, PlayCircle } from 'lucide-react';
 import type { AiAnalysisPayload } from '@/lib/openai';
 import { buildSchoolPassData } from '@/lib/schoolPass';
 import {
@@ -69,6 +74,13 @@ export default function ResultsScreen({
     scores: result.scores,
     emergencyContact,
   });
+  const routineGoals =
+    goals.length === 0
+      ? buildRoutineEnhancementGoals({
+          ageBand: result.ageBand,
+          childAge,
+        })
+      : [];
 
   return (
     <section className="print-document space-y-6 print:bg-white print:p-0">
@@ -182,16 +194,41 @@ export default function ResultsScreen({
             <div className="mb-4 flex items-center gap-2">
               <Target className="h-5 w-5 text-[#2D8B5A]" />
               <h2 className="text-xl font-bold text-[#0b1f14]">
-                الأهداف المقترحة للعمل مع الطالب
+                {goals.length === 0
+                  ? 'أهداف تعزيز وتطور نمائي روتينية'
+                  : 'الأهداف المقترحة للعمل مع الطالب'}
               </h2>
             </div>
             <p className="mb-5 text-sm text-slate-500">
-              مستخرجة تلقائياً من المؤشرات ذات الدرجة 2 أو أعلى (أولوية الدعم).
+              {goals.length === 0
+                ? 'أهداف تعزيز وتطور نمائي روتينية تناسب عمر الطفل. ليست مؤشرات دعم حاد، ولا تعني إتقان معيار.'
+                : 'مستخرجة تلقائياً من المؤشرات ذات الدرجة 2 أو أعلى (أولوية الدعم).'}
             </p>
             {goals.length === 0 ? (
-              <p className="text-sm text-slate-500">
-                لا توجد أهداف عالية الأولوية حالياً — الملف ضمن متابعة روتينية.
-              </p>
+              <ul className="space-y-4">
+                {routineGoals.map((g, i) => (
+                  <li
+                    key={g.id}
+                    className="rounded-2xl border border-emerald-100 bg-[#F0F9F4] p-4"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <p className="font-bold text-slate-900">
+                        {i + 1}. {g.title}
+                      </p>
+                      <span className="rounded-lg bg-emerald-100 px-2 py-1 text-xs font-semibold text-emerald-800">
+                        تعزيز روتيني · {g.ageLabel}
+                      </span>
+                    </div>
+                    <p className="mt-1 text-xs text-slate-500">{g.domain}</p>
+                    <p className="mt-2 text-sm leading-7 text-slate-700">
+                      <span className="font-semibold text-[#2D8B5A]">
+                        ممارسة منزلية:{' '}
+                      </span>
+                      {g.strategy}
+                    </p>
+                  </li>
+                ))}
+              </ul>
             ) : (
               <ul className="space-y-4">
                 {goals.map((g, i) => (
@@ -386,6 +423,26 @@ export default function ResultsScreen({
       <div className="school-pass-host">
         <SchoolPassCard data={schoolPass} />
       </div>
+
+      <nav
+        aria-label="متابعة بعد التقرير"
+        className="sticky bottom-3 z-40 grid gap-3 rounded-3xl border border-emerald-100 bg-white/95 p-3 shadow-lg backdrop-blur print:hidden sm:grid-cols-2"
+      >
+        <Link
+          href="/parent/training"
+          className="inline-flex h-14 items-center justify-center gap-2 rounded-2xl bg-[#2D8B5A] px-4 text-base font-bold text-white transition hover:bg-[#247a4d]"
+        >
+          <PlayCircle className="h-5 w-5" />
+          الانتقال إلى الجلسات التدريبية
+        </Link>
+        <Link
+          href="/dashboard"
+          className="inline-flex h-14 items-center justify-center gap-2 rounded-2xl border border-slate-200 bg-white px-4 text-base font-bold text-[#0b1f14] transition hover:bg-slate-50"
+        >
+          <LayoutDashboard className="h-5 w-5" />
+          العودة للوحة التحكم
+        </Link>
+      </nav>
     </section>
   );
 }

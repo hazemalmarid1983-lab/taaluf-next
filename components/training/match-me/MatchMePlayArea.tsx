@@ -1,7 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import PromptRecordingBar from '@/components/classroom/PromptRecordingBar';
 import MatchVisual, { matchVisualAriaLabel } from '@/components/training/match-me/MatchVisual';
+import type { PromptHierarchyLevel } from '@/lib/promptHierarchy';
 import {
   buildMatchMeTrialSpec,
   getMatchMeDisplayedChoices,
@@ -43,13 +45,9 @@ export default function MatchMePlayArea({
   );
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<'success' | 'miss' | null>(null);
-  const [reducedMotion, setReducedMotion] = useState(false);
-
-  useEffect(() => {
-    setReducedMotion(
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    );
-  }, []);
+  const [pendingOutcome, setPendingOutcome] = useState<MatchMeTrialOutcome | null>(
+    null
+  );
 
   useEffect(() => {
     completedRef.current = false;
@@ -58,6 +56,7 @@ export default function MatchMePlayArea({
     setAssistanceStage('none');
     setSelectedId(null);
     setFeedback(null);
+    setPendingOutcome(null);
 
     const freshSpec = buildMatchMeTrialSpec(settings, trialNumber);
     setDisplayedChoices(freshSpec.choices);
@@ -81,16 +80,17 @@ export default function MatchMePlayArea({
 
       const wasCorrect = outcome.correct;
       setFeedback(wasCorrect ? 'success' : 'miss');
+      setPendingOutcome(outcome);
       setPhase('feedback');
-
-      const delay = settings.reinforcement ? 700 : 220;
-      window.setTimeout(() => {
-        onTrialComplete(outcome);
-        completedRef.current = false;
-      }, reducedMotion ? Math.min(delay, 150) : delay);
     },
-    [onTrialComplete, reducedMotion, settings, trialNumber]
+    [settings, trialNumber]
   );
+
+  const recordPrompt = (level: PromptHierarchyLevel) => {
+    if (!pendingOutcome) return;
+    onTrialComplete({ ...pendingOutcome, promptLevel: level });
+    setPendingOutcome(null);
+  };
 
   useEffect(() => {
     if (phase !== 'choosing') return;
@@ -239,6 +239,12 @@ export default function MatchMePlayArea({
             حاول مرة أخرى
           </p>
         )}
+
+        {pendingOutcome ? (
+          <div className="w-full max-w-2xl" aria-label="تسجيل مستوى المساعدة">
+            <PromptRecordingBar isAr visible onRecord={recordPrompt} />
+          </div>
+        ) : null}
       </div>
     </div>
   );

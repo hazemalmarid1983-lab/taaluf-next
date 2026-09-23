@@ -1,6 +1,7 @@
 'use client';
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import PromptRecordingBar from '@/components/classroom/PromptRecordingBar';
 import CommPictogramVisual, {
   commPictogramAriaLabel,
 } from '@/components/training/communication/CommPictogramVisual';
@@ -14,6 +15,7 @@ import {
   type CommRuntimeSettings,
   type CommTrialOutcome,
 } from '@/lib/training/communicationChoiceEngine';
+import type { PromptHierarchyLevel } from '@/lib/promptHierarchy';
 import type { TrainingAssistanceStage } from '@/lib/training/assistanceSemantics';
 
 type Props = {
@@ -61,13 +63,9 @@ export default function CommunicationChoicePlayArea({
     trialSpec.choices
   );
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [reducedMotion, setReducedMotion] = useState(false);
-
-  useEffect(() => {
-    setReducedMotion(
-      window.matchMedia('(prefers-reduced-motion: reduce)').matches
-    );
-  }, []);
+  const [pendingOutcome, setPendingOutcome] = useState<CommTrialOutcome | null>(
+    null
+  );
 
   useEffect(() => {
     completedRef.current = false;
@@ -77,6 +75,7 @@ export default function CommunicationChoicePlayArea({
     setFeedback(null);
     setAssistanceStage('none');
     setSelectedId(null);
+    setPendingOutcome(null);
     setDisplayedChoices(trialSpec.choices);
 
     if (settings.mode === 'name_orienting' && typeof window !== 'undefined') {
@@ -97,20 +96,16 @@ export default function CommunicationChoicePlayArea({
 
       setFeedback(kind);
       setPhase('feedback');
-
-      const delay =
-        kind === 'timeout'
-          ? 900
-          : settings.reinforcement && kind === 'success'
-            ? 700
-            : 400;
-
-      window.setTimeout(() => {
-        onTrialCompleteRef.current(outcome);
-      }, reducedMotion ? Math.min(delay, 150) : delay);
+      setPendingOutcome(outcome);
     },
-    [reducedMotion, settings.reinforcement]
+    []
   );
+
+  const recordPrompt = (level: PromptHierarchyLevel) => {
+    if (!pendingOutcome) return;
+    onTrialCompleteRef.current({ ...pendingOutcome, promptLevel: level });
+    setPendingOutcome(null);
+  };
 
   useEffect(() => {
     if (phase !== 'choosing') return;
@@ -263,9 +258,11 @@ export default function CommunicationChoicePlayArea({
             حاول مرة أخرى
           </p>
         )}
-        {phase === 'feedback' && feedback !== 'timeout' && selectedId && (
-          <p className="mt-4 text-center text-sm text-slate-600">جاري التالي…</p>
-        )}
+        {pendingOutcome ? (
+          <div className="mx-auto mt-6 w-full max-w-2xl" aria-label="تسجيل مستوى المساعدة">
+            <PromptRecordingBar isAr visible onRecord={recordPrompt} />
+          </div>
+        ) : null}
       </div>
     </div>
   );

@@ -1,7 +1,9 @@
 import {
   DEFAULT_GOAL_WHY,
+  ageBandForRoutineGoals,
   analysisFocusSentence,
   buildProposedGoals,
+  buildRoutineEnhancementGoals,
   goalWhyFromCriterion,
 } from '../lib/goalsEngine';
 import { shortRadarDomainLabel } from '../lib/radarLabels';
@@ -36,6 +38,19 @@ describe('goal why text', () => {
     for (const g of goals) {
       expect(g.why.trim().length).toBeGreaterThan(10);
     }
+  });
+});
+
+describe('routine enhancement goals', () => {
+  it('offers age-banded home practice when support goals are absent', () => {
+    expect(ageBandForRoutineGoals({ childAge: 4 })).toBe('3-4');
+    expect(ageBandForRoutineGoals({ ageBand: '10-12', childAge: 4 })).toBe(
+      '10-12'
+    );
+    const goals = buildRoutineEnhancementGoals({ childAge: 6 });
+    expect(goals.length).toBeGreaterThan(0);
+    expect(goals.every((g) => g.ageBand === '5-6')).toBe(true);
+    expect(goals[0].strategy.trim().length).toBeGreaterThan(10);
   });
 });
 

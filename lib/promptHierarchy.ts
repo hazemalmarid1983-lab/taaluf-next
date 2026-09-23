@@ -49,7 +49,7 @@ export const PROMPT_HIERARCHY_LEVELS: PromptHierarchyOption[] = [
   {
     level: 'independent',
     emoji: '🟢',
-    labelAr: 'مستقل',
+    labelAr: 'استقلالية',
     labelEn: 'Independent',
     hintAr: 'بدون أي مساعدة',
     hintEn: 'No prompt needed',
@@ -69,7 +69,7 @@ export const PROMPT_HIERARCHY_LEVELS: PromptHierarchyOption[] = [
   {
     level: 'verbal',
     emoji: '🟠',
-    labelAr: 'لفظي',
+    labelAr: 'مساعدة لفظية',
     labelEn: 'Verbal',
     hintAr: 'تكرار الأمر أو تلميح لفظي',
     hintEn: 'Repeat cue or verbal hint',
@@ -79,7 +79,7 @@ export const PROMPT_HIERARCHY_LEVELS: PromptHierarchyOption[] = [
   {
     level: 'partial_physical',
     emoji: '🔵',
-    labelAr: 'جسدي جزئي',
+    labelAr: 'مساعدة جسدية',
     labelEn: 'Partial physical',
     hintAr: 'لمس خفيف أو توجيه جزئي لليد',
     hintEn: 'Light touch or partial hand guide',

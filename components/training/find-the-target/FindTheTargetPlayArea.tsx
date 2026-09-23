@@ -1,7 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import FieldPromptRecordBar from '@/components/training/FieldPromptRecordBar';
 import MatchVisual, { matchVisualAriaLabel } from '@/components/training/match-me/MatchVisual';
+import type { PromptHierarchyLevel } from '@/lib/promptHierarchy';
 import type { TrainingAssistanceStage } from '@/lib/training/assistanceSemantics';
 import {
   buildFindTheTargetTrialSpec,
@@ -56,6 +58,8 @@ export default function FindTheTargetPlayArea({
   );
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [feedback, setFeedback] = useState<'success' | 'miss' | null>(null);
+  const [pendingOutcome, setPendingOutcome] =
+    useState<FindTheTargetTrialOutcome | null>(null);
   const [reducedMotion, setReducedMotion] = useState(false);
 
   useEffect(() => {
@@ -88,16 +92,17 @@ export default function FindTheTargetPlayArea({
       });
 
       setFeedback(outcome.correct ? 'success' : 'miss');
+      setPendingOutcome(outcome);
       setPhase('feedback');
-
-      const delay = settings.reinforcement ? 700 : 220;
-      window.setTimeout(() => {
-        onTrialComplete(outcome);
-        completedRef.current = false;
-      }, reducedMotion ? Math.min(delay, 150) : delay);
     },
-    [fieldSeed, onTrialComplete, reducedMotion, settings, trialNumber]
+    [fieldSeed, settings, trialNumber]
   );
+
+  const recordPrompt = (level: PromptHierarchyLevel) => {
+    if (!pendingOutcome) return;
+    onTrialComplete({ ...pendingOutcome, promptLevel: level });
+    setPendingOutcome(null);
+  };
 
   useEffect(() => {
     completedRef.current = false;
@@ -106,6 +111,7 @@ export default function FindTheTargetPlayArea({
     setAssistanceStage('none');
     setSelectedId(null);
     setFeedback(null);
+    setPendingOutcome(null);
 
     const freshSpec = buildFindTheTargetTrialSpec(
       settings,
@@ -289,6 +295,11 @@ export default function FindTheTargetPlayArea({
             حاول مرة أخرى
           </p>
         )}
+        {pendingOutcome ? (
+          <div className="mt-4 flex justify-center px-2">
+            <FieldPromptRecordBar onRecord={recordPrompt} />
+          </div>
+        ) : null}
       </div>
     </div>
   );

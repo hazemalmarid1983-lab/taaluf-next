@@ -75,6 +75,144 @@ export function buildSmartGoalText(
   return `خلال ${weeks} أسبوعين، نعمل على تحسين «${criterionName}» عبر تطبيق: ${recommendation} مع توثيق يومي قصير للنجاح والتعديل.`;
 }
 
+export type RoutineEnhancementGoal = {
+  id: string;
+  title: string;
+  domain: string;
+  strategy: string;
+  ageBand: string;
+  ageLabel: string;
+};
+
+const ROUTINE_ENHANCEMENT_GOALS: Record<string, Omit<RoutineEnhancementGoal, 'ageBand' | 'ageLabel'>[]> = {
+  '3-4': [
+    {
+      id: 'routine-3-4-joint',
+      title: 'تبادل الانتباه في لعب قصير',
+      domain: 'التفاعل واللعب',
+      strategy:
+        'خلال 3–5 دقائق، سمِّ ما ينظر إليه الطفل وانتظر مشاركته قبل تقديم اللعبة.',
+    },
+    {
+      id: 'routine-3-4-request',
+      title: 'طلب شيء مفضل بإشارة أو كلمة',
+      domain: 'التواصل',
+      strategy:
+        'ضع الشيء المفضل في مجال الرؤية، وانتظر الإشارة أو الكلمة، ثم قدّمه مباشرة.',
+    },
+    {
+      id: 'routine-3-4-match',
+      title: 'مطابقة شيء مألوف مع نموذجه',
+      domain: 'الانتباه والمطابقة',
+      strategy:
+        'اعرض نموذجاً واحداً وخيارين، واحتفل بالمطابقة الصحيحة ثم أعد المحاولة بهدوء.',
+    },
+  ],
+  '5-6': [
+    {
+      id: 'routine-5-6-instruction',
+      title: 'اتباع تعليمة من خطوتين في روتين يومي',
+      domain: 'الفهم والتنفيذ',
+      strategy:
+        'اطلب خطوتين متتاليتين واضحتين، مثل «ضع الكوب ثم أغلق الباب»، وامنح مهلة قبل التكرار.',
+    },
+    {
+      id: 'routine-5-6-feelings',
+      title: 'تسمية شعور بسيط أثناء قصة أو لعب',
+      domain: 'التواصل الاجتماعي',
+      strategy:
+        'قف عند مشهد واضح واسأل «ماذا يشعر؟» واقبل كلمة واحدة ثم أعد صياغتها في جملة قصيرة.',
+    },
+    {
+      id: 'routine-5-6-turn',
+      title: 'تبادل الدور في لعبة قصيرة',
+      domain: 'اللعب',
+      strategy:
+        'حدّد دوراً لك ودوره للطفل، وانتظر اكتمال دوره قبل أن تبدأ دورك التالي.',
+    },
+  ],
+  '7-9': [
+    {
+      id: 'routine-7-9-recount',
+      title: 'سرد حدث يومي في جملتين أو ثلاث',
+      domain: 'التعبير',
+      strategy:
+        'اسأل ماذا حدث ثم ماذا بعد ذلك، وساعده ببداية الجملة إن توقف دون إكمال القصة عنه.',
+    },
+    {
+      id: 'routine-7-9-problem',
+      title: 'حل مشكلة منزلية بسيطة بعد مهلة تفكير',
+      domain: 'المرونة والتفكير',
+      strategy:
+        'اطرح سؤالاً مثل «أين نضع هذا؟» وانتظر قبل أي تلميح، ثم اقبل حلاً عملياً واحداً.',
+    },
+    {
+      id: 'routine-7-9-tidy',
+      title: 'إنهاء نشاط ثم إعادة أدواته إلى مكانها',
+      domain: 'الاستقلال في الروتين',
+      strategy:
+        'اتفق على نهاية واضحة للنشاط، ثم اطلب إعادة الأدوات قبل الانتقال إلى شيء آخر.',
+    },
+  ],
+  '10-12': [
+    {
+      id: 'routine-10-12-plan',
+      title: 'تخطيط الخطوة التالية في نشاط أو واجب',
+      domain: 'التنظيم',
+      strategy:
+        'قبل البدء، اطلب منه تسمية الخطوة الأولى فقط، ثم راجعها بعد الإنجاز.',
+    },
+    {
+      id: 'routine-10-12-help',
+      title: 'طلب المساعدة بجملة واضحة عند التعثر',
+      domain: 'التواصل الوظيفي',
+      strategy:
+        'عند التوقف، انتظر جملة طلب مثل «أحتاج مساعدة في…» قبل تقديم الحل.',
+    },
+    {
+      id: 'routine-10-12-flex',
+      title: 'التكيف مع تغيير بسيط في الروتين بعد تهيئة',
+      domain: 'المرونة',
+      strategy:
+        'أخبر بالتغيير قبل وقوعه بجملة واحدة، ثم نفّذه وراجع مع الطفل ما الذي بقي كما هو.',
+    },
+  ],
+};
+
+const AGE_BAND_AR: Record<string, string> = {
+  '3-4': '٣–٤ سنوات',
+  '5-6': '٥–٦ سنوات',
+  '7-9': '٧–٩ سنوات',
+  '10-12': '١٠–١٢ سنة',
+};
+
+export function ageBandForRoutineGoals(input: {
+  ageBand?: string;
+  childAge?: number;
+}): string {
+  if (input.ageBand && ROUTINE_ENHANCEMENT_GOALS[input.ageBand]) {
+    return input.ageBand;
+  }
+  const age = input.childAge;
+  if (age == null || Number.isNaN(age)) return '5-6';
+  if (age < 5) return '3-4';
+  if (age < 7) return '5-6';
+  if (age < 10) return '7-9';
+  return '10-12';
+}
+
+/** أهداف تعزيز منزلي عندما لا توجد بنود دعم بدرجة ٢ أو أعلى. ليست تشخيصاً ولا إتقاناً. */
+export function buildRoutineEnhancementGoals(input: {
+  ageBand?: string;
+  childAge?: number;
+}): RoutineEnhancementGoal[] {
+  const ageBand = ageBandForRoutineGoals(input);
+  const ageLabel = AGE_BAND_AR[ageBand] || ageBand;
+  return (ROUTINE_ENHANCEMENT_GOALS[ageBand] || ROUTINE_ENHANCEMENT_GOALS['5-6']).map(
+    (goal) => ({ ...goal, ageBand, ageLabel })
+  );
+}
+
 export function buildProposedGoals(
   scores: AssessmentScore[],
   limit = 8
