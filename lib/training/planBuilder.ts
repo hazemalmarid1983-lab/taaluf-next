@@ -9,7 +9,10 @@ import {
   createTrainingPlan,
   type CreateTrainingPlanAssignmentInput,
 } from '@/lib/training/createPlan';
-import { loadAttentionFocusChapter } from '@/lib/training/loadChapter';
+import {
+  findChapterIdForMedia,
+  loadChapterById,
+} from '@/lib/training/loadChapter';
 import {
   getActiveTrainingPlan,
   MULTIPLE_ACTIVE_TRAINING_PLANS,
@@ -17,7 +20,6 @@ import {
 } from '@/lib/training/storage/planStore';
 import {
   getTrainingCandidatesForTrackedGoal,
-  TRAINING_CANDIDATE_CHAPTER_ID,
   type TrainingCandidatesResult,
 } from '@/lib/training/trainingCandidates';
 import type { TrainingDifficulty, TrainingPlan } from '@/lib/training/types';
@@ -103,6 +105,27 @@ export function checkPlanBuilderActivePlan(
   }
 }
 
+/** فصل الخطة = فصل الأنشطة المختارة. لا يُخلط فصلان في برنامج واحد. */
+export function resolveChapterIdForPlanMedia(orderedMediaIds: string[]): string {
+  if (orderedMediaIds.length === 0) {
+    throw new PlanBuilderError('يجب اختيار نشاط واحد على الأقل');
+  }
+  const chapterIds = orderedMediaIds.map((mediaId) => {
+    const chapterId = findChapterIdForMedia(mediaId);
+    if (!chapterId) {
+      throw new PlanBuilderError(`نشاط تدريب غير معروف: ${mediaId}`);
+    }
+    return chapterId;
+  });
+  const unique = new Set(chapterIds);
+  if (unique.size > 1) {
+    throw new PlanBuilderError(
+      'الخطة الحالية تدعم فصلاً تدريبياً واحداً في كل برنامج'
+    );
+  }
+  return chapterIds[0];
+}
+
 export function resolvePlanBuilderGoalViews(
   childId: string,
   selectedGoalIds: string[]
@@ -133,7 +156,7 @@ export function listCandidateEntriesForGoal(
 ): PlanBuilderCandidateEntry[] {
   if (!view.hasCandidates) return [];
 
-  const chapter = loadAttentionFocusChapter();
+  const chapter = loadChapterById(view.candidates.chapterId);
 
   return view.candidates.media.map((media) => {
     const skill =
@@ -162,11 +185,12 @@ export function listCandidateEntriesForGoal(
 export function buildMediaOptionsFromGoalViews(
   views: PlanBuilderGoalView[]
 ): PlanBuilderMediaOption[] {
-  const chapter = loadAttentionFocusChapter();
   const byMedia = new Map<string, PlanBuilderMediaOption>();
 
   for (const view of views) {
     if (!view.hasCandidates) continue;
+
+    const chapter = loadChapterById(view.candidates.chapterId);
 
     for (const media of view.candidates.media) {
       const skill =
@@ -264,7 +288,7 @@ export function saveTrainingPlanFromBuilder(input: {
 
   const plan = createTrainingPlan({
     childId: input.childId,
-    chapterId: TRAINING_CANDIDATE_CHAPTER_ID,
+    chapterId: resolveChapterIdForPlanMedia(input.orderedMediaIds),
     goalIds: [...new Set(input.selectedGoalIds)],
     assignments,
     status: 'active',
@@ -288,7 +312,7 @@ export function describeSavedPlan(plan: TrainingPlan): {
     };
   }
 
-  const chapter = loadAttentionFocusChapter();
+  const chapter = loadChapterById(plan.chapterId);
   const media = chapter.media.find((item) => item.mediaId === first.mediaId);
 
   return {
