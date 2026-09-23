@@ -32,6 +32,19 @@ export const PARENT_ROUTES = {
   community: '/parent/community',
 } as const;
 
+/** مسارات مسار صعوبات التعلم (وزارة التربية) */
+export const LD_ROUTES = {
+  hub: '/dashboard/ld',
+  screening: '/dashboard/ld/screening',
+  assessment: '/dashboard/ld/assessment',
+  iep: '/dashboard/ld/iep',
+  resourceRoom: '/dashboard/ld/resource-room',
+  reports: '/dashboard/ld/reports',
+  admin: '/dashboard/ld/admin',
+  studentsNew: '/dashboard/ld/students/new',
+  academicCard: '/dashboard/academic-card',
+} as const;
+
 /** نقطة دخول الفرز — مسار مزدوج أو فرز نمائي فقط */
 export function parentScreeningEntryHref(): string {
   return isLearningDifficultiesEnabled()

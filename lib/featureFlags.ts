@@ -19,6 +19,7 @@ export function isLearningDifficultiesEnabled(): boolean {
 
 /** مسارات صعوبات التعلم — تُعطّل عند LEARNING_DIFFICULTIES_ENABLED=false */
 export const LEARNING_DIFFICULTIES_ROUTE_PREFIXES = [
+  '/dashboard/ld',
   '/dashboard/pathways',
   '/dashboard/screening-learning',
   '/dashboard/academic-assessment',
