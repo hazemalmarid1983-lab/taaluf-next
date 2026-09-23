@@ -52,7 +52,7 @@ export default function CommunicationChoicePlayArea({
   trialSpecRef.current = trialSpec;
 
   const defaultChoiceSize =
-    trialSpec.layout === 'scene' ? 110 : 88;
+    trialSpec.layout === 'scene' ? 148 : 132;
   const choiceVisualSize = choiceSizePx ?? defaultChoiceSize;
 
   const [phase, setPhase] = useState<TrialPhase>('choosing');
@@ -165,7 +165,7 @@ export default function CommunicationChoicePlayArea({
 
   return (
     <div
-      className="flex min-h-[100dvh] flex-col bg-gradient-to-b from-[#F7FAFC] to-[#E2EEF3] px-4 py-6"
+      className="flex h-[100dvh] flex-col overflow-hidden bg-gradient-to-b from-[#F7FAFC] to-[#E2EEF3] py-4 pl-4 pr-4 lg:pl-[18.5rem]"
       dir="rtl"
     >
       <div className="mx-auto flex w-full max-w-lg flex-1 flex-col">
@@ -173,18 +173,18 @@ export default function CommunicationChoicePlayArea({
           {trialNumber} / {totalTrials}
         </p>
         <div
-          className={`mt-6 flex flex-col items-center gap-4 rounded-3xl border border-slate-200/80 bg-white/90 p-8 shadow-sm ${
+          className={`mt-3 flex flex-col items-center gap-3 rounded-3xl border border-slate-200/80 bg-white/90 p-4 shadow-sm ${
             pulsePrompt && phase === 'choosing' ? 'animate-pulse' : ''
           } ${phase === 'feedback' && feedback === 'timeout' ? 'opacity-80' : ''}`}
         >
-          <CommPictogramVisual item={trialSpec.target} sizePx={140} highlighted />
+          <CommPictogramVisual item={trialSpec.target} sizePx={280} highlighted />
           <p className="text-xl font-bold text-slate-800">
             {trialSpec.promptLabelAr}
           </p>
         </div>
 
         <div
-          className={`mt-8 grid gap-4 ${
+          className={`mt-4 grid min-h-0 gap-3 ${
             displayedChoices.length <= 2
               ? 'grid-cols-1 gap-6 sm:grid-cols-2'
               : trialSpec.layout === 'scene'

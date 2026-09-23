@@ -13,6 +13,8 @@ export const TRAINING_PROMPT_LEVELS: TrainingPromptLevel[] = [
   'no_response',
   'gestural',
   'verbal',
+  'verbal_partial',
+  'model',
   'partial_physical',
   'full_physical',
 ];
@@ -45,6 +47,8 @@ export function emptyTrainingPromptBreakdown(): TrainingPromptBreakdown {
     no_response: 0,
     gestural: 0,
     verbal: 0,
+    verbal_partial: 0,
+    model: 0,
     partial_physical: 0,
     full_physical: 0,
   };

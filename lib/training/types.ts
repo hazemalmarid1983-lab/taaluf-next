@@ -26,6 +26,8 @@ export type TrainingPromptLevel =
   | 'no_response'
   | 'gestural'
   | 'verbal'
+  | 'verbal_partial'
+  | 'model'
   | 'partial_physical'
   | 'full_physical';
 

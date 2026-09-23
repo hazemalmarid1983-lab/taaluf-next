@@ -3,13 +3,12 @@
 import { useEffect, useState } from 'react';
 import {
   PROMPT_HIERARCHY_LEVELS,
-  PROMPT_QUICK_LEVELS,
   type PromptHierarchyLevel,
 } from '@/lib/promptHierarchy';
 
 /**
- * شريط رصد المساعدة بعد تفاعل الطفل.
- * لا يفترض استقلالية ولا يسجّل أي درجة دون نقرة الملاحظ.
+ * رصيف جانبي لتسجيل المساعدة.
+ * لا يحجب مركز النشاط، ولا يفترض استقلالية قبل نقرة الملاحظ.
  */
 export default function PromptRecordingBar({
   isAr,
@@ -18,7 +17,7 @@ export default function PromptRecordingBar({
 }: {
   isAr: boolean;
   visible: boolean;
-  /** مقبول للتوافق فقط — لا يُستخدم ولا يُسجَّل تلقائياً. */
+  /** مقبول للتوافق فقط — لا يُسجَّل تلقائياً. */
   suggestedLevel?: PromptHierarchyLevel | null;
   onRecord: (level: PromptHierarchyLevel) => void;
 }) {
@@ -35,54 +34,58 @@ export default function PromptRecordingBar({
     onRecord(level);
   };
 
-  const extraLevels = PROMPT_HIERARCHY_LEVELS.filter((item) => !item.quick);
-
   return (
-    <div className="space-y-3 rounded-3xl border border-[#2E7D8E]/20 bg-gradient-to-b from-white/95 to-slate-50/90 p-4 shadow-md backdrop-blur-xl">
-      <span className="text-xs font-black text-[#0b1f14]">
-        {isAr ? 'درجة المساعدة في هذه المحاولة' : 'Prompt level for this trial'}
-      </span>
-
-      <div className="grid grid-cols-4 gap-2 sm:grid-cols-4">
-        {PROMPT_QUICK_LEVELS.map((option) => {
+    <aside
+      className="fixed bottom-3 left-3 z-[10050] flex max-h-[min(78dvh,34rem)] w-[min(17.5rem,calc(100vw-1.5rem))] flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white/95 shadow-[0_16px_40px_rgba(15,23,42,0.16)] backdrop-blur-md"
+      aria-label={isAr ? 'اختيار مستوى الدعم' : 'Choose support level'}
+    >
+      <div className="border-b border-slate-100 px-3 py-2.5">
+        <p className="text-xs font-black text-[#0b1f14]">
+          {isAr ? 'مستوى الدعم في هذه المحاولة' : 'Support level for this trial'}
+        </p>
+        <p className="mt-1 text-[10px] leading-4 text-slate-500">
+          {isAr
+            ? 'المحاولة التالية متوقفة. الاستقلالية تُحتسب فقط عند «استقلال تام».'
+            : 'The next trial stays paused. Independence counts only for full independence.'}
+        </p>
+      </div>
+      <div className="flex flex-col gap-1.5 overflow-y-auto p-2">
+        {PROMPT_HIERARCHY_LEVELS.map((option) => {
           const active = selected === option.level;
           return (
             <button
               key={option.level}
               type="button"
               onClick={() => pick(option.level)}
-              className={`relative flex flex-col items-center rounded-2xl border-2 px-2 py-3 text-center transition active:scale-95 ${
-                option.tone
-              } ${active ? 'ring-2 ring-offset-1' : 'hover:brightness-[1.02]'}`}
+              className={`flex items-center gap-2 rounded-2xl border px-2.5 py-2 text-start transition active:scale-[0.99] ${option.tone} ${
+                active ? 'ring-2 ring-offset-1' : ''
+              }`}
             >
-              <span className="text-2xl leading-none">{option.emoji}</span>
-              <strong className="mt-1.5 text-[10px] font-black leading-4 sm:text-xs">
+              <span
+                className={`h-2.5 w-2.5 shrink-0 rounded-full ${
+                  option.level === 'independent'
+                    ? 'bg-emerald-600'
+                    : option.level === 'verbal_partial' || option.level === 'verbal'
+                      ? 'bg-orange-500'
+                      : option.level === 'gestural'
+                        ? 'bg-blue-600'
+                        : option.level === 'model'
+                          ? 'bg-teal-600'
+                          : option.level === 'partial_physical'
+                            ? 'bg-amber-500'
+                            : option.level === 'full_physical'
+                              ? 'bg-red-600'
+                              : 'bg-red-900'
+                }`}
+                aria-hidden
+              />
+              <span className="text-[11px] font-black leading-4">
                 {isAr ? option.labelAr : option.labelEn}
-              </strong>
+              </span>
             </button>
           );
         })}
       </div>
-
-      <div className="flex flex-wrap items-center justify-center gap-2">
-        {extraLevels.map((option) => (
-          <button
-            key={option.level}
-            type="button"
-            onClick={() => pick(option.level)}
-            className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-[10px] font-bold transition active:scale-95 ${option.tone}`}
-          >
-            <span>{option.emoji}</span>
-            <span>{isAr ? option.labelAr : option.labelEn}</span>
-          </button>
-        ))}
-      </div>
-
-      <p className="text-center text-[10px] leading-5 text-slate-400">
-        {isAr
-          ? 'لا تُسجَّل الاستقلالية تلقائياً. اختاري الدرجة قبل المحاولة التالية.'
-          : 'Independence is never assumed. Choose a level before the next trial.'}
-      </p>
-    </div>
+    </aside>
   );
 }

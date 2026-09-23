@@ -74,9 +74,9 @@ type ChildFeedbackKind = 'success' | 'miss';
 
 
 
-const PROMPT_VISUAL_PX = 160;
+const PROMPT_VISUAL_PX = 240;
 
-const CHOICE_VISUAL_PX = 128;
+const CHOICE_VISUAL_PX = 156;
 
 
 

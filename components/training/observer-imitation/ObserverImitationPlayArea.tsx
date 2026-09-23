@@ -13,8 +13,10 @@ type TrialPhase = 'model' | 'perform' | 'observe' | 'reinforcement';
 
 const OBSERVER_PROMPT_LEVELS: PromptHierarchyLevel[] = [
   'independent',
-  'gestural',
+  'verbal_partial',
   'verbal',
+  'gestural',
+  'model',
   'partial_physical',
   'full_physical',
   'no_response',
@@ -176,7 +178,7 @@ export default function ObserverImitationPlayArea({
       </div>
 
       {phase === 'observe' ? (
-        <div className="fixed inset-x-0 bottom-0 z-20 max-h-[70dvh] overflow-y-auto rounded-t-3xl border-t border-white/20 bg-white px-4 py-5 text-[#0b1f14] shadow-2xl">
+        <div className="fixed bottom-3 left-3 z-20 max-h-[min(78dvh,34rem)] w-[min(18rem,calc(100vw-1.5rem))] overflow-y-auto rounded-3xl border border-white/30 bg-white px-3 py-4 text-[#0b1f14] shadow-2xl">
           <h2 className="text-lg font-bold">تسجيل نتيجة المحاولة</h2>
           <p className="mt-1 text-xs text-slate-600">
             اختر مستوى المساعدة الفعلية ثم نجاح/عدم النجاح. لا يُسجّل تلقائياً.

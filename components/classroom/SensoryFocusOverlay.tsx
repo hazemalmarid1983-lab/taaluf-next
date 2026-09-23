@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import RealisticItemVisual from '@/components/classroom/RealisticItemVisual';
 import type { HomeClassroomGoal, InteractiveToolItem } from '@/lib/homeClassroomEngine';
 import { HOME_SESSION_TARGET_TRIALS } from '@/lib/homeClassroomEngine';
 import type { SortingBin } from '@/lib/homeClassroomEngine';
@@ -79,10 +80,10 @@ export default function SensoryFocusOverlay({
               type="button"
               onClick={onSpeakTarget}
               disabled={!soundOn}
-              className="flex h-36 w-36 items-center justify-center rounded-[2rem] border-2 border-white/80 bg-white/70 text-7xl shadow-[0_8px_32px_rgba(14,116,144,0.12),inset_0_2px_12px_rgba(255,255,255,0.9)] backdrop-blur-md transition active:scale-95 disabled:cursor-default"
+              className="flex h-[min(300px,40vh)] w-[min(340px,72vw)] items-center justify-center rounded-[2rem] border-2 border-white/80 bg-white/80 shadow-[0_18px_40px_rgba(14,116,144,0.16)] backdrop-blur-md transition active:scale-95 disabled:cursor-default"
               aria-label={targetName}
             >
-              {target.imageUrl}
+              <RealisticItemVisual symbol={target.imageUrl} size={200} label={targetName} />
             </button>
           )}
 
@@ -115,10 +116,14 @@ export default function SensoryFocusOverlay({
                   type="button"
                   onClick={() => onChoiceTap(item)}
                   disabled={inputLocked}
-                  className={`flex h-24 w-24 items-center justify-center rounded-3xl border-2 text-5xl transition active:scale-95 disabled:pointer-events-none sm:h-28 sm:w-28 ${tapTone(item.id)}`}
+                  className={`flex h-32 w-32 items-center justify-center rounded-3xl border-2 transition active:scale-95 disabled:pointer-events-none sm:h-36 sm:w-36 ${tapTone(item.id)}`}
                   aria-label={isAr ? item.nameAr : item.nameEn}
                 >
-                  {item.imageUrl}
+                  <RealisticItemVisual
+                    symbol={item.imageUrl}
+                    size={96}
+                    label={isAr ? item.nameAr : item.nameEn}
+                  />
                 </button>
               ))}
             </div>

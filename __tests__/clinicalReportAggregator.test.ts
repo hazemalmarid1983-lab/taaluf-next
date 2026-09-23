@@ -65,8 +65,10 @@ describe('clinical report aggregator', () => {
         moodAfter: 'green',
         promptBreakdown: {
           independent: 4,
+          verbal_partial: 0,
           gestural: 1,
           verbal: 0,
+          model: 0,
           partial_physical: 0,
           full_physical: 0,
           no_response: 0,

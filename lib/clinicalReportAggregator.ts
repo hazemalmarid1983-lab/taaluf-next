@@ -122,8 +122,10 @@ export type ClinicalProgressReport = {
 
 const EMPTY_BREAKDOWN: PromptBreakdown = {
   independent: 0,
+  verbal_partial: 0,
   gestural: 0,
   verbal: 0,
+  model: 0,
   partial_physical: 0,
   full_physical: 0,
   no_response: 0,
@@ -133,8 +135,10 @@ function mergeBreakdowns(breakdowns: PromptBreakdown[]): PromptBreakdown {
   return breakdowns.reduce(
     (acc, row) => ({
       independent: acc.independent + row.independent,
+      verbal_partial: acc.verbal_partial + row.verbal_partial,
       gestural: acc.gestural + row.gestural,
       verbal: acc.verbal + row.verbal,
+      model: acc.model + row.model,
       partial_physical: acc.partial_physical + row.partial_physical,
       full_physical: acc.full_physical + row.full_physical,
       no_response: acc.no_response + row.no_response,

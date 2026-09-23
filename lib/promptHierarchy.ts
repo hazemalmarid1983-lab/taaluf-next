@@ -8,8 +8,10 @@ import type { TrialResult } from './homeClassroomEngine';
 /** المستويات الخمسة + عدم الاستجابة */
 export type PromptHierarchyLevel =
   | 'independent'
-  | 'gestural'
+  | 'verbal_partial'
   | 'verbal'
+  | 'gestural'
+  | 'model'
   | 'partial_physical'
   | 'full_physical'
   | 'no_response';
@@ -38,8 +40,10 @@ export type PromptHierarchyOption = {
 /** ترتيب الشدة: الأقل = أعلى استقلالية */
 export const PROMPT_HIERARCHY_ORDER: PromptHierarchyLevel[] = [
   'independent',
-  'gestural',
+  'verbal_partial',
   'verbal',
+  'gestural',
+  'model',
   'partial_physical',
   'full_physical',
   'no_response',
@@ -48,63 +52,83 @@ export const PROMPT_HIERARCHY_ORDER: PromptHierarchyLevel[] = [
 export const PROMPT_HIERARCHY_LEVELS: PromptHierarchyOption[] = [
   {
     level: 'independent',
-    emoji: '🟢',
-    labelAr: 'استقلالية',
-    labelEn: 'Independent',
-    hintAr: 'بدون أي مساعدة',
-    hintEn: 'No prompt needed',
-    tone: 'border-emerald-500/70 bg-emerald-50 text-emerald-900 ring-emerald-300',
+    emoji: '●',
+    labelAr: 'استقلال تام',
+    labelEn: 'Full independence',
+    hintAr: 'أنجز دون أي مساعدة',
+    hintEn: 'Completed with no prompt',
+    tone: 'border-emerald-600 bg-emerald-50 text-emerald-900 ring-emerald-300',
     quick: true,
   },
   {
-    level: 'gestural',
-    emoji: '🟡',
-    labelAr: 'إيمائي',
-    labelEn: 'Gestural',
-    hintAr: 'إشارة أو نظرة توجيهية',
-    hintEn: 'Point or visual cue',
-    tone: 'border-amber-400/70 bg-amber-50 text-amber-900 ring-amber-300',
+    level: 'verbal_partial',
+    emoji: '●',
+    labelAr: 'مساعدة لفظية جزئية (كلمة واحدة)',
+    labelEn: 'Partial verbal (one word)',
+    hintAr: 'كلمة واحدة فقط',
+    hintEn: 'A single word cue',
+    tone: 'border-orange-500 bg-orange-50 text-orange-950 ring-orange-300',
     quick: true,
   },
   {
     level: 'verbal',
-    emoji: '🟠',
-    labelAr: 'مساعدة لفظية',
-    labelEn: 'Verbal',
-    hintAr: 'تكرار الأمر أو تلميح لفظي',
-    hintEn: 'Repeat cue or verbal hint',
-    tone: 'border-orange-400/70 bg-orange-50 text-orange-900 ring-orange-300',
+    emoji: '●',
+    labelAr: 'مساعدة لفظية كلية (الجملة كاملة)',
+    labelEn: 'Full verbal (whole sentence)',
+    hintAr: 'نطق الجملة كاملة',
+    hintEn: 'The full spoken sentence',
+    tone: 'border-orange-600 bg-orange-100 text-orange-950 ring-orange-400',
+    quick: true,
+  },
+  {
+    level: 'gestural',
+    emoji: '●',
+    labelAr: 'مساعدة بالإيماءة',
+    labelEn: 'Gestural prompt',
+    hintAr: 'إشارة أو نظرة دون كلام',
+    hintEn: 'A point or look without words',
+    tone: 'border-blue-600 bg-blue-50 text-blue-950 ring-blue-300',
+    quick: true,
+  },
+  {
+    level: 'model',
+    emoji: '●',
+    labelAr: 'مساعدة نمذجة',
+    labelEn: 'Model prompt',
+    hintAr: 'تنفيذ النموذج أمام الطفل',
+    hintEn: 'Demonstrate the action first',
+    tone: 'border-teal-600 bg-teal-50 text-teal-950 ring-teal-300',
     quick: true,
   },
   {
     level: 'partial_physical',
-    emoji: '🔵',
-    labelAr: 'مساعدة جسدية',
-    labelEn: 'Partial physical',
-    hintAr: 'لمس خفيف أو توجيه جزئي لليد',
-    hintEn: 'Light touch or partial hand guide',
-    tone: 'border-sky-500/70 bg-sky-50 text-sky-900 ring-sky-300',
+    emoji: '●',
+    labelAr: 'مساعدة جسدية جزئية (توجيه كوع)',
+    labelEn: 'Partial physical (elbow guide)',
+    hintAr: 'توجيه الكوع أو الساعد',
+    hintEn: 'Guide the elbow or forearm',
+    tone: 'border-amber-600 bg-amber-50 text-amber-950 ring-amber-300',
     quick: true,
   },
   {
     level: 'full_physical',
-    emoji: '✋',
-    labelAr: 'جسدي كامل',
-    labelEn: 'Full physical',
+    emoji: '●',
+    labelAr: 'مساعدة جسدية كاملة (يد فوق يد)',
+    labelEn: 'Full physical (hand over hand)',
     hintAr: 'يد فوق يد حتى الإنجاز',
     hintEn: 'Hand-over-hand until done',
-    tone: 'border-indigo-500/70 bg-indigo-50 text-indigo-900 ring-indigo-300',
-    quick: false,
+    tone: 'border-red-600 bg-red-50 text-red-950 ring-red-300',
+    quick: true,
   },
   {
     level: 'no_response',
-    emoji: '⭕',
-    labelAr: 'لم يستجب',
+    emoji: '●',
+    labelAr: 'عدم استجابة',
     labelEn: 'No response',
-    hintAr: 'تشتت أو رفض',
-    hintEn: 'Distracted or refused',
-    tone: 'border-rose-400/70 bg-rose-50 text-rose-900 ring-rose-300',
-    quick: false,
+    hintAr: 'لم يبدأ الاستجابة',
+    hintEn: 'Did not begin a response',
+    tone: 'border-red-900 bg-red-100 text-red-950 ring-red-800',
+    quick: true,
   },
 ];
 
@@ -125,8 +149,10 @@ export function normalizePromptLevel(
 ): PromptHierarchyLevel {
   switch (level) {
     case 'independent':
+    case 'verbal_partial':
     case 'gestural':
     case 'verbal':
+    case 'model':
     case 'partial_physical':
     case 'full_physical':
     case 'no_response':
@@ -146,8 +172,10 @@ export function isIndependentLevel(level: PromptHierarchyLevel) {
 
 export function isPromptedLevel(level: PromptHierarchyLevel) {
   return (
-    level === 'gestural' ||
+    level === 'verbal_partial' ||
     level === 'verbal' ||
+    level === 'gestural' ||
+    level === 'model' ||
     level === 'partial_physical' ||
     level === 'full_physical'
   );
@@ -156,8 +184,10 @@ export function isPromptedLevel(level: PromptHierarchyLevel) {
 export function emptyPromptBreakdown(): PromptBreakdown {
   return {
     independent: 0,
+    verbal_partial: 0,
     gestural: 0,
     verbal: 0,
+    model: 0,
     partial_physical: 0,
     full_physical: 0,
     no_response: 0,
@@ -245,11 +275,25 @@ export function summarizePromptLevels(
         : `${breakdown.gestural} gestural`
     );
   }
+  if (breakdown.verbal_partial > 0) {
+    parts.push(
+      isAr
+        ? `${breakdown.verbal_partial} بلفظ جزئي`
+        : `${breakdown.verbal_partial} partial verbal`
+    );
+  }
   if (breakdown.verbal > 0) {
     parts.push(
       isAr
-        ? `${breakdown.verbal} بمساعدة لفظية`
-        : `${breakdown.verbal} verbal`
+        ? `${breakdown.verbal} بلفظ كلي`
+        : `${breakdown.verbal} full verbal`
+    );
+  }
+  if (breakdown.model > 0) {
+    parts.push(
+      isAr
+        ? `${breakdown.model} بنمذجة`
+        : `${breakdown.model} model`
     );
   }
   if (breakdown.partial_physical > 0) {
@@ -283,8 +327,10 @@ export function buildPromptFadingCue(
 ) {
   const total =
     breakdown.independent +
+    breakdown.verbal_partial +
     breakdown.gestural +
     breakdown.verbal +
+    breakdown.model +
     breakdown.partial_physical +
     breakdown.full_physical +
     breakdown.no_response;
@@ -359,16 +405,19 @@ export function buildPromptFadingCue(
 export function barSegmentColor(level: PromptHierarchyLevel) {
   switch (level) {
     case 'independent':
-      return 'bg-emerald-400';
-    case 'gestural':
-      return 'bg-amber-400';
+      return 'bg-emerald-500';
+    case 'verbal_partial':
     case 'verbal':
-      return 'bg-orange-400';
+      return 'bg-orange-500';
+    case 'gestural':
+      return 'bg-blue-600';
+    case 'model':
+      return 'bg-teal-600';
     case 'partial_physical':
-      return 'bg-sky-500';
+      return 'bg-amber-500';
     case 'full_physical':
-      return 'bg-indigo-500';
+      return 'bg-red-600';
     default:
-      return 'bg-rose-400';
+      return 'bg-red-900';
   }
 }

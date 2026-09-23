@@ -133,7 +133,7 @@ export default function MatchMePlayArea({
 
   return (
     <div
-      className="relative flex min-h-[100dvh] flex-col bg-gradient-to-b from-[#F7F3EB] via-[#F0EBE1] to-[#E8E2D6]"
+      className="relative flex h-[100dvh] flex-col overflow-hidden bg-gradient-to-b from-[#F7F3EB] via-[#F0EBE1] to-[#E8E2D6]"
       dir="rtl"
     >
       <div className="flex items-center justify-between px-5 pb-2 pt-5 sm:px-8">
@@ -155,11 +155,11 @@ export default function MatchMePlayArea({
         </span>
       </div>
 
-      <div className="flex flex-1 flex-col items-center justify-center gap-8 px-4 pb-10 sm:gap-10 sm:px-8">
+      <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-3 pb-4 pl-4 pr-4 lg:pl-[18.5rem]">
         <p className="text-base font-medium text-[#374151] sm:text-lg">طابق مثلي</p>
 
         <div
-          className={`flex min-h-[11rem] w-full max-w-md items-center justify-center rounded-[2rem] border-2 bg-white/90 px-8 py-10 shadow-[0_24px_64px_rgba(46,125,142,0.1)] backdrop-blur-sm sm:min-h-[13rem] ${
+          className={`flex w-[min(340px,70vw)] items-center justify-center rounded-[2rem] border-2 bg-white/95 px-4 py-4 shadow-[0_24px_48px_rgba(31,42,55,0.12)] backdrop-blur-sm ${
             highlightModel
               ? 'border-[#2E7D8E] ring-4 ring-[#2E7D8E]/25 motion-safe:animate-pulse'
               : 'border-[#2E7D8E]/20'
@@ -168,7 +168,7 @@ export default function MatchMePlayArea({
         >
           <MatchVisual
             item={spec.target}
-            sizePx={140}
+            sizePx={300}
             label={`النموذج: ${matchVisualAriaLabel(spec.target)}`}
           />
         </div>
@@ -177,16 +177,16 @@ export default function MatchMePlayArea({
           className="flex w-full max-w-lg flex-col items-center gap-3"
           aria-hidden
         >
-          <span className="h-8 w-px bg-gradient-to-b from-[#2E7D8E]/40 to-transparent" />
+          <span className="h-4 w-px bg-gradient-to-b from-[#2E7D8E]/40 to-transparent" />
         </div>
 
         <div
-          className={`grid w-full max-w-2xl gap-4 ${
+          className={`grid w-full max-w-5xl gap-3 ${
             displayedChoices.length <= 2
-              ? 'grid-cols-1 sm:grid-cols-2'
+              ? 'grid-cols-2'
               : displayedChoices.length === 3
-                ? 'grid-cols-1 sm:grid-cols-3'
-                : 'grid-cols-2 sm:grid-cols-2 lg:grid-cols-4'
+                ? 'grid-cols-3'
+                : 'grid-cols-2 xl:grid-cols-4'
           }`}
           role="group"
           aria-label="اختيارات المطابقة"
@@ -211,7 +211,7 @@ export default function MatchMePlayArea({
                 disabled={phase !== 'choosing'}
                 onClick={() => handleChoice(choice.id)}
                 onKeyDown={(event) => handleChoiceKeyDown(event, choice.id)}
-                className={`flex min-h-[8.5rem] touch-manipulation items-center justify-center rounded-[1.5rem] border-2 bg-white/95 p-6 shadow-[0_12px_32px_rgba(31,42,55,0.06)] transition-all motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#2E7D8E]/45 sm:min-h-[10rem] ${
+                className={`flex min-h-[9.5rem] touch-manipulation items-center justify-center rounded-[1.5rem] border-2 bg-white/95 p-3 shadow-[0_12px_28px_rgba(31,42,55,0.08)] transition-all motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#2E7D8E]/45 sm:min-h-[11rem] ${
                   showAsCorrect
                     ? 'border-[#3A9B6E] bg-[#3A9B6E]/10 ring-4 ring-[#3A9B6E]/25'
                     : showAsWrong
@@ -223,7 +223,7 @@ export default function MatchMePlayArea({
                           : 'border-[#D1D5DB] hover:border-[#2E7D8E]/40 hover:bg-white'
                 }`}
               >
-                <MatchVisual item={choice.item} sizePx={100} />
+                <MatchVisual item={choice.item} sizePx={152} />
               </button>
             );
           })}

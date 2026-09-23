@@ -19,6 +19,7 @@ import SensoryFocusOverlay from '@/components/classroom/SensoryFocusOverlay';
 import PromptHierarchyChart from '@/components/classroom/PromptHierarchyChart';
 import PromptRecordingBar from '@/components/classroom/PromptRecordingBar';
 import PromptSelectionOverlay from '@/components/classroom/PromptSelectionOverlay';
+import RealisticItemVisual from '@/components/classroom/RealisticItemVisual';
 import ReinforcerDeliveryTimer from '@/components/classroom/ReinforcerDeliveryTimer';
 import SessionMilestoneCard from '@/components/classroom/SessionMilestoneCard';
 import SupportToolsCard from '@/components/home/SupportToolsCard';
@@ -1209,9 +1210,9 @@ export default function HomeClassroomPage() {
                       title={
                         isAr ? 'اسمعي نطق الكلمة' : 'Hear the word pronounced'
                       }
-                      className="mx-auto flex h-32 w-32 items-center justify-center rounded-3xl border-2 border-slate-200 bg-gradient-to-b from-slate-50 to-slate-100 text-6xl shadow-inner transition hover:border-[#2E7D8E]/40 active:scale-95 disabled:cursor-default"
+                      className="mx-auto flex h-[min(300px,42vh)] w-[min(340px,78vw)] items-center justify-center rounded-[2rem] border-2 border-slate-200 bg-gradient-to-b from-white to-slate-100 shadow-[0_18px_40px_rgba(15,23,42,0.12)] transition hover:border-[#2E7D8E]/40 active:scale-95 disabled:cursor-default"
                     >
-                      {target.imageUrl}
+                      <RealisticItemVisual symbol={target.imageUrl} size={220} label={targetName} />
                     </button>
                     <h3 className="pt-2 text-2xl font-black text-[#0b1f14]">
                       {targetName}
@@ -1274,10 +1275,14 @@ export default function HomeClassroomPage() {
                           type="button"
                           onClick={() => handleChoiceTap(item)}
                           disabled={awaitingPrompt}
-                          className={`flex h-20 w-20 items-center justify-center rounded-2xl border-2 text-4xl transition hover:scale-105 active:scale-95 disabled:pointer-events-none ${tapTone(item.id)}`}
+                          className={`flex h-36 w-36 items-center justify-center rounded-3xl border-2 transition hover:scale-105 active:scale-95 disabled:pointer-events-none sm:h-40 sm:w-40 ${tapTone(item.id)}`}
                           aria-label={isAr ? item.nameAr : item.nameEn}
                         >
-                          {item.imageUrl}
+                          <RealisticItemVisual
+                            symbol={item.imageUrl}
+                            size={112}
+                            label={isAr ? item.nameAr : item.nameEn}
+                          />
                         </button>
                       ))}
                     </div>
