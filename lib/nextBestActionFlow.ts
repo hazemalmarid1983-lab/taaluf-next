@@ -12,11 +12,8 @@ import { loadStoredAssessments } from '@/lib/assessmentHelpers';
 import { homePathForRole } from '@/lib/access';
 import {
   HUB_ONBOARDING_POST_ID,
-  mouOverallStatus,
   type HubActor,
   type HubPost,
-  type MouOverallStatus,
-  type MouState,
 } from '@/lib/clinicalHub';
 import {
   type AdvisorGuideState,
@@ -250,16 +247,10 @@ function advisorCompletedOnboardingBriefing(posts: HubPost[]) {
 
 export function resolveHubNextAction(input: {
   actor: HubActor;
-  mou: MouState;
   posts: HubPost[];
   advisorGuide?: AdvisorGuideState;
 }): UnifiedNextAction {
-  const status = mouOverallStatus(input.mou);
   const pending = input.posts.filter((p) => p.status === 'pending').length;
-  const ownSigned =
-    input.actor.memberId === 'hazem'
-      ? input.mou.hazem.signed
-      : input.mou.samer.signed;
   const onboardingDone = advisorCompletedOnboardingBriefing(input.posts);
 
   if (
@@ -282,31 +273,6 @@ export function resolveHubNextAction(input: {
       ctaEn: 'Open first meeting',
       stepLabelAr: 'غرفة الاجتماعات',
       stepLabelEn: 'Meeting room',
-      autoRedirect: true,
-    };
-  }
-
-  if (status !== 'executed') {
-    return {
-      id: 'hub_mou_sign',
-      stage: 'onboarding',
-      priority: 'critical',
-      emoji: '📜',
-      titleAr: 'راجع المذكرة واعتمد الشراكة',
-      titleEn: 'Review the MOU & partnership',
-      bodyAr:
-        status === 'pending'
-          ? 'مذكرة التفاهم الاستشارية لسنتين — أكّد توقيعك لبدء التعاون.'
-          : 'بانتظار تأكيد الطرف الآخر — راجع المذكرة وأكّد موقفك.',
-      bodyEn:
-        status === 'pending'
-          ? 'Two-year advisory MOU — confirm your sign-off to begin collaboration.'
-          : 'Awaiting the other party — review the memorandum and confirm your position.',
-      href: '/hub?focus=agreement',
-      ctaAr: ownSigned ? 'عرض حالة المذكرة' : 'راجع المذكرة واعتمد',
-      ctaEn: ownSigned ? 'View MOU status' : 'Review & sign MOU',
-      stepLabelAr: 'الشراكة والاتفاق',
-      stepLabelEn: 'Partnership & agreement',
       autoRedirect: true,
     };
   }
@@ -359,8 +325,8 @@ export function resolveHubNextAction(input: {
     emoji: '🛡️',
     titleAr: 'راجع المركز السريري والبحثي',
     titleEn: 'Review the clinical & research hub',
-    bodyAr: 'المذكرة نافذة — تابع غرفة الاجتماعات والمقترحات المعتمدة.',
-    bodyEn: 'MOU is in force — continue in the meeting room and approved proposals.',
+    bodyAr: 'تابع غرفة الاجتماعات والمقترحات قيد المراجعة.',
+    bodyEn: 'Continue in the meeting room and review pending proposals.',
     href: '/hub?focus=meeting',
     ctaAr: 'افتح غرفة الاجتماعات',
     ctaEn: 'Open meeting room',
@@ -370,30 +336,9 @@ export function resolveHubNextAction(input: {
 }
 
 export function resolveAdminNextAction(input?: {
-  mouStatus?: MouOverallStatus;
   pendingHubPosts?: number;
 }): UnifiedNextAction {
-  const mou = input?.mouStatus;
   const pending = input?.pendingHubPosts ?? 0;
-
-  if (mou && mou !== 'executed') {
-    return {
-      id: 'admin_hub_mou',
-      stage: 'onboarding',
-      priority: 'critical',
-      emoji: '📜',
-      titleAr: 'راجع المذكرة والمركز البحثي',
-      titleEn: 'Review MOU & research hub',
-      bodyAr: 'اعتمد مذكرة التفاهم الاستشارية مع د. سامر قبل متابعة التعاون.',
-      bodyEn: 'Sign the advisory MOU with Dr. Samer before continuing collaboration.',
-      href: '/hub?focus=agreement',
-      ctaAr: 'راجع المذكرة واعتمد',
-      ctaEn: 'Review & sign MOU',
-      autoRedirect: true,
-      stepLabelAr: 'الإدارة العليا',
-      stepLabelEn: 'Administration',
-    };
-  }
 
   if (pending > 0) {
     return {
@@ -454,6 +399,7 @@ function isGenericHome(path: string) {
   return (
     path === '/parent' ||
     path === '/dashboard' ||
+    path === '/dashboard/consultant' ||
     path === '/admin' ||
     path === '/hub' ||
     path === '/login'
@@ -493,23 +439,18 @@ export function resolvePostLoginDestination(
 
 export function hubFocusFromQuery(
   focus: string | null | undefined
-): 'overview' | 'meeting' | 'agreement' | null {
-  if (
-    focus === 'meeting' ||
-    focus === 'agreement' ||
-    focus === 'overview'
-  ) {
+): 'overview' | 'meeting' | null {
+  if (focus === 'meeting' || focus === 'overview') {
     return focus;
   }
   return null;
 }
 
 export function defaultHubTab(input: {
-  mouStatus: MouOverallStatus;
   pendingCount: number;
   actorRole: HubActor['role'];
   posts?: HubPost[];
-}): 'overview' | 'meeting' | 'agreement' {
+}): 'overview' | 'meeting' {
   if (
     input.actorRole === 'scientific_advisor' &&
     input.posts &&
@@ -517,7 +458,6 @@ export function defaultHubTab(input: {
   ) {
     return 'meeting';
   }
-  if (input.mouStatus !== 'executed') return 'agreement';
   if (input.actorRole === 'admin' && input.pendingCount > 0) return 'meeting';
   if (input.actorRole === 'scientific_advisor') return 'meeting';
   return 'overview';

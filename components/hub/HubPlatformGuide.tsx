@@ -107,8 +107,8 @@ export default function HubPlatformGuide({
         {allDone && (
           <p className="mt-4 rounded-2xl bg-emerald-50 px-4 py-3 text-sm font-semibold text-emerald-900">
             {isAr
-              ? '✓ أكملت مراجعة الدليل — يمكنك الآن توقيع اتفاقية الشراكة وبدء العمل في غرفة الاجتماعات.'
-              : '✓ Guide complete — you may now sign the partnership agreement and start in the meeting room.'}
+              ? '✓ أكملت مراجعة الدليل — يمكنك الآن بدء العمل في غرفة الاجتماعات.'
+              : '✓ Guide complete — you may now start in the meeting room.'}
           </p>
         )}
       </div>

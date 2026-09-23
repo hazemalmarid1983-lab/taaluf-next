@@ -14,6 +14,7 @@ import {
   type TrackedGoal,
 } from '@/lib/goalsEngine';
 import { loadGoalsLocal, saveGoalsLocal } from '@/lib/goalsStore';
+import { hydrateActiveChildClinicalSlice } from '@/lib/clinical/hydrateActiveChild';
 import PhysicianClinicalSummary from '@/components/PhysicianClinicalSummary';
 import DualPathwayRecord from '@/components/records/DualPathwayRecord';
 import SensoryHubRecommendationsCard from '@/components/sensory-hub/SensoryHubRecommendationsCard';
@@ -146,47 +147,81 @@ export default function StudentDetailPage() {
   const [sensorySessions, setSensorySessions] = useState<ReturnType<typeof loadSensoryHubSessions>>([]);
 
   useEffect(() => {
-    try {
-      const rawStudents = localStorage.getItem('taaluf.students.v1');
-      const students: StudentRow[] = rawStudents
-        ? JSON.parse(rawStudents)
-        : [];
-      const found = students.find((s) => s.id === id);
-      if (found) {
-        setStudent(found);
-        localStorage.setItem('taaluf.activeStudent', JSON.stringify(found));
-      } else {
-        const active = JSON.parse(
-          localStorage.getItem('taaluf.activeStudent') || 'null'
-        );
-        if (active?.id === id) setStudent(active);
-      }
-
+    const refreshClinicalFromLocal = (studentId: string) => {
       const localAssess = loadStoredAssessments().filter(
-        (a) => a.studentId === id
+        (a) => a.studentId === studentId
       );
       setAssessments(localAssess);
-      let goalList = loadGoalsLocal(id);
+      let goalList = loadGoalsLocal(studentId);
       if (!goalList.length && localAssess[0]?.scores?.length) {
-        goalList = createTrackedGoalsFromScores(id, localAssess[0].scores);
+        goalList = createTrackedGoalsFromScores(
+          studentId,
+          localAssess[0].scores
+        );
         saveGoalsLocal([...goalList, ...loadGoalsLocal()]);
       }
       setGoals(goalList.filter((g) => g.status !== 'done'));
+    };
 
-      const localGames = JSON.parse(
-        localStorage.getItem('taaluf.gameSessions.v1') || '[]'
-      ) as GameSession[];
-      setGames(
-        (Array.isArray(localGames) ? localGames : []).filter(
-          (g: { childId?: string }) => g.childId === id
-        )
-      );
+    const run = async () => {
+      try {
+        const rawStudents = localStorage.getItem('taaluf.students.v1');
+        const students: StudentRow[] = rawStudents
+          ? JSON.parse(rawStudents)
+          : [];
+        const found = students.find((s) => s.id === id);
+        let clinicalChild: {
+          id: string;
+          name: string;
+          age?: number;
+          dob?: string;
+        } | null = null;
 
-      setHomeSessions(loadHomeSessions().filter((s) => s.childId === id));
-      setSensorySessions(loadSensoryHubSessions(id));
-    } catch {
-      /* ignore */
-    }
+        if (found) {
+          setStudent(found);
+          clinicalChild = {
+            id: found.id,
+            name: found.name,
+            age: found.age,
+            dob: found.dob,
+          };
+        } else {
+          const active = JSON.parse(
+            localStorage.getItem('taaluf.activeStudent') || 'null'
+          );
+          if (active?.id === id) {
+            setStudent(active);
+            clinicalChild = {
+              id: active.id,
+              name: active.name || 'طفل',
+              age: active.age,
+              dob: active.dob,
+            };
+          }
+        }
+
+        if (clinicalChild) {
+          await hydrateActiveChildClinicalSlice(clinicalChild);
+        }
+        refreshClinicalFromLocal(id);
+
+        const localGames = JSON.parse(
+          localStorage.getItem('taaluf.gameSessions.v1') || '[]'
+        ) as GameSession[];
+        setGames(
+          (Array.isArray(localGames) ? localGames : []).filter(
+            (g: { childId?: string }) => g.childId === id
+          )
+        );
+
+        setHomeSessions(loadHomeSessions().filter((s) => s.childId === id));
+        setSensorySessions(loadSensoryHubSessions(id));
+      } catch {
+        /* ignore */
+      }
+    };
+
+    void run();
 
     fetch(`/api/students/${id}`)
       .then((r) => r.json())

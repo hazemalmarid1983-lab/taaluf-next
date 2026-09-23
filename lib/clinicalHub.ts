@@ -4,6 +4,7 @@
  */
 
 import type { AdvisorGuideState } from '@/lib/advisorPlatformGuide';
+import type { HubReadState } from '@/lib/hubUnread';
 
 export const HUB_PATH = '/hub';
 export const HUB_NAME_AR = 'مركز تآلف السريري والبحثي';
@@ -102,26 +103,6 @@ export type HubPost = {
   replies: HubReply[];
 };
 
-export type MouPartySignOff = {
-  memberId: HubMemberId;
-  signed: boolean;
-  signedAt?: string;
-  signerName?: string;
-};
-
-export type MouState = {
-  version: string;
-  termYears: 2;
-  hazem: MouPartySignOff;
-  samer: MouPartySignOff;
-};
-
-export type MouOverallStatus =
-  | 'pending'
-  | 'awaiting_hazem'
-  | 'awaiting_samer'
-  | 'executed';
-
 export type HubMerhidDirectives = {
   text: string;
   updatedAt: string;
@@ -130,10 +111,41 @@ export type HubMerhidDirectives = {
 
 export type ClinicalHubSnapshot = {
   posts: HubPost[];
-  mou: MouState;
   advisorGuide: AdvisorGuideState;
   merhidDirectives: HubMerhidDirectives;
+  readState: HubReadState;
 };
+
+export type MouSignerState = {
+  signed: boolean;
+  signedAt?: string;
+  signerName?: string;
+};
+
+export type MouState = {
+  hazem: MouSignerState;
+  samer: MouSignerState;
+};
+
+export type MouOverallStatus =
+  | 'pending'
+  | 'awaiting_hazem'
+  | 'awaiting_samer'
+  | 'executed';
+
+export function emptyMouState(): MouState {
+  return {
+    hazem: { signed: false },
+    samer: { signed: false },
+  };
+}
+
+export function mouOverallStatus(mou: MouState): MouOverallStatus {
+  if (mou.hazem.signed && mou.samer.signed) return 'executed';
+  if (mou.samer.signed && !mou.hazem.signed) return 'awaiting_hazem';
+  if (mou.hazem.signed && !mou.samer.signed) return 'awaiting_samer';
+  return 'pending';
+}
 
 export function isHubOnboardingPost(post: HubPost) {
   return post.id === HUB_ONBOARDING_POST_ID;
@@ -147,25 +159,6 @@ export type HubActor = {
   titleAr: string;
   titleEn: string;
 };
-
-export { ADVISORY_MOU, ADVISORY_MOU_VERSION } from '@/lib/advisoryMouContent';
-import { ADVISORY_MOU_VERSION } from '@/lib/advisoryMouContent';
-
-export function emptyMouState(): MouState {
-  return {
-    version: ADVISORY_MOU_VERSION,
-    termYears: 2,
-    hazem: { memberId: 'hazem', signed: false },
-    samer: { memberId: 'samer', signed: false },
-  };
-}
-
-export function mouOverallStatus(mou: MouState): MouOverallStatus {
-  if (mou.hazem.signed && mou.samer.signed) return 'executed';
-  if (mou.samer.signed && !mou.hazem.signed) return 'awaiting_hazem';
-  if (mou.hazem.signed && !mou.samer.signed) return 'awaiting_samer';
-  return 'pending';
-}
 
 export function isHubSessionRole(
   role?: string | null

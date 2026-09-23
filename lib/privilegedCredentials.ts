@@ -15,7 +15,9 @@ export type PrivilegedCredentialsFile = {
   accounts: Partial<Record<PrivilegedAccountId, PrivilegedCredentialRecord>>;
 };
 
-const DATA_FILE = path.join(getHubDataDir(), 'privileged-credentials.json');
+function dataFilePath() {
+  return path.join(getHubDataDir(), 'privileged-credentials.json');
+}
 
 const EMAIL_TO_ACCOUNT: Record<string, PrivilegedAccountId> = {
   'admin@taaluf.local': 'admin',
@@ -44,7 +46,7 @@ async function ensureLoaded() {
   if (loaded) return;
   loaded = true;
   try {
-    const raw = await fs.readFile(DATA_FILE, 'utf8');
+    const raw = await fs.readFile(dataFilePath(), 'utf8');
     const parsed = JSON.parse(raw) as Partial<PrivilegedCredentialsFile>;
     memory.accounts = parsed.accounts ?? {};
   } catch {
@@ -53,8 +55,9 @@ async function ensureLoaded() {
 }
 
 async function persist() {
-  await fs.mkdir(path.dirname(DATA_FILE), { recursive: true });
-  await fs.writeFile(DATA_FILE, JSON.stringify(memory, null, 2), 'utf8');
+  const filePath = dataFilePath();
+  await fs.mkdir(path.dirname(filePath), { recursive: true });
+  await fs.writeFile(filePath, JSON.stringify(memory, null, 2), 'utf8');
 }
 
 export async function getPrivilegedPasswordHash(
@@ -123,5 +126,5 @@ export function resetPrivilegedCredentialsMemoryForTests() {
 }
 
 export function privilegedCredentialsFilePath() {
-  return DATA_FILE;
+  return dataFilePath();
 }

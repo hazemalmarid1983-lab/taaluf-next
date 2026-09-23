@@ -4,7 +4,6 @@ import { defaultHubTab } from '../lib/nextBestActionFlow';
 describe('hub onboarding meeting tab', () => {
   it('opens meeting tab first for advisor without onboarding reply', () => {
     const tab = defaultHubTab({
-      mouStatus: 'pending',
       pendingCount: 0,
       actorRole: 'scientific_advisor',
       posts: [
@@ -26,9 +25,8 @@ describe('hub onboarding meeting tab', () => {
     expect(tab).toBe('meeting');
   });
 
-  it('opens agreement after advisor replied to onboarding', () => {
+  it('keeps meeting tab after advisor replied to onboarding', () => {
     const tab = defaultHubTab({
-      mouStatus: 'pending',
       pendingCount: 0,
       actorRole: 'scientific_advisor',
       posts: [
@@ -56,6 +54,6 @@ describe('hub onboarding meeting tab', () => {
         },
       ],
     });
-    expect(tab).toBe('agreement');
+    expect(tab).toBe('meeting');
   });
 });

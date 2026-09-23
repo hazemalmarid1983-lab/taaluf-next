@@ -18,6 +18,10 @@ import {
 } from '@/lib/training/storage';
 import { persistCompletedTrainingSession } from '@/lib/training/sessionPersistence';
 import { filterCompletedSessionsForChild } from '@/lib/training/trainingResultsPresentation';
+import {
+  resolveTapToRequestSessionChildId,
+  TAP_TO_REQUEST_MEDIA_ID,
+} from '@/lib/training/tapToRequestCompletion';
 import { readActiveTrainingChildId, readTrainingChildId } from '@/lib/training/sessionPersistence';
 
 const ACTIVE_STUDENT_KEY = 'taaluf.activeStudent';
@@ -244,6 +248,20 @@ describe('G2 — standalone activity child id consistency', () => {
     persistCompletedTrainingSession(session);
 
     expect(getTrainingSession('sess_dup')?.childId).toBe('child_a');
+  });
+
+  it('tap-to-request standalone with activeStudent aligns with begin childId', () => {
+    setActiveStudent('child_a');
+    const begin = preparePlanActivityBegin({ pageMediaId: TAP_TO_REQUEST_MEDIA_ID });
+    if (!begin.ok) throw new Error('expected begin ok');
+    expect(begin.childId).toBe('child_a');
+
+    const resolution = resolveTapToRequestSessionChildId({
+      mediaId: TAP_TO_REQUEST_MEDIA_ID,
+      beginChildId: begin.childId,
+      activeChildId: readActiveTrainingChildId(),
+    });
+    expect(resolution).toEqual({ ok: true, childId: 'child_a' });
   });
 
   it('ignores wrong-media recovery but uses activeStudent for standalone', () => {

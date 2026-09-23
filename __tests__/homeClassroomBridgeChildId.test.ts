@@ -1,7 +1,9 @@
 import type { TrackedGoal } from '@/lib/goalsEngine';
 import { createTrainingPlan } from '@/lib/training/createPlan';
-import { ATTENTION_FOCUS_CHAPTER_ID } from '@/lib/training/loadChapter';
-import { peekTrainingPlanLaunchContext } from '@/lib/training/planLaunchContext';
+import { MOTOR_SOCIAL_IMITATION_CHAPTER_ID } from '@/lib/training/loadChapter';
+import {
+  peekTrainingPlanLaunchContext,
+} from '@/lib/training/planLaunchContext';
 import { readActiveTrainingChildId } from '@/lib/training/sessionPersistence';
 import {
   beginSpecializedTrainingFromBridge,
@@ -76,14 +78,14 @@ function setActiveStudent(id: string) {
   localStorage.setItem(ACTIVE_STUDENT_KEY, JSON.stringify({ id, name: id }));
 }
 
-function attentionGoal(childId: string): TrackedGoal {
+function c15Goal(childId: string): TrackedGoal {
   return {
-    id: `tg_${childId}_C11_bridge`,
+    id: `tg_${childId}_C15_bridge`,
     childId,
-    criterionId: 'C11',
-    domain: 'cognitive',
-    title: 'الانتباه المشترك',
-    smartText: 'أن يتابع الطفل هدفاً بصرياً',
+    criterionId: 'C15',
+    domain: 'social',
+    title: 'التقليد الحركي والاجتماعي',
+    smartText: 'أن يقلد الطفل حركة بسيطة',
     baseline: 30,
     target: 70,
     current: 35,
@@ -91,17 +93,6 @@ function attentionGoal(childId: string): TrackedGoal {
     targetDate: '2026-10-08T00:00:00.000Z',
     status: 'active',
     sessions: [],
-  };
-}
-
-function requestGoal(childId: string): TrackedGoal {
-  return {
-    ...attentionGoal(childId),
-    id: `tg_${childId}_C1_bridge`,
-    criterionId: 'C1',
-    domain: 'communication',
-    title: 'الطلب الوظيفي',
-    smartText: 'أن يطلب الطفل شيئاً مرغوباً',
   };
 }
 
@@ -128,16 +119,13 @@ describe('G3 — Home Classroom training bridge child id', () => {
     saveTrainingPlan(
       createTrainingPlan({
         childId: 'child_local',
-        chapterId: ATTENTION_FOCUS_CHAPTER_ID,
-        assignments: [{ mediaId: 'follow-star', difficulty: 1, order: 1 }],
+        chapterId: MOTOR_SOCIAL_IMITATION_CHAPTER_ID,
+        assignments: [{ mediaId: 'observer-imitation', difficulty: 1, order: 1 }],
         status: 'active',
       })
     );
 
-    const action = resolveSpecializedTrainingBridgeAction(
-      attentionGoal('child_a'),
-      true
-    );
+    const action = resolveSpecializedTrainingBridgeAction(c15Goal('child_a'), true);
     expect(action).toEqual({ kind: 'blocked', reason: 'missing_child' });
   });
 
@@ -145,39 +133,43 @@ describe('G3 — Home Classroom training bridge child id', () => {
     saveTrainingPlan(
       createTrainingPlan({
         childId: 'child_local',
-        chapterId: ATTENTION_FOCUS_CHAPTER_ID,
-        assignments: [{ mediaId: 'follow-star', difficulty: 1, order: 1 }],
+        chapterId: MOTOR_SOCIAL_IMITATION_CHAPTER_ID,
+        assignments: [{ mediaId: 'observer-imitation', difficulty: 1, order: 1 }],
         status: 'active',
       })
     );
 
-    const stateIfForced = resolveTrainingBridgeState(
-      'child_local',
-      attentionGoal('child_local')
-    );
+    const stateIfForced = resolveTrainingBridgeState('child_local', c15Goal('child_local'));
     expect(stateIfForced.status).toBe('ready');
 
     const action = resolveSpecializedTrainingBridgeAction(
-      attentionGoal('child_local'),
+      c15Goal('child_local'),
       true
     );
     expect(action.kind).toBe('blocked');
     expect(peekTrainingPlanLaunchContext()).toBeNull();
   });
 
-  it('ready candidate + matching cursor → launch uses the active child plan', () => {
+  it('ready candidate + matching cursor → same ready launch behavior', () => {
     setActiveStudent('child_bridge_test');
     const plan = saveTrainingPlan(
       createTrainingPlan({
         childId: 'child_bridge_test',
-        chapterId: ATTENTION_FOCUS_CHAPTER_ID,
-        assignments: [{ mediaId: 'follow-star', difficulty: 1, order: 1 }],
+        chapterId: MOTOR_SOCIAL_IMITATION_CHAPTER_ID,
+        assignments: [
+          {
+            mediaId: 'observer-imitation',
+            difficulty: 1,
+            order: 1,
+            skillIds: ['skill-c15-s1-gross'],
+          },
+        ],
         status: 'active',
       })
     );
 
     const action = resolveSpecializedTrainingBridgeAction(
-      attentionGoal('child_bridge_test'),
+      c15Goal('child_bridge_test'),
       true
     );
     expect(action.kind).toBe('ready');
@@ -185,23 +177,23 @@ describe('G3 — Home Classroom training bridge child id', () => {
 
     expect(action.childId).toBe('child_bridge_test');
     expect(action.launch.planId).toBe(plan.id);
-    expect(action.launch.mediaId).toBe('follow-star');
-    expect(action.activityRoute).toContain('follow-star');
+    expect(action.launch.mediaId).toBe('observer-imitation');
+    expect(action.activityRoute).toContain('observer-imitation');
   });
 
-  it('mismatch → navigate with notice when the next activity is not a candidate', () => {
+  it('mismatch → same navigate + notice flag', () => {
     setActiveStudent('child_bridge_test');
     saveTrainingPlan(
       createTrainingPlan({
         childId: 'child_bridge_test',
-        chapterId: ATTENTION_FOCUS_CHAPTER_ID,
+        chapterId: 'attention-focus',
         assignments: [{ mediaId: 'follow-star', difficulty: 1, order: 1 }],
         status: 'active',
       })
     );
 
     const action = resolveSpecializedTrainingBridgeAction(
-      requestGoal('child_bridge_test'),
+      c15Goal('child_bridge_test'),
       false
     );
     expect(action).toEqual({
@@ -211,58 +203,46 @@ describe('G3 — Home Classroom training bridge child id', () => {
     });
   });
 
-  it('no_plan → parent and specialist destinations stay distinct', () => {
+  it('no_plan → same parent/specialist destinations', () => {
     setActiveStudent('child_bridge_test');
 
     expect(
-      resolveSpecializedTrainingBridgeAction(
-        attentionGoal('child_bridge_test'),
-        true
-      )
+      resolveSpecializedTrainingBridgeAction(c15Goal('child_bridge_test'), true)
     ).toEqual({
       kind: 'navigate',
       href: '/dashboard/training',
     });
 
     expect(
-      resolveSpecializedTrainingBridgeAction(
-        attentionGoal('child_bridge_test'),
-        false
-      )
+      resolveSpecializedTrainingBridgeAction(c15Goal('child_bridge_test'), false)
     ).toEqual({
       kind: 'navigate',
       href: '/dashboard/training/plans/new',
     });
   });
 
-  it('child A active — does not open child B goal', () => {
+  it('child A active — does not use child B plan via bridge action', () => {
     setActiveStudent('child_a');
     saveTrainingPlan(
       createTrainingPlan({
         childId: 'child_b',
-        chapterId: ATTENTION_FOCUS_CHAPTER_ID,
-        assignments: [{ mediaId: 'follow-star', difficulty: 1, order: 1 }],
+        chapterId: MOTOR_SOCIAL_IMITATION_CHAPTER_ID,
+        assignments: [{ mediaId: 'observer-imitation', difficulty: 1, order: 1 }],
         status: 'active',
       })
     );
 
-    const blocked = resolveSpecializedTrainingBridgeAction(
-      attentionGoal('child_b'),
-      true
-    );
+    const blocked = resolveSpecializedTrainingBridgeAction(c15Goal('child_b'), true);
     expect(blocked).toEqual({ kind: 'blocked', reason: 'goal_child_mismatch' });
 
-    const forA = resolveSpecializedTrainingBridgeAction(
-      attentionGoal('child_a'),
-      true
-    );
+    const forA = resolveSpecializedTrainingBridgeAction(c15Goal('child_a'), true);
     expect(forA.kind).toBe('navigate');
     if (forA.kind === 'navigate') {
       expect(forA.href).toBe('/dashboard/training');
     }
   });
 
-  it('re-reads canonical active child after storage update', () => {
+  it('re-reads canonical active child after storage update (re-entry)', () => {
     expect(readTrainingBridgeActiveChildId()).toBeNull();
     setActiveStudent('child_a');
     expect(readTrainingBridgeActiveChildId()).toBe('child_a');
@@ -273,19 +253,19 @@ describe('G3 — Home Classroom training bridge child id', () => {
     expect(readTrainingBridgeActiveChildId()).toBe('child_a_refreshed');
   });
 
-  it('beginSpecializedTrainingFromBridge sets launch for the active child plan', () => {
+  it('beginSpecializedTrainingFromBridge sets launch for active child plan', () => {
     setActiveStudent('child_launch');
     const plan = saveTrainingPlan(
       createTrainingPlan({
         childId: 'child_launch',
-        chapterId: ATTENTION_FOCUS_CHAPTER_ID,
-        assignments: [{ mediaId: 'follow-star', difficulty: 2, order: 1 }],
+        chapterId: MOTOR_SOCIAL_IMITATION_CHAPTER_ID,
+        assignments: [{ mediaId: 'observer-imitation', difficulty: 2, order: 1 }],
         status: 'active',
       })
     );
 
     const action = resolveSpecializedTrainingBridgeAction(
-      attentionGoal('child_launch'),
+      c15Goal('child_launch'),
       true
     );
     if (action.kind !== 'ready') {
@@ -302,11 +282,45 @@ describe('G3 — Home Classroom training bridge child id', () => {
     expect(readActiveTrainingChildId()).toBe('child_launch');
     expect(peekTrainingPlanLaunchContext()).toEqual({
       planId: plan.id,
-      chapterId: ATTENTION_FOCUS_CHAPTER_ID,
-      mediaId: 'follow-star',
+      chapterId: MOTOR_SOCIAL_IMITATION_CHAPTER_ID,
+      mediaId: 'observer-imitation',
       difficulty: 2,
       order: 1,
     });
-    expect(navigated[0]).toContain('follow-star');
+    expect(navigated[0]).toContain('observer-imitation');
+  });
+
+  it('C15 bridge → observer-imitation route and skillIds unchanged', () => {
+    setActiveStudent('child_c15');
+    saveTrainingPlan(
+      createTrainingPlan({
+        childId: 'child_c15',
+        chapterId: MOTOR_SOCIAL_IMITATION_CHAPTER_ID,
+        assignments: [
+          {
+            mediaId: 'observer-imitation',
+            difficulty: 1,
+            order: 1,
+            skillIds: ['skill-c15-s1-gross'],
+          },
+        ],
+        status: 'active',
+      })
+    );
+
+    const direct = resolveTrainingBridgeState('child_c15', c15Goal('child_c15'));
+    expect(direct.status).toBe('ready');
+    if (direct.status !== 'ready') return;
+
+    const viaAction = resolveSpecializedTrainingBridgeAction(
+      c15Goal('child_c15'),
+      true
+    );
+    expect(viaAction.kind).toBe('ready');
+    if (viaAction.kind !== 'ready') return;
+
+    expect(viaAction.launch).toEqual(direct.launch);
+    expect(viaAction.activityRoute).toBe(direct.activityRoute);
+    expect(viaAction.launch.skillIds).toEqual(['skill-c15-s1-gross']);
   });
 });

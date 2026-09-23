@@ -1,6 +1,8 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import ActiveChildTrainingPrompt from '@/components/training/ActiveChildTrainingPrompt';
+import { Button } from '@/components/ui/button';
 
 const MESSAGES = {
   missing_child: 'يرجى تحديد الطفل قبل بدء التدريب.',
@@ -17,16 +19,25 @@ export default function PlanActivityGuardMessage({
 }) {
   const router = useRouter();
 
+  if (reason === 'missing_child') {
+    return (
+      <div className="mx-auto max-w-lg">
+        <ActiveChildTrainingPrompt subtitle="اختر الطفل النشط ثم ابدأ النشاط من لوحة التدريب أو من الخطة." />
+      </div>
+    );
+  }
+
   return (
     <div className="mx-auto max-w-lg rounded-2xl bg-amber-50 p-8 text-center shadow-sm">
       <p className="text-lg font-semibold text-amber-900">{MESSAGES[reason]}</p>
-      <button
+      <Button
         type="button"
+        className="mt-6 w-full"
+        size="lg"
         onClick={() => router.push('/dashboard/training')}
-        className="mt-6 w-full rounded-xl bg-indigo-600 px-6 py-3 text-base font-semibold text-white transition hover:bg-indigo-700"
       >
         العودة إلى التدريب
-      </button>
+      </Button>
     </div>
   );
 }

@@ -2,8 +2,7 @@
  * مرشّحات التدريب — criterion → skill → media فقط.
  * لا يختار نشاطاً ولا ينشئ خطة ولا يشخّص.
  *
- * نطاق الفصول: ما يحمّله loadChapter فعلياً.
- * لا يُنشأ مرشّح لمعيار ليست له مهارة في فصل محمّل.
+ * نطاق الفصول: attention-focus + communication-language + motor-social-imitation.
  * معايير التقييم: data/taalof_criteria_v3.json فقط (CRITERIA_LIST).
  */
 
