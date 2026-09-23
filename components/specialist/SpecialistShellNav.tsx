@@ -1,10 +1,12 @@
 'use client';
 
 import Link from 'next/link';
+import { useSession } from 'next-auth/react';
 import TaalufLogo from '@/components/branding/TaalufLogo';
 import { LanguageToggleBtn, useLanguage } from '@/components/LanguageProvider';
 import PermissionGate from '@/components/access/PermissionGate';
 import { usePermissionsOptional } from '@/components/access/PermissionsProvider';
+import { advisorClinicalNavHref } from '@/lib/consultantRoom/access';
 
 export default function SpecialistShellNav({
   name,
@@ -14,9 +16,12 @@ export default function SpecialistShellNav({
   isAdmin?: boolean;
 }) {
   const { t, dir } = useLanguage();
+  const { data: session } = useSession();
   const perms = usePermissionsOptional();
   const showAdmin =
     perms?.has('access_admin_panel') ?? isAdmin ?? false;
+  const isAdvisor = session?.user?.role === 'scientific_advisor';
+  const clinicalHubHref = isAdvisor ? advisorClinicalNavHref() : '/hub';
 
   return (
     <header
@@ -37,7 +42,7 @@ export default function SpecialistShellNav({
       <nav className="flex flex-wrap items-center justify-end gap-1 text-sm">
         <PermissionGate permission="access_clinical_hub">
           <Link
-            href="/hub"
+            href={clinicalHubHref}
             className="rounded-xl bg-[#0b1f14] px-3 py-2 font-semibold text-white"
           >
             {t('clinicalHub')}

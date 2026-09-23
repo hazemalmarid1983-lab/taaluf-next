@@ -1,4 +1,5 @@
 import { getServerSession } from 'next-auth';
+import { headers } from 'next/headers';
 import { redirect } from 'next/navigation';
 import AdminPreviewGate from '@/components/access/AdminPreviewGate';
 import AdvisorTestBanner from '@/components/access/AdvisorTestBanner';
@@ -16,6 +17,11 @@ export default async function DashboardLayout({
 }) {
   const session = await getServerSession(authOptions);
   if (!session) redirect('/login?portal=specialist');
+
+  const pathname = headers().get('x-pathname') ?? '';
+  if (pathname.startsWith('/dashboard/consultant')) {
+    return <>{children}</>;
+  }
 
   const role = session.user?.role;
   const isAdmin = role === 'admin';

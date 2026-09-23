@@ -8,6 +8,7 @@ import {
   homePathForRole,
   parseEntitlements,
 } from '@/lib/access';
+import { canAccessConsultantRoom } from '@/lib/consultantRoom/access';
 import { CONSENT_COOKIE } from '@/lib/consentConstants';
 import { ensureAuthUrl } from '@/lib/ensureAuthUrl';
 import {
@@ -32,16 +33,9 @@ export default withAuth(
         return NextResponse.redirect(new URL('/parent/booking', req.url));
       }
       if (path.startsWith('/specialist/pay') || path.startsWith('/payments/')) {
-        const dest =
-          role === 'parent'
-            ? '/parent'
-            : role === 'admin'
-              ? '/admin'
-              : role === 'scientific_advisor'
-                ? '/hub'
-                : role
-                  ? '/dashboard'
-                  : '/login?portal=specialist';
+        const dest = role
+          ? homePathForRole(role)
+          : '/login?portal=specialist';
         return NextResponse.redirect(new URL(dest, req.url));
       }
     }
@@ -88,6 +82,15 @@ export default withAuth(
       ) {
         return NextResponse.redirect(new URL('/parent/pay-assessment', req.url));
       }
+    }
+
+    if (
+      path.startsWith('/dashboard/consultant') &&
+      !canAccessConsultantRoom(role)
+    ) {
+      return NextResponse.redirect(
+        new URL(role ? homePathForRole(role) : '/login?portal=hub', req.url)
+      );
     }
 
     if (path.startsWith('/dashboard')) {
@@ -142,7 +145,9 @@ export default withAuth(
       return NextResponse.redirect(new URL('/consent', req.url));
     }
 
-    return NextResponse.next();
+    const requestHeaders = new Headers(req.headers);
+    requestHeaders.set('x-pathname', path);
+    return NextResponse.next({ request: { headers: requestHeaders } });
   },
   {
     secret: process.env.NEXTAUTH_SECRET,
