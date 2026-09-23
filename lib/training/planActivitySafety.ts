@@ -11,12 +11,21 @@ import {
 import type { TrainingDifficulty } from '@/lib/training/types';
 import { getTrainingPlan } from '@/lib/training/storage/planStore';
 import { findAssignmentByOrder } from '@/lib/training/validatePlan';
-import {
-  readActiveTrainingChildId,
-  readTrainingChildId,
-} from '@/lib/training/sessionPersistence';
+import { readActiveTrainingChildId } from '@/lib/training/sessionPersistence';
 
 const RECOVERY_KEY = 'taaluf.training.planActivityRecovery.v1';
+
+/** fallback when no `taaluf.activeStudent` — legacy standalone behavior */
+export const STANDALONE_TRAINING_CHILD_FALLBACK = 'child_local';
+
+/** Standalone activity (no plan launch/recovery): active student id, else fallback. */
+export function resolveStandaloneActivityChildId(): string {
+  const activeId = readActiveTrainingChildId();
+  if (activeId) {
+    return activeId;
+  }
+  return STANDALONE_TRAINING_CHILD_FALLBACK;
+}
 
 export type PlanActivityRecoveryContext = TrainingPlanLaunchContext & {
   childId: string;
@@ -102,13 +111,15 @@ export function resolveTrainingActivityCompletionHref(planId?: string): string {
   return planId ? '/dashboard/training' : '/dashboard/games';
 }
 
-function resolveAssignmentGoalIds(planId: string, order: number): string[] {
+function resolveAssignmentByOrder(planId: string, order: number) {
   const plan = getTrainingPlan(planId);
-  if (!plan) return [];
+  if (!plan) return null;
+  return findAssignmentByOrder(plan, order) ?? null;
+}
 
-  const assignment = findAssignmentByOrder(plan, order);
+function resolveAssignmentGoalIds(planId: string, order: number): string[] {
+  const assignment = resolveAssignmentByOrder(planId, order);
   if (!assignment?.goalIds?.length) return [];
-
   return [...new Set(assignment.goalIds)];
 }
 
@@ -166,7 +177,7 @@ export function preparePlanActivityBegin(
 
   return {
     ok: true,
-    childId: readTrainingChildId(),
+    childId: resolveStandaloneActivityChildId(),
     goalIds: [],
   };
 }

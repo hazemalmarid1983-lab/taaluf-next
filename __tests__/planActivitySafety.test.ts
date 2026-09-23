@@ -124,8 +124,13 @@ describe('planActivitySafety', () => {
       expect(readActiveTrainingChildId()).toBe('child_real');
     });
 
-    it('readTrainingChildId still falls back to child_local for standalone', () => {
+    it('readTrainingChildId falls back to child_local when no activeStudent', () => {
       expect(readTrainingChildId()).toBe('child_local');
+    });
+
+    it('readTrainingChildId uses activeStudent when set', () => {
+      setActiveStudent('child_real');
+      expect(readTrainingChildId()).toBe('child_real');
     });
   });
 
@@ -144,6 +149,12 @@ describe('planActivitySafety', () => {
     it('starts standalone session with child_local when no plan context exists', () => {
       const result = preparePlanActivityBegin({ pageMediaId: 'follow-star' });
       expect(result).toEqual({ ok: true, childId: 'child_local', goalIds: [] });
+    });
+
+    it('starts standalone session with activeStudent id when set', () => {
+      setActiveStudent('child_real');
+      const result = preparePlanActivityBegin({ pageMediaId: 'follow-star' });
+      expect(result).toEqual({ ok: true, childId: 'child_real', goalIds: [] });
     });
 
     it('starts plan-linked session when launch mediaId matches page media', () => {
