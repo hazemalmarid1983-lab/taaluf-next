@@ -19,6 +19,7 @@ import {
   isWaitThenTouchSessionComplete,
   startWaitThenTouchTrial,
 } from '@/lib/training/waitThenTouchSessionFlow';
+import { prepareLiveActivitySession } from '@/lib/training/liveSessionDraft';
 import {
   ATTENTION_FOCUS_CHAPTER_ID,
   loadAttentionFocusChapter,
@@ -85,8 +86,30 @@ export default function WaitThenTouchActivity() {
       goalIds: begin.goalIds,
       sessionDifficulty: begin.sessionDifficulty,
     });
-    const started = startWaitThenTouchTrial(bundle.session);
-    setSessionBundle(bundle);
+    const opened = prepareLiveActivitySession(
+      bundle.session,
+      startWaitThenTouchTrial
+    );
+    if (opened.action === 'finalize') {
+      const nextSession = finalizeWaitThenTouchSession(opened.session);
+      const metrics = calculateSessionMetrics(nextSession.trials);
+      setResultStars(childFacingStars(metrics.accuracy));
+      try {
+        persistSessionAndAdvancePlan(nextSession);
+        setSessionSaved(true);
+      } catch (error) {
+        console.error(
+          '[taaluf-training] persistCompletedTrainingSession failed',
+          error
+        );
+        setSessionSaved(false);
+      }
+      setSession(nextSession);
+      setPhase('complete');
+      return;
+    }
+    const started = opened.session;
+    setSessionBundle({ ...bundle, session: started });
     setSession(started);
     setPhase('playing');
   }, [media]);

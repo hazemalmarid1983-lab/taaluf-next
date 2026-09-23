@@ -27,6 +27,7 @@ import {
   isWhereDidItGoSessionComplete,
   startWhereDidItGoTrial,
 } from '@/lib/training/whereDidItGoSessionFlow';
+import { prepareLiveActivitySession } from '@/lib/training/liveSessionDraft';
 import PlanActivityGuardMessage from '@/components/training/PlanActivityGuardMessage';
 import {
   persistSessionAndAdvancePlan,
@@ -76,8 +77,30 @@ export default function WhereDidItGoActivity() {
       goalIds: begin.goalIds,
       sessionDifficulty: begin.sessionDifficulty,
     });
-    const started = startWhereDidItGoTrial(bundle.session);
-    setSessionBundle(bundle);
+    const opened = prepareLiveActivitySession(
+      bundle.session,
+      startWhereDidItGoTrial
+    );
+    if (opened.action === 'finalize') {
+      const nextSession = finalizeWhereDidItGoSession(opened.session);
+      const metrics = calculateSessionMetrics(nextSession.trials);
+      setResultStars(childFacingStars(metrics.accuracy));
+      try {
+        persistSessionAndAdvancePlan(nextSession);
+        setSessionSaved(true);
+      } catch (error) {
+        console.error(
+          '[taaluf-training] persistCompletedTrainingSession failed',
+          error
+        );
+        setSessionSaved(false);
+      }
+      setSession(nextSession);
+      setPhase('complete');
+      return;
+    }
+    const started = opened.session;
+    setSessionBundle({ ...bundle, session: started });
     setSession(started);
     setPhase('playing');
   }, [media]);

@@ -39,6 +39,8 @@ export const TRAINING_STORAGE = {
   sessions: 'taaluf.training.sessions.v1',
   /** تقدم الطفل عبر الفصول والوسائل */
   progress: 'taaluf.training.progress.v1',
+  /** مسودة المحاولات أثناء الجلسة الحية — تُحذف عند اكتمال الحفظ */
+  liveSessions: 'taaluf.training.liveSessions.v1',
 } as const;
 
 /** مفاتيح أكاديمية قديمة — تُحوَّل تلقائياً عند القراءة */

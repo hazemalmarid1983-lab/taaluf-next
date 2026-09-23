@@ -27,6 +27,7 @@ import {
 } from '@/lib/training/planActivityIntegration';
 import type { TrainingSessionRuntime } from '@/lib/training/engine/types';
 import { calculateSessionMetrics } from '@/lib/training/engine';
+import { prepareLiveActivitySession } from '@/lib/training/liveSessionDraft';
 
 type ActivityPhase = 'welcome' | 'playing' | 'complete' | 'blocked';
 type BlockReason = 'missing_child' | 'invalid_launch';
@@ -70,8 +71,30 @@ export default function FollowStarActivity() {
       goalIds: begin.goalIds,
       sessionDifficulty: begin.sessionDifficulty,
     });
-    const started = startFollowStarTrial(bundle.session);
-    setSessionBundle(bundle);
+    const opened = prepareLiveActivitySession(
+      bundle.session,
+      startFollowStarTrial
+    );
+    if (opened.action === 'finalize') {
+      const nextSession = finalizeFollowStarSession(opened.session);
+      const metrics = calculateSessionMetrics(nextSession.trials);
+      setResultStars(childFacingStars(metrics.accuracy));
+      try {
+        persistSessionAndAdvancePlan(nextSession);
+        setSessionSaved(true);
+      } catch (error) {
+        console.error(
+          '[taaluf-training] persistCompletedTrainingSession failed',
+          error
+        );
+        setSessionSaved(false);
+      }
+      setSession(nextSession);
+      setPhase('complete');
+      return;
+    }
+    const started = opened.session;
+    setSessionBundle({ ...bundle, session: started });
     setSession(started);
     setPhase('playing');
   }, [media]);

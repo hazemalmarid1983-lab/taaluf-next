@@ -27,6 +27,7 @@ import {
   resolveTrainingActivityCompletionHref,
 } from '@/lib/training/planActivityIntegration';
 import type { TrainingSessionRuntime } from '@/lib/training/engine/types';
+import { prepareLiveActivitySession } from '@/lib/training/liveSessionDraft';
 
 type ActivityPhase = 'welcome' | 'playing' | 'complete' | 'blocked';
 type BlockReason = 'missing_child' | 'invalid_launch';
@@ -69,8 +70,24 @@ export default function MatchMeActivity() {
       goalIds: begin.goalIds,
       sessionDifficulty: begin.sessionDifficulty,
     });
-    const started = startMatchMeTrial(bundle.session);
-    setSessionBundle(bundle);
+    const opened = prepareLiveActivitySession(bundle.session, startMatchMeTrial);
+    if (opened.action === 'finalize') {
+      const nextSession = finalizeMatchMeSession(opened.session);
+      const metrics = calculateSessionMetrics(nextSession.trials);
+      setResultStars(childFacingStars(metrics.accuracy));
+      try {
+        persistSessionAndAdvancePlan(nextSession);
+        setSessionSaved(true);
+      } catch (error) {
+        console.error('[taaluf-training] persist session failed', error);
+        setSessionSaved(false);
+      }
+      setSession(nextSession);
+      setPhase('complete');
+      return;
+    }
+    const started = opened.session;
+    setSessionBundle({ ...bundle, session: started });
     setSession(started);
     setPhase('playing');
   }, [media]);

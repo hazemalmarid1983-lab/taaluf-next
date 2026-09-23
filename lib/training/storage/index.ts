@@ -62,6 +62,7 @@ export {
   markCompletionProgressApplied,
 } from '@/lib/training/storage/completionApplyStore';
 
+import { clearLiveTrainingSessions } from '@/lib/training/liveSessionDraft';
 import { clearCompletionApplyRecords } from '@/lib/training/storage/completionApplyStore';
 import { clearTrainingPlans } from '@/lib/training/storage/planStore';
 import { clearTrainingProgress } from '@/lib/training/storage/progressStore';
@@ -72,4 +73,5 @@ export function clearAllTrainingStorage() {
   clearTrainingSessions();
   clearTrainingProgress();
   clearCompletionApplyRecords();
+  clearLiveTrainingSessions();
 }

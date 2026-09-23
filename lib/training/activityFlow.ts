@@ -10,6 +10,10 @@ import {
   resolveMediaRuntimeConfig,
   startTrial,
 } from '@/lib/training/engine';
+import {
+  findOpenLiveTrainingSession,
+  saveLiveTrainingSession,
+} from '@/lib/training/liveSessionDraft';
 import type { ResolvedMediaConfig } from '@/lib/training/engine/types';
 import type { TrainingSessionRuntime } from '@/lib/training/engine/types';
 import {
@@ -72,6 +76,26 @@ export function createTrainingActivityFlow<TSettings>(
 ): TrainingActivityFlow<TSettings> {
   return {
     begin(beginInput: BeginTrainingActivityInput): TrainingActivityBundle<TSettings> {
+      const recovered = findOpenLiveTrainingSession({
+        childId: beginInput.childId,
+        chapterId: beginInput.chapterId,
+        mediaId: beginInput.media.mediaId,
+      });
+      if (
+        recovered &&
+        recovered.status === 'active' &&
+        (recovered.activeTrialNumber !== undefined || recovered.trials.length > 0)
+      ) {
+        const runtimeConfig = resolveMediaRuntimeConfig(
+          beginInput.media,
+          recovered.difficulty
+        );
+        return {
+          session: recovered,
+          settings: input.resolveSettings(runtimeConfig),
+        };
+      }
+
       const difficulty =
         beginInput.sessionDifficulty ??
         resolveMediaRuntimeConfig(beginInput.media).difficulty;
@@ -97,14 +121,16 @@ export function createTrainingActivityFlow<TSettings>(
     },
 
     startTrial(session: TrainingSessionRuntime): TrainingSessionRuntime {
-      return startTrial(session);
+      const next = startTrial(session);
+      saveLiveTrainingSession(next);
+      return next;
     },
 
     commitTrial(
       session: TrainingSessionRuntime,
       outcome: TrainingTrialOutcome
     ): TrainingSessionRuntime {
-      return recordTrial(session, {
+      const next = recordTrial(session, {
         correct: outcome.correct,
         promptLevel: outcome.promptLevel,
         responseTimeMs: outcome.responseTimeMs,
@@ -125,6 +151,8 @@ export function createTrainingActivityFlow<TSettings>(
           ? { modelReplays: outcome.modelReplays }
           : {}),
       });
+      saveLiveTrainingSession(next);
+      return next;
     },
 
     finalize(session: TrainingSessionRuntime): TrainingSessionRuntime {

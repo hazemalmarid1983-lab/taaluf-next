@@ -30,6 +30,7 @@ import {
 } from '@/lib/training/planActivityIntegration';
 import type { TrainingSessionRuntime } from '@/lib/training/engine/types';
 import type { ObserverImitationRuntimeSettings } from '@/lib/training/observerImitationEngine';
+import { prepareLiveActivitySession } from '@/lib/training/liveSessionDraft';
 
 type ActivityPhase = 'welcome' | 'playing' | 'complete' | 'blocked';
 type BlockReason = 'missing_child' | 'invalid_launch';
@@ -74,10 +75,33 @@ export default function ObserverImitationActivity() {
       skillIds: begin.skillIds,
       sessionDifficulty: begin.sessionDifficulty,
     });
-    const started = startObserverImitationTrial(bundle.session);
+    const opened = prepareLiveActivitySession(
+      bundle.session,
+      startObserverImitationTrial
+    );
+    if (opened.action === 'finalize') {
+      const nextSession = finalizeObserverImitationSession(opened.session);
+      const metrics = calculateSessionMetrics(nextSession.trials);
+      setSummary({
+        accuracy: metrics.accuracy,
+        independence: metrics.independence,
+        totalTrials: metrics.totalTrials,
+      });
+      try {
+        persistSessionAndAdvancePlan(nextSession);
+        setSessionSaved(true);
+      } catch (error) {
+        console.error('[taaluf-training] observer-imitation persist failed', error);
+        setSessionSaved(false);
+      }
+      setSession(nextSession);
+      setPhase('complete');
+      return;
+    }
+    const started = opened.session;
     setSettings(bundle.settings);
     setSession(started);
-    setActiveTrial(started.activeTrialNumber ?? 1);
+    setActiveTrial(started.activeTrialNumber ?? started.trials.length + 1);
     setPhase('playing');
   }, [media]);
 

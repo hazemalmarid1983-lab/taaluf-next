@@ -6,6 +6,7 @@
 import { resolveTrainingActivityRouteOrThrow } from '@/lib/training/activityRoutes';
 import { isPlanExecutionComplete } from '@/lib/training/createPlan';
 import { findMediaInChapter, loadChapterById } from '@/lib/training/loadChapter';
+import { clearLiveTrainingSession } from '@/lib/training/liveSessionDraft';
 import { clearPlanActivityRecoveryAfterPlanSessionComplete } from '@/lib/training/planActivitySafety';
 import { persistCompletedTrainingSession } from '@/lib/training/sessionPersistence';
 import {
@@ -236,6 +237,7 @@ export function persistSessionAndAdvancePlan(
     }
     clearPlanActivityRecoveryAfterPlanSessionComplete();
   }
+  clearLiveTrainingSession(session.id);
   return result;
 }
 

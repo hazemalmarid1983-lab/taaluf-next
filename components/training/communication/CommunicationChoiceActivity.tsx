@@ -48,6 +48,8 @@ import {
 
 } from '@/lib/training/communicationChoiceSessionFlow';
 
+import { prepareLiveActivitySession } from '@/lib/training/liveSessionDraft';
+
 import type { CommTrialOutcome } from '@/lib/training/communicationChoiceEngine';
 
 import {
@@ -232,9 +234,29 @@ export default function CommunicationChoiceActivity({
 
     });
 
-    const started = startCommChoiceTrial(bundle.session);
+    const opened = prepareLiveActivitySession(bundle.session, startCommChoiceTrial);
 
-    setSessionBundle(bundle);
+    if (opened.action === 'finalize') {
+      const nextSession = finalizeCommChoiceSession(opened.session);
+      const metrics = calculateSessionMetrics(nextSession.trials);
+      setResultStars(childFacingStars(metrics.accuracy));
+
+      try {
+        persistSessionAndAdvancePlan(nextSession);
+        setSessionSaved(true);
+      } catch (error) {
+        console.error('[taaluf-training] persist session failed', error);
+        setSessionSaved(false);
+      }
+
+      setSession(nextSession);
+      setPhase('complete');
+      return;
+    }
+
+    const started = opened.session;
+
+    setSessionBundle({ ...bundle, session: started });
 
     setSession(started);
 

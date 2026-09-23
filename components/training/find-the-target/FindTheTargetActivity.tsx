@@ -19,6 +19,7 @@ import {
   isFindTheTargetSessionComplete,
   startFindTheTargetTrial,
 } from '@/lib/training/findTheTargetSessionFlow';
+import { prepareLiveActivitySession } from '@/lib/training/liveSessionDraft';
 import {
   ATTENTION_FOCUS_CHAPTER_ID,
   loadAttentionFocusChapter,
@@ -85,8 +86,30 @@ export default function FindTheTargetActivity() {
       goalIds: begin.goalIds,
       sessionDifficulty: begin.sessionDifficulty,
     });
-    const started = startFindTheTargetTrial(bundle.session);
-    setSessionBundle(bundle);
+    const opened = prepareLiveActivitySession(
+      bundle.session,
+      startFindTheTargetTrial
+    );
+    if (opened.action === 'finalize') {
+      const nextSession = finalizeFindTheTargetSession(opened.session);
+      const metrics = calculateSessionMetrics(nextSession.trials);
+      setResultStars(childFacingStars(metrics.accuracy));
+      try {
+        persistSessionAndAdvancePlan(nextSession);
+        setSessionSaved(true);
+      } catch (error) {
+        console.error(
+          '[taaluf-training] persistCompletedTrainingSession failed',
+          error
+        );
+        setSessionSaved(false);
+      }
+      setSession(nextSession);
+      setPhase('complete');
+      return;
+    }
+    const started = opened.session;
+    setSessionBundle({ ...bundle, session: started });
     setSession(started);
     setPhase('playing');
   }, [media]);
