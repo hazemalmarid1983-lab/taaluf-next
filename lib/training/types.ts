@@ -51,6 +51,8 @@ export const TRAINING_ENGINE_TYPES = [
   'response_control',
   'expressive_choice',
   'receptive_choice',
+  /** C15 — نموذج رقمي + تنفيذ جسدي + تسجيل مراقب (Hybrid) */
+  'observer_imitation',
 ] as const;
 
 export type TrainingEngineType = (typeof TRAINING_ENGINE_TYPES)[number];
@@ -71,6 +73,11 @@ export const TRAINING_GOAL_TYPES = [
   'receptive_instruction',
   'communicative_point',
   'name_orienting',
+  'gross_motor_imitation',
+  'fine_motor_imitation',
+  'social_expression_imitation',
+  'imitation_after_model_replay',
+  'imitation_with_assistance_fading',
 ] as const;
 
 export type TrainingGoalType = (typeof TRAINING_GOAL_TYPES)[number];
@@ -170,6 +177,15 @@ export type TapToRequestResponseMode = 'child_tap' | 'observer_no_response';
 
 export const TAP_TO_REQUEST_PROTOCOL_REVISION = 'tap-to-request-v1';
 
+export const OBSERVER_IMITATION_PROTOCOL_REVISION = 'observer-imitation-v1';
+
+export type ObserverImitationMovementCategory = 'gross' | 'fine' | 'social';
+
+export type ObserverImitationModelType =
+  | 'illustration'
+  | 'animated'
+  | 'video';
+
 /** محاولة واحدة داخل جلسة تدريب */
 export type TrainingTrial = {
   trialNumber: number;
@@ -181,6 +197,11 @@ export type TrainingTrial = {
   targetId?: string;
   responseChoiceId?: string | null;
   responseMode?: TapToRequestResponseMode;
+  /** observer-imitation v1 — اختياري */
+  movementId?: string;
+  movementCategory?: ObserverImitationMovementCategory;
+  /** عدد مرات إعادة النموذج — لا يُشتق منه promptLevel */
+  modelReplays?: number;
 };
 
 /** جلسة تدريب — للاستخدام في مراحل لاحقة */
@@ -200,6 +221,8 @@ export type TrainingSession = {
   metrics?: Record<string, number>;
   /** tap-to-request v1 — اختياري */
   protocolRevision?: string;
+  /** مهارات مخططة للجلسة — من assignment.skillIds عند الإطلاق من خطة */
+  skillIds?: string[];
 };
 
 /** تقدم الطفل في وسيلة/فصل — للاستخدام في مراحل لاحقة */
@@ -221,6 +244,11 @@ export type TrainingPlanAssignment = {
   order: number;
   /** مراجع TrackedGoal.id المرتبطة بهذه المهمة — اختياري للخطط القديمة */
   goalIds?: string[];
+  /**
+   * مهارات target مختارة ضمن الوسيلة (ماذا يُدرَّب؟) — اختياري.
+   * C15 observer-imitation: S1–S3 فقط للخطط الجديدة؛ S4/S5 أبعاد تقدم وليست target skills.
+   */
+  skillIds?: string[];
 };
 
 /** مؤشر التقدم داخل الخطة — nextOrder يطابق TrainingPlanAssignment.order */

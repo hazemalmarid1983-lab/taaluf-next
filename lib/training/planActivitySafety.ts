@@ -41,6 +41,7 @@ export type PreparePlanActivityBeginSuccess = {
   planId?: string;
   sessionDifficulty?: TrainingDifficulty;
   goalIds: string[];
+  skillIds?: string[];
 };
 
 export type PreparePlanActivityBeginFailure = {
@@ -123,6 +124,12 @@ function resolveAssignmentGoalIds(planId: string, order: number): string[] {
   return [...new Set(assignment.goalIds)];
 }
 
+function resolveAssignmentSkillIds(planId: string, order: number): string[] {
+  const assignment = resolveAssignmentByOrder(planId, order);
+  if (!assignment?.skillIds?.length) return [];
+  return [...new Set(assignment.skillIds)];
+}
+
 export function preparePlanActivityBegin(
   input: PreparePlanActivityBeginInput
 ): PreparePlanActivityBeginResult {
@@ -147,12 +154,14 @@ export function preparePlanActivityBegin(
       childId: activeChildId,
     });
 
+    const skillIds = resolveAssignmentSkillIds(launch.planId, launch.order);
     return {
       ok: true,
       childId: activeChildId,
       planId: launch.planId,
       sessionDifficulty: launch.difficulty,
       goalIds: resolveAssignmentGoalIds(launch.planId, launch.order),
+      ...(skillIds.length ? { skillIds } : {}),
     };
   }
 
@@ -166,12 +175,14 @@ export function preparePlanActivityBegin(
       return { ok: false, reason: 'missing_child' };
     }
 
+    const skillIds = resolveAssignmentSkillIds(recovery.planId, recovery.order);
     return {
       ok: true,
       childId: activeChildId,
       planId: recovery.planId,
       sessionDifficulty: recovery.difficulty,
       goalIds: resolveAssignmentGoalIds(recovery.planId, recovery.order),
+      ...(skillIds.length ? { skillIds } : {}),
     };
   }
 

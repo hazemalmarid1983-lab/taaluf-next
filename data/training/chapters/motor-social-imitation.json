@@ -1,0 +1,151 @@
+{
+  "version": "1.0",
+  "platform": "تآلف",
+  "chapter": {
+    "chapterId": "motor-social-imitation",
+    "titleAr": "التقليد الحركي والاجتماعي",
+    "titleEn": "Motor & Social Imitation",
+    "descriptionAr": "فصل تدريبي (Hybrid) لـ C15: نموذج رقمي ثم تنفيذ جسدي مع تسجيل المراقب. PROVISIONAL DESIGN — يحتاج مراجعة علمية.",
+    "descriptionEn": "Hybrid C15 chapter: digital model, physical performance, observer scoring.",
+    "domain": "social",
+    "skillIds": [
+      "skill-c15-s1-gross",
+      "skill-c15-s2-fine",
+      "skill-c15-s3-social"
+    ],
+    "criterionIds": ["C15"],
+    "ageBands": ["3-4", "5-6", "7-9", "10-12"],
+    "difficultyLevels": [1, 2, 3],
+    "orderedMedia": ["observer-imitation"]
+  },
+  "skills": [
+    {
+      "skillId": "skill-c15-s1-gross",
+      "domainId": "social",
+      "titleAr": "C15-S1 — تقليد حركة كبيرة مألوفة",
+      "titleEn": "C15-S1 Gross motor imitation",
+      "descriptionAr": "بعد نموذج واحد — حركات كبيرة (PROVISIONAL).",
+      "criterionIds": ["C15"]
+    },
+    {
+      "skillId": "skill-c15-s2-fine",
+      "domainId": "social",
+      "titleAr": "C15-S2 — تقليد حركة دقيقة",
+      "titleEn": "C15-S2 Fine motor imitation",
+      "descriptionAr": "بعد نموذج مباشر — حركات صغيرة (PROVISIONAL).",
+      "criterionIds": ["C15"]
+    },
+    {
+      "skillId": "skill-c15-s3-social",
+      "domainId": "social",
+      "titleAr": "C15-S3 — تقليد تعبير اجتماعي بسيط",
+      "titleEn": "C15-S3 Social expression imitation",
+      "descriptionAr": "تعبير وجهي/اجتماعي بعد نموذج (PROVISIONAL).",
+      "criterionIds": ["C15"]
+    },
+    {
+      "skillId": "skill-c15-s4-replay",
+      "domainId": "social",
+      "titleAr": "C15-S4 — تقليد بعد إعادة النموذج",
+      "titleEn": "C15-S4 Imitation after model replay",
+      "descriptionAr": "إعادة النموذج بقرار المراقب — لا تُ equated بالمساعدة تلقائياً (PROVISIONAL).",
+      "criterionIds": ["C15"]
+    },
+    {
+      "skillId": "skill-c15-s5-fading",
+      "domainId": "social",
+      "titleAr": "C15-S5 — تقليد مع تلاشي المساعدة",
+      "titleEn": "C15-S5 Assisted imitation fading",
+      "descriptionAr": "تسجيل مساعدة بشرية وتلاشٍ (PROVISIONAL).",
+      "criterionIds": ["C15"]
+    }
+  ],
+  "media": [
+    {
+      "mediaId": "observer-imitation",
+      "titleAr": "تقليد مع مراقب",
+      "titleEn": "Observer-scored imitation",
+      "descriptionAr": "نموذج على الشاشة → تنفيذ جسدي → تسجيل المراقب. لا يُعد إتقان C15 من الشاشة وحدها.",
+      "descriptionEn": "Digital model → physical performance → observer record.",
+      "engineType": "observer_imitation",
+      "skillIds": [
+        "skill-c15-s1-gross",
+        "skill-c15-s2-fine",
+        "skill-c15-s3-social"
+      ],
+      "goalLinks": [
+        {
+          "goalType": "gross_motor_imitation",
+          "labelAr": "تقليد حركة كبيرة بعد نموذج",
+          "labelEn": "Gross motor imitation after model",
+          "skillIds": ["skill-c15-s1-gross"],
+          "criterionIds": ["C15"]
+        },
+        {
+          "goalType": "fine_motor_imitation",
+          "labelAr": "تقليد حركة دقيقة بعد نموذج",
+          "labelEn": "Fine motor imitation after model",
+          "skillIds": ["skill-c15-s2-fine"],
+          "criterionIds": ["C15"]
+        },
+        {
+          "goalType": "social_expression_imitation",
+          "labelAr": "تقليد تعبير اجتماعي بسيط",
+          "labelEn": "Simple social expression imitation",
+          "skillIds": ["skill-c15-s3-social"],
+          "criterionIds": ["C15"]
+        },
+        {
+          "goalType": "imitation_after_model_replay",
+          "labelAr": "تقليد بعد إعادة النموذج",
+          "labelEn": "Imitation after model replay",
+          "skillIds": ["skill-c15-s4-replay"],
+          "criterionIds": ["C15"]
+        },
+        {
+          "goalType": "imitation_with_assistance_fading",
+          "labelAr": "تقليد مع تلاشي المساعدة البشرية",
+          "labelEn": "Imitation with assistance fading",
+          "skillIds": ["skill-c15-s5-fading"],
+          "criterionIds": ["C15"]
+        }
+      ],
+      "criterionIds": ["C15"],
+      "ageBands": ["3-4", "5-6", "7-9", "10-12"],
+      "difficultyLevels": [1, 2, 3],
+      "config": {
+        "trialCount": 5,
+        "difficulty": 1,
+        "prompting": false,
+        "reinforcement": true,
+        "displayDurationMs": 3500,
+        "content": {
+          "assetNote": "Temporary MVP Asset — not Final Educational Asset",
+          "c15SkillModel": {
+            "targetSkillIds": [
+              "skill-c15-s1-gross",
+              "skill-c15-s2-fine",
+              "skill-c15-s3-social"
+            ],
+            "progressionDimensionSkillIds": [
+              "skill-c15-s4-replay",
+              "skill-c15-s5-fading"
+            ],
+            "methodologyNoteAr": "S1–S3 = Target Skills (ماذا يقلد؟). S4–S5 = أبعاد تقدم/بروتوكول (كيف يُدرَّب؟) — غير قابلة لـ assignment.skillIds. S4 لا ي equate replay بمعيار نجاح؛ S5 لا ي equate promptLevel ببروتوكول fading منفذ. PROVISIONAL — مراجعة علمية مطلوبة قبل protocol executable.",
+            "methodologyDoc": "data/training/docs/C15-skill-classification.md"
+          },
+          "modelDurationMs": 3500,
+          "replayAllowed": true,
+          "movementIds": [
+            "hands_up",
+            "clap",
+            "wave",
+            "touch_nose",
+            "touch_head",
+            "smile"
+          ]
+        }
+      }
+    }
+  ]
+}

@@ -25,6 +25,8 @@ const TAP_TO_REQUEST_RESPONSE_MODES = new Set([
   'observer_no_response',
 ]);
 
+const OBSERVER_IMITATION_CATEGORIES = new Set(['gross', 'fine', 'social']);
+
 function validateOptionalTapToRequestTrialFields(
   input: Record<string, unknown>,
   errors: string[]
@@ -50,6 +52,33 @@ function validateOptionalTapToRequestTrialFields(
       !TAP_TO_REQUEST_RESPONSE_MODES.has(input.responseMode)
     ) {
       errors.push('responseMode غير صالح');
+    }
+  }
+}
+
+function validateOptionalObserverImitationTrialFields(
+  input: Record<string, unknown>,
+  errors: string[]
+) {
+  if (input.movementId !== undefined) {
+    if (typeof input.movementId !== 'string' || !input.movementId.trim()) {
+      errors.push('movementId يجب أن يكون نصاً غير فارغ');
+    }
+  }
+
+  if (input.movementCategory !== undefined) {
+    if (
+      typeof input.movementCategory !== 'string' ||
+      !OBSERVER_IMITATION_CATEGORIES.has(input.movementCategory)
+    ) {
+      errors.push('movementCategory غير صالح');
+    }
+  }
+
+  if (input.modelReplays !== undefined) {
+    const replays = Number(input.modelReplays);
+    if (!Number.isInteger(replays) || replays < 0) {
+      errors.push('modelReplays يجب أن يكون عدداً صحيحاً غير سالب');
     }
   }
 }
@@ -89,6 +118,7 @@ export function validateTrainingTrial(input: unknown): TrainingValidationResult 
   }
 
   validateOptionalTapToRequestTrialFields(input, errors);
+  validateOptionalObserverImitationTrialFields(input, errors);
 
   return { valid: errors.length === 0, errors };
 }
@@ -128,6 +158,7 @@ export function validateRecordTrainingTrialInput(
   }
 
   validateOptionalTapToRequestTrialFields(input, errors);
+  validateOptionalObserverImitationTrialFields(input, errors);
 
   return { valid: errors.length === 0, errors };
 }

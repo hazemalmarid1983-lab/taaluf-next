@@ -4,6 +4,7 @@
 
 import attentionFocusRaw from '@/data/training/chapters/attention-focus.json';
 import communicationLanguageRaw from '@/data/training/chapters/communication-language.json';
+import motorSocialImitationRaw from '@/data/training/chapters/motor-social-imitation.json';
 import {
   assertValidTrainingChapterDocument,
   validateTrainingChapterDocument,
@@ -12,6 +13,7 @@ import type { TrainingChapterDocument } from '@/lib/training/types';
 
 export const ATTENTION_FOCUS_CHAPTER_ID = 'attention-focus';
 export const COMMUNICATION_LANGUAGE_CHAPTER_ID = 'communication-language';
+export const MOTOR_SOCIAL_IMITATION_CHAPTER_ID = 'motor-social-imitation';
 
 /** مستند خام — يُتحقق منه عند التحميل */
 export const ATTENTION_FOCUS_CHAPTER_RAW: unknown = attentionFocusRaw;
@@ -37,9 +39,19 @@ export function validateCommunicationLanguageChapter() {
   return validateTrainingChapterDocument(communicationLanguageRaw);
 }
 
+export function loadMotorSocialImitationChapter(): TrainingChapterDocument {
+  assertValidTrainingChapterDocument(motorSocialImitationRaw);
+  return motorSocialImitationRaw as TrainingChapterDocument;
+}
+
+export function validateMotorSocialImitationChapter() {
+  return validateTrainingChapterDocument(motorSocialImitationRaw);
+}
+
 const CHAPTER_LOADERS: Record<string, () => TrainingChapterDocument> = {
   [ATTENTION_FOCUS_CHAPTER_ID]: loadAttentionFocusChapter,
   [COMMUNICATION_LANGUAGE_CHAPTER_ID]: loadCommunicationLanguageChapter,
+  [MOTOR_SOCIAL_IMITATION_CHAPTER_ID]: loadMotorSocialImitationChapter,
 };
 
 export function listTrainingChapterIds(): string[] {

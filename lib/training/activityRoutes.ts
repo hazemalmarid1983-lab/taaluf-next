@@ -21,6 +21,11 @@ const COMMUNICATION_LANGUAGE_ROUTES: Record<string, string> = {
   'name-call-tap': '/dashboard/training/communication-language/name-call-tap',
 };
 
+const MOTOR_SOCIAL_IMITATION_ROUTES: Record<string, string> = {
+  'observer-imitation':
+    '/dashboard/training/motor-social-imitation/observer-imitation',
+};
+
 export function resolveTrainingActivityRoute(
   chapterId: string,
   mediaId: string
@@ -30,6 +35,9 @@ export function resolveTrainingActivityRoute(
   }
   if (chapterId === 'communication-language') {
     return COMMUNICATION_LANGUAGE_ROUTES[mediaId] ?? null;
+  }
+  if (chapterId === 'motor-social-imitation') {
+    return MOTOR_SOCIAL_IMITATION_ROUTES[mediaId] ?? null;
   }
   return null;
 }

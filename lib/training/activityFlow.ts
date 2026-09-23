@@ -13,7 +13,9 @@ import {
 import type { ResolvedMediaConfig } from '@/lib/training/engine/types';
 import type { TrainingSessionRuntime } from '@/lib/training/engine/types';
 import {
+  OBSERVER_IMITATION_PROTOCOL_REVISION,
   TAP_TO_REQUEST_PROTOCOL_REVISION,
+  type ObserverImitationMovementCategory,
   type TapToRequestResponseMode,
   type TrainingDifficulty,
   type TrainingMedia,
@@ -28,6 +30,9 @@ export type TrainingTrialOutcome = {
   targetId?: string;
   responseChoiceId?: string | null;
   responseMode?: TapToRequestResponseMode;
+  movementId?: string;
+  movementCategory?: ObserverImitationMovementCategory;
+  modelReplays?: number;
 };
 
 export type TrainingActivityBundle<TSettings> = {
@@ -41,6 +46,7 @@ export type BeginTrainingActivityInput = {
   media: TrainingMedia;
   planId?: string;
   goalIds?: string[];
+  skillIds?: string[];
   /** صعوبة مُخصّصة من الخطة — تتجاوز إعدادات الوسيلة الافتراضية */
   sessionDifficulty?: TrainingDifficulty;
 };
@@ -77,11 +83,14 @@ export function createTrainingActivityFlow<TSettings>(
         media: beginInput.media,
         planId: beginInput.planId,
         goalIds: beginInput.goalIds,
+        skillIds: beginInput.skillIds,
         difficulty,
         protocolRevision:
           beginInput.media.mediaId === 'tap-to-request'
             ? TAP_TO_REQUEST_PROTOCOL_REVISION
-            : undefined,
+            : beginInput.media.engineType === 'observer_imitation'
+              ? OBSERVER_IMITATION_PROTOCOL_REVISION
+              : undefined,
       });
 
       return { session, settings };
@@ -105,6 +114,15 @@ export function createTrainingActivityFlow<TSettings>(
           : {}),
         ...(outcome.responseMode !== undefined
           ? { responseMode: outcome.responseMode }
+          : {}),
+        ...(outcome.movementId !== undefined
+          ? { movementId: outcome.movementId }
+          : {}),
+        ...(outcome.movementCategory !== undefined
+          ? { movementCategory: outcome.movementCategory }
+          : {}),
+        ...(outcome.modelReplays !== undefined
+          ? { modelReplays: outcome.modelReplays }
           : {}),
       });
     },

@@ -46,6 +46,7 @@ export function createTrainingSession(
     mediaId: input.media.mediaId,
     planId: input.planId,
     ...(input.goalIds?.length ? { goalIds: [...new Set(input.goalIds)] } : {}),
+    ...(input.skillIds?.length ? { skillIds: [...new Set(input.skillIds)] } : {}),
     difficulty: runtimeConfig.difficulty,
     startedAt: input.startedAt ?? new Date().toISOString(),
     trials: [],
@@ -115,6 +116,13 @@ export function recordTrial(
       : {}),
     ...(input.responseMode !== undefined
       ? { responseMode: input.responseMode }
+      : {}),
+    ...(input.movementId !== undefined ? { movementId: input.movementId } : {}),
+    ...(input.movementCategory !== undefined
+      ? { movementCategory: input.movementCategory }
+      : {}),
+    ...(input.modelReplays !== undefined
+      ? { modelReplays: input.modelReplays }
       : {}),
   };
 

@@ -3,6 +3,7 @@
  */
 
 import type {
+  ObserverImitationMovementCategory,
   TapToRequestResponseMode,
   TrainingDifficulty,
   TrainingMedia,
@@ -30,6 +31,7 @@ export type CreateTrainingSessionInput = {
   difficulty?: TrainingDifficulty;
   planId?: string;
   goalIds?: string[];
+  skillIds?: string[];
   startedAt?: string;
   protocolRevision?: string;
 };
@@ -42,6 +44,9 @@ export type RecordTrainingTrialInput = {
   targetId?: string;
   responseChoiceId?: string | null;
   responseMode?: TapToRequestResponseMode;
+  movementId?: string;
+  movementCategory?: ObserverImitationMovementCategory;
+  modelReplays?: number;
 };
 
 export type ResolvedMediaConfig = {
