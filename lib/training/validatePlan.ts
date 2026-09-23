@@ -2,7 +2,13 @@
  * التحقق من TrainingPlan — طبقة التنفيذ.
  */
 
+import {
+  isC15ProgressionDimensionSkillId,
+  isC15TargetSkillId,
+} from '@/lib/training/c15SkillClassification';
+import { OBSERVER_IMITATION_MEDIA_ID } from '@/lib/training/observerImitationEngine';
 import { isValidTrainingDifficulty } from '@/lib/training/engine/mediaLoader';
+import { findMediaInChapter, loadChapterById } from '@/lib/training/loadChapter';
 import type {
   TrainingPlan,
   TrainingPlanAssignment,
@@ -61,7 +67,82 @@ function validateAssignment(
     }
   }
 
-  return errors.length === 0;
+  if (assignment.skillIds !== undefined) {
+    if (!isStringArray(assignment.skillIds)) {
+      errors.push(`assignments[${index}].skillIds يجب أن يكون مصفوفة نصوص`);
+    } else if (assignment.skillIds.length === 0) {
+      errors.push(
+        `assignments[${index}].skillIds يجب أن تكون غير فارغة عند التعريف`
+      );
+    } else if (new Set(assignment.skillIds).size !== assignment.skillIds.length) {
+      errors.push(`assignments[${index}].skillIds يجب أن تكون فريدة`);
+    }
+  }
+
+  return true;
+}
+
+function validateAssignmentSkillIdsAgainstChapter(
+  assignment: Record<string, unknown>,
+  index: number,
+  chapterId: string,
+  errors: string[]
+) {
+  if (assignment.skillIds === undefined) return;
+
+  const skillIds = assignment.skillIds;
+  if (!isStringArray(skillIds) || skillIds.length === 0) return;
+
+  const mediaId =
+    typeof assignment.mediaId === 'string' ? assignment.mediaId.trim() : '';
+  if (!mediaId) return;
+
+  let chapter;
+  try {
+    chapter = loadChapterById(chapterId);
+  } catch {
+    errors.push(`chapterId غير معروف: ${chapterId}`);
+    return;
+  }
+
+  const media = findMediaInChapter(chapter, mediaId);
+  if (!media) {
+    errors.push(
+      `assignments[${index}].mediaId غير موجود في الفصل ${chapterId}: ${mediaId}`
+    );
+    return;
+  }
+
+  const knownSkillIds = new Set(chapter.skills.map((skill) => skill.skillId));
+  const mediaSkillIds = new Set(media.skillIds);
+
+  for (const skillId of skillIds) {
+    if (!knownSkillIds.has(skillId)) {
+      errors.push(
+        `assignments[${index}].skillIds يشير إلى مهارة غير معرّفة في الفصل: ${skillId}`
+      );
+      continue;
+    }
+
+    if (mediaId === OBSERVER_IMITATION_MEDIA_ID) {
+      if (isC15ProgressionDimensionSkillId(skillId)) {
+        // خطط قديمة قد تحتوي S4/S5 — نبقيها صالحة دون migration
+        continue;
+      }
+      if (!isC15TargetSkillId(skillId)) {
+        errors.push(
+          `assignments[${index}].skillIds: ${skillId} ليست مهارة target لـ observer-imitation`
+        );
+        continue;
+      }
+    }
+
+    if (!mediaSkillIds.has(skillId)) {
+      errors.push(
+        `assignments[${index}].skillIds: المهارة ${skillId} غير مرتبطة بالوسيلة ${mediaId}`
+      );
+    }
+  }
 }
 
 export function sortedPlanAssignments(
@@ -129,6 +210,17 @@ export function validateTrainingPlanDocument(
           errors.push(`assignments[${index}].mediaId مكرر: ${mediaId}`);
         }
         mediaIds.add(mediaId);
+      }
+
+      const chapterId =
+        typeof input.chapterId === 'string' ? input.chapterId.trim() : '';
+      if (chapterId) {
+        validateAssignmentSkillIdsAgainstChapter(
+          assignment,
+          index,
+          chapterId,
+          errors
+        );
       }
     });
   }

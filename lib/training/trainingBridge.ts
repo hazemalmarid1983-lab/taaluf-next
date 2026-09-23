@@ -68,6 +68,9 @@ export function buildTrainingPlanLaunchContextFromExecution(
     mediaId: execution.assignment.mediaId,
     difficulty: execution.assignment.difficulty,
     order: execution.assignment.order,
+    ...(execution.assignment.skillIds?.length
+      ? { skillIds: [...execution.assignment.skillIds] }
+      : {}),
   };
 }
 

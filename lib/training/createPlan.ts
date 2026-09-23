@@ -19,6 +19,7 @@ export type CreateTrainingPlanAssignmentInput = {
   difficulty?: TrainingDifficulty;
   order?: number;
   goalIds?: string[];
+  skillIds?: string[];
 };
 
 export type CreateTrainingPlanInput = {
@@ -61,6 +62,9 @@ export function buildTrainingPlanAssignments(
     };
     if (item.goalIds !== undefined) {
       assignment.goalIds = [...new Set(item.goalIds)];
+    }
+    if (item.skillIds !== undefined && item.skillIds.length > 0) {
+      assignment.skillIds = [...new Set(item.skillIds)];
     }
     return assignment;
   });

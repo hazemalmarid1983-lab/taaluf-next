@@ -13,6 +13,7 @@ export type TrainingPlanLaunchContext = {
   mediaId: string;
   difficulty: TrainingDifficulty;
   order: number;
+  skillIds?: string[];
 };
 
 function isBrowser(): boolean {

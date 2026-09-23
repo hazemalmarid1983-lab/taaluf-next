@@ -6,6 +6,10 @@
 import type { TrackedGoal } from '@/lib/goalsEngine';
 import { loadGoalsLocal } from '@/lib/goalsStore';
 import {
+  filterObserverImitationTargetSkillIds,
+  isC15ProgressionDimensionSkillId,
+} from '@/lib/training/c15SkillClassification';
+import {
   createTrainingPlan,
   type CreateTrainingPlanAssignmentInput,
 } from '@/lib/training/createPlan';
@@ -13,6 +17,7 @@ import {
   findChapterIdForMedia,
   loadChapterById,
 } from '@/lib/training/loadChapter';
+import { OBSERVER_IMITATION_MEDIA_ID } from '@/lib/training/observerImitationEngine';
 import {
   getActiveTrainingPlan,
   MULTIPLE_ACTIVE_TRAINING_PLANS,
@@ -72,6 +77,20 @@ export type PlanBuilderMediaOption = {
   criterionTitle: string;
 };
 
+/** اختيار مهارات per-media في Plan Builder */
+export type PlanBuilderActivitySkills = Record<string, string[]>;
+
+export type PlanBuilderConfigureRow = {
+  mediaId: string;
+  mediaTitleAr: string;
+  skillIds: string[];
+  skillTitlesAr: string[];
+  relatedGoalIds: string[];
+  relatedGoalTitles: string[];
+  criterionId: string;
+  criterionTitle: string;
+};
+
 export type PlanBuilderActivePlanCheck =
   | { allowed: true; activePlan: null }
   | { allowed: false; activePlan: TrainingPlan; reason: 'active_plan_exists' }
@@ -105,7 +124,6 @@ export function checkPlanBuilderActivePlan(
   }
 }
 
-/** فصل الخطة = فصل الأنشطة المختارة. لا يُخلط فصلان في برنامج واحد. */
 export function resolveChapterIdForPlanMedia(orderedMediaIds: string[]): string {
   if (orderedMediaIds.length === 0) {
     throw new PlanBuilderError('يجب اختيار نشاط واحد على الأقل');
@@ -158,18 +176,32 @@ export function listCandidateEntriesForGoal(
 
   const chapter = loadChapterById(view.candidates.chapterId);
 
-  return view.candidates.media.map((media) => {
-    const skill =
-      chapter.skills.find((item) => media.skillIds.includes(item.skillId)) ??
-      view.candidates.skills.find((item) => media.skillIds.includes(item.skillId));
+  return view.candidates.media.flatMap((media) => {
+    const skills = view.candidates.skills.filter((item) =>
+      media.skillIds.includes(item.skillId)
+    );
 
-    if (!skill) {
+    const resolved =
+      skills.length > 0
+        ? skills
+        : (() => {
+            const fallback =
+              chapter.skills.find((item) =>
+                media.skillIds.includes(item.skillId)
+              ) ??
+              view.candidates.skills.find((item) =>
+                media.skillIds.includes(item.skillId)
+              );
+            return fallback ? [fallback] : [];
+          })();
+
+    if (resolved.length === 0) {
       throw new PlanBuilderError(
         `مهارة غير معروفة للوسيلة ${media.mediaId} في الهدف ${view.goal.id}`
       );
     }
 
-    return {
+    return resolved.map((skill) => ({
       goalId: view.goal.id,
       goalTitle: view.goal.title,
       criterionId: view.candidates.criterionId,
@@ -178,7 +210,7 @@ export function listCandidateEntriesForGoal(
       skillTitleAr: skill.titleAr,
       mediaId: media.mediaId,
       mediaTitleAr: media.titleAr,
-    };
+    }));
   });
 }
 
@@ -233,9 +265,139 @@ export function assertValidPlanBuilderDifficulty(
   return difficulty;
 }
 
+export function isPlanBuilderSkillSelected(
+  selection: PlanBuilderActivitySkills,
+  mediaId: string,
+  skillId: string
+): boolean {
+  return (selection[mediaId] ?? []).includes(skillId);
+}
+
+export function togglePlanBuilderActivitySkill(
+  selection: PlanBuilderActivitySkills,
+  mediaOrder: string[],
+  mediaId: string,
+  skillId: string
+): { selection: PlanBuilderActivitySkills; mediaOrder: string[] } {
+  if (
+    mediaId === OBSERVER_IMITATION_MEDIA_ID &&
+    isC15ProgressionDimensionSkillId(skillId)
+  ) {
+    throw new PlanBuilderError(
+      'S4/S5 أبعاد تقدم/بروتوكول — لا تُختار كمهارات target في الخطة'
+    );
+  }
+  const current = selection[mediaId] ?? [];
+  const nextSelection = { ...selection };
+
+  if (current.includes(skillId)) {
+    const filtered = current.filter((id) => id !== skillId);
+    if (filtered.length === 0) {
+      delete nextSelection[mediaId];
+      return {
+        selection: nextSelection,
+        mediaOrder: mediaOrder.filter((id) => id !== mediaId),
+      };
+    }
+    nextSelection[mediaId] = filtered;
+    return { selection: nextSelection, mediaOrder };
+  }
+
+  nextSelection[mediaId] = [...current, skillId];
+  const nextOrder = mediaOrder.includes(mediaId)
+    ? mediaOrder
+    : [...mediaOrder, mediaId];
+  return { selection: nextSelection, mediaOrder: nextOrder };
+}
+
+export function countSelectedPlanBuilderActivities(
+  mediaOrder: string[],
+  selection: PlanBuilderActivitySkills
+): number {
+  return mediaOrder.filter((mediaId) => (selection[mediaId] ?? []).length > 0)
+    .length;
+}
+
+export function countSelectedSkillsForMedia(
+  selection: PlanBuilderActivitySkills,
+  mediaId: string
+): number {
+  return selection[mediaId]?.length ?? 0;
+}
+
+export function buildPlanBuilderConfigureRows(
+  views: PlanBuilderGoalView[],
+  selection: PlanBuilderActivitySkills,
+  mediaOrder: string[]
+): PlanBuilderConfigureRow[] {
+  const goalIdsByMedia = new Map<string, string[]>();
+  const goalTitlesByMedia = new Map<string, string[]>();
+  const metaByMedia = new Map<
+    string,
+    { mediaTitleAr: string; criterionId: string; criterionTitle: string }
+  >();
+
+  for (const view of views) {
+    if (!view.hasCandidates) continue;
+    for (const entry of listCandidateEntriesForGoal(view)) {
+      if (!metaByMedia.has(entry.mediaId)) {
+        metaByMedia.set(entry.mediaId, {
+          mediaTitleAr: entry.mediaTitleAr,
+          criterionId: entry.criterionId,
+          criterionTitle: entry.criterionTitle,
+        });
+      }
+      const goalIds = goalIdsByMedia.get(entry.mediaId) ?? [];
+      if (!goalIds.includes(entry.goalId)) {
+        goalIds.push(entry.goalId);
+        goalIdsByMedia.set(entry.mediaId, goalIds);
+        const titles = goalTitlesByMedia.get(entry.mediaId) ?? [];
+        titles.push(entry.goalTitle);
+        goalTitlesByMedia.set(entry.mediaId, titles);
+      }
+    }
+  }
+
+  const chapterCache = new Map<string, ReturnType<typeof loadChapterById>>();
+
+  return mediaOrder
+    .filter((mediaId) => (selection[mediaId] ?? []).length > 0)
+    .map((mediaId) => {
+      const skillIds = [...new Set(selection[mediaId] ?? [])];
+      const meta = metaByMedia.get(mediaId);
+      const chapterId = views.find((v) =>
+        v.candidates.media.some((m) => m.mediaId === mediaId)
+      )?.candidates.chapterId;
+
+      let skillTitlesAr = skillIds.map((id) => id);
+      if (chapterId) {
+        if (!chapterCache.has(chapterId)) {
+          chapterCache.set(chapterId, loadChapterById(chapterId));
+        }
+        const chapter = chapterCache.get(chapterId)!;
+        skillTitlesAr = skillIds.map((id) => {
+          const skill = chapter.skills.find((item) => item.skillId === id);
+          return skill?.titleAr ?? id;
+        });
+      }
+
+      return {
+        mediaId,
+        mediaTitleAr: meta?.mediaTitleAr ?? mediaId,
+        skillIds,
+        skillTitlesAr,
+        relatedGoalIds: goalIdsByMedia.get(mediaId) ?? [],
+        relatedGoalTitles: goalTitlesByMedia.get(mediaId) ?? [],
+        criterionId: meta?.criterionId ?? '',
+        criterionTitle: meta?.criterionTitle ?? '',
+      };
+    });
+}
+
 export function buildOrderedAssignments(
   orderedMediaIds: string[],
-  difficulties: Record<string, TrainingDifficulty>
+  difficulties: Record<string, TrainingDifficulty>,
+  selectedActivitySkills: PlanBuilderActivitySkills = {}
 ): CreateTrainingPlanAssignmentInput[] {
   if (orderedMediaIds.length === 0) {
     throw new PlanBuilderError('يجب اختيار نشاط واحد على الأقل');
@@ -246,13 +408,26 @@ export function buildOrderedAssignments(
     throw new PlanBuilderError('لا يمكن تكرار نفس النشاط في الخطة');
   }
 
-  return orderedMediaIds.map((mediaId, index) => ({
-    mediaId,
-    difficulty: assertValidPlanBuilderDifficulty(
-      difficulties[mediaId] ?? 1
-    ),
-    order: index + 1,
-  }));
+  return orderedMediaIds.map((mediaId, index) => {
+    const skillIds = selectedActivitySkills[mediaId];
+    const assignment: CreateTrainingPlanAssignmentInput = {
+      mediaId,
+      difficulty: assertValidPlanBuilderDifficulty(
+        difficulties[mediaId] ?? 1
+      ),
+      order: index + 1,
+    };
+    const filtered =
+      mediaId === OBSERVER_IMITATION_MEDIA_ID
+        ? filterObserverImitationTargetSkillIds(skillIds)
+        : skillIds?.length
+          ? [...new Set(skillIds)]
+          : undefined;
+    if (filtered && filtered.length > 0) {
+      assignment.skillIds = filtered;
+    }
+    return assignment;
+  });
 }
 
 export function saveTrainingPlanFromBuilder(input: {
@@ -260,6 +435,7 @@ export function saveTrainingPlanFromBuilder(input: {
   selectedGoalIds: string[];
   orderedMediaIds: string[];
   difficulties: Record<string, TrainingDifficulty>;
+  selectedActivitySkills?: PlanBuilderActivitySkills;
 }): TrainingPlan {
   const activeCheck = checkPlanBuilderActivePlan(input.childId);
   if (!activeCheck.allowed) {
@@ -280,7 +456,8 @@ export function saveTrainingPlanFromBuilder(input: {
 
   const assignments = buildOrderedAssignments(
     input.orderedMediaIds,
-    input.difficulties
+    input.difficulties,
+    input.selectedActivitySkills ?? {}
   ).map((assignment) => ({
     ...assignment,
     goalIds: goalIdsByMedia.get(assignment.mediaId) ?? [],

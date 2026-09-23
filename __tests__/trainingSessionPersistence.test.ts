@@ -1,4 +1,11 @@
+import { createTrainingActivityFlow } from '../lib/training/activityFlow';
 import { calculateSessionMetrics } from '../lib/training/engine';
+import { resolveFollowStarRuntimeSettings } from '../lib/training/followStarEngine';
+import {
+  findOpenLiveTrainingSession,
+  readLiveTrainingSession,
+} from '../lib/training/liveSessionDraft';
+import { persistSessionAndAdvancePlan } from '../lib/training/planExecution';
 import type { TrainingSessionRuntime } from '../lib/training/engine/types';
 import {
   buildUpdatedTrainingProgress,
@@ -107,5 +114,70 @@ describe('training session persistence layer', () => {
       getTrainingProgress('child_p', ATTENTION_FOCUS_CHAPTER_ID, 'follow-star')
         ?.completedSessions
     ).toBe(2);
+  });
+
+  it('restores in-progress trials for the same session id after reload', () => {
+    const media = requireTrainingMedia(
+      loadAttentionFocusChapter(),
+      'follow-star'
+    );
+    const flow = createTrainingActivityFlow({
+      resolveSettings: resolveFollowStarRuntimeSettings,
+      resolveDifficulty: (settings) => settings.difficulty,
+    });
+    const started = flow.startTrial(
+      flow.begin({
+        childId: 'child_p',
+        chapterId: ATTENTION_FOCUS_CHAPTER_ID,
+        media,
+      }).session
+    );
+    const afterFirstTrial = flow.commitTrial(started, {
+      correct: true,
+      promptLevel: 'independent',
+      responseTimeMs: 400,
+    });
+
+    const restored = readLiveTrainingSession(afterFirstTrial.id);
+    expect(restored?.id).toBe(afterFirstTrial.id);
+    expect(restored?.status).toBe('active');
+    expect(restored?.trials).toHaveLength(1);
+    expect(restored?.trials[0]?.promptLevel).toBe('independent');
+    expect(
+      findOpenLiveTrainingSession({
+        childId: 'child_p',
+        chapterId: ATTENTION_FOCUS_CHAPTER_ID,
+        mediaId: 'follow-star',
+      })?.id
+    ).toBe(afterFirstTrial.id);
+
+    const resumed = flow.begin({
+      childId: 'child_p',
+      chapterId: ATTENTION_FOCUS_CHAPTER_ID,
+      media,
+    });
+    expect(resumed.session.id).toBe(afterFirstTrial.id);
+    expect(resumed.session.trials).toHaveLength(1);
+
+    let finished = resumed.session;
+    while (finished.trials.length < finished.targetTrialCount) {
+      const playing =
+        finished.activeTrialNumber !== undefined
+          ? finished
+          : flow.startTrial(finished);
+      finished = flow.commitTrial(playing, {
+        correct: true,
+        promptLevel: 'independent',
+        responseTimeMs: 300,
+      });
+    }
+
+    finished = flow.finalize(finished);
+    persistSessionAndAdvancePlan(finished);
+    expect(readLiveTrainingSession(afterFirstTrial.id)).toBeNull();
+    expect(getTrainingSession(afterFirstTrial.id)?.status).toBe('completed');
+    expect(getTrainingSession(afterFirstTrial.id)?.trials.length).toBe(
+      finished.targetTrialCount
+    );
   });
 });
