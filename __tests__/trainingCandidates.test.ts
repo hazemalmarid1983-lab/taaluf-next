@@ -40,6 +40,15 @@ describe('trainingCandidates', () => {
     );
   });
 
+  it('returns tap-to-request for C1 in communication-language', () => {
+    const result = getTrainingCandidatesForCriterion('C1');
+    expect(result.chapterId).toBe('communication-language');
+    expect(result.skills.map((s) => s.skillId)).toEqual([
+      'skill-functional-request',
+    ]);
+    expect(result.media.map((m) => m.mediaId)).toEqual(['tap-to-request']);
+  });
+
   it('returns follow-star for C11', () => {
     const result = getTrainingCandidatesForCriterion('C11');
     expect(result.chapterId).toBe('attention-focus');

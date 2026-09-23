@@ -2,7 +2,8 @@
  * مرشّحات التدريب — criterion → skill → media فقط.
  * لا يختار نشاطاً ولا ينشئ خطة ولا يشخّص.
  *
- * نطاق الفصل الحالي: attention-focus فقط (قابل للتوسيع لاحقاً).
+ * نطاق الفصول: ما يحمّله loadChapter فعلياً.
+ * لا يُنشأ مرشّح لمعيار ليست له مهارة في فصل محمّل.
  * معايير التقييم: data/taalof_criteria_v3.json فقط (CRITERIA_LIST).
  */
 
@@ -14,12 +15,13 @@ import {
 } from '@/lib/training/canonicalCriteria';
 import {
   ATTENTION_FOCUS_CHAPTER_ID,
-  loadAttentionFocusChapter,
+  listTrainingChapterIds,
+  loadChapterById,
 } from '@/lib/training/loadChapter';
 import type { TrainingMedia, TrainingSkill } from '@/lib/training/types';
 import type { Criterion } from '@/types/taalof';
 
-/** الفصل الوحيد المدعوم في هذه المرحلة */
+/** @deprecated استخدم chapterId من نتيجة getTrainingCandidatesForCriterion */
 export const TRAINING_CANDIDATE_CHAPTER_ID = ATTENTION_FOCUS_CHAPTER_ID;
 
 export class TrainingCandidateError extends Error {
@@ -46,25 +48,45 @@ export type TrainingCriterionCandidatesResult = {
   media: TrainingMedia[];
 };
 
-function resolveAttentionFocusCandidates(criterionId: string): {
+function resolveTrainingCandidatesForChapter(
+  chapterId: string,
+  criterionId: string
+): {
   chapterId: string;
   skills: TrainingSkill[];
   media: TrainingMedia[];
-} {
-  const chapter = loadAttentionFocusChapter();
+} | null {
+  const chapter = loadChapterById(chapterId);
   const skills = chapter.skills.filter((skill) =>
     skill.criterionIds.includes(criterionId)
   );
+  if (skills.length === 0) {
+    return null;
+  }
   const skillIds = new Set(skills.map((skill) => skill.skillId));
   const media = chapter.media.filter((item) =>
     item.skillIds.some((id) => skillIds.has(id))
   );
 
   return {
-    chapterId: ATTENTION_FOCUS_CHAPTER_ID,
+    chapterId,
     skills,
     media,
   };
+}
+
+function resolveTrainingCandidates(criterionId: string): {
+  chapterId: string;
+  skills: TrainingSkill[];
+  media: TrainingMedia[];
+} {
+  for (const chapterId of listTrainingChapterIds()) {
+    const resolved = resolveTrainingCandidatesForChapter(chapterId, criterionId);
+    if (resolved) {
+      return resolved;
+    }
+  }
+  return { chapterId: '', skills: [], media: [] };
 }
 
 export function getTrainingCandidatesForCriterion(
@@ -80,7 +102,7 @@ export function getTrainingCandidatesForCriterion(
     throw new TrainingCandidateError(`معيار غير صالح: ${trimmed}`);
   }
 
-  const resolved = resolveAttentionFocusCandidates(trimmed);
+  const resolved = resolveTrainingCandidates(trimmed);
 
   return {
     criterion,
