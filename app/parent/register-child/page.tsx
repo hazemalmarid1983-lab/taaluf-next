@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useLanguage } from '@/components/LanguageProvider';
-import { saveActiveChild, parentScreeningEntryHref } from '@/lib/parentJourney';
+import { parentScreeningEntryHref } from '@/lib/parentJourney';
+import { hydrateActiveChildClinicalSlice } from '@/lib/clinical/hydrateActiveChild';
 
 function toWesternDigits(value: string) {
   const map: Record<string, string> = {
@@ -103,7 +104,7 @@ export default function ParentRegisterChildPage() {
       /* يبقى المعرف المحلي */
     }
     const row = { id, name: childName, age: childAge, dob: childDob };
-    saveActiveChild(row);
+    await hydrateActiveChildClinicalSlice(row);
     await fetch('/api/access/entitlements', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

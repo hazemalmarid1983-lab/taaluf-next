@@ -11,7 +11,6 @@ import {
   type AdvisorGuideSectionId,
 } from '@/lib/advisorPlatformGuide';
 import {
-  emptyMouState,
   HUB_MEMBERS,
   HUB_ONBOARDING_POST_ID,
   type ClinicalHubSnapshot,
@@ -22,12 +21,11 @@ import {
   type HubPostStatus,
   type HubReply,
   type HubSessionRole,
-  type MouState,
 } from '@/lib/clinicalHub';
+import type { HubReadState } from '@/lib/hubUnread';
 
 const memory: ClinicalHubSnapshot = {
   posts: [],
-  mou: emptyMouState(),
   advisorGuide: emptyAdvisorGuideState(),
   merhidDirectives: {
     text: DEFAULT_HUB_MERHID_DIRECTIVES_AR,
@@ -35,6 +33,7 @@ const memory: ClinicalHubSnapshot = {
     updatedBy: HUB_MEMBERS.hazem.nameAr,
   },
   advisorOnboarding: {},
+  readState: {},
 };
 
 let loaded = false;
@@ -104,18 +103,6 @@ async function ensureLoaded() {
     if (!raw) throw new Error('MISSING_HUB_DATA');
     const parsed = JSON.parse(raw) as Partial<ClinicalHubSnapshot>;
     memory.posts = Array.isArray(parsed.posts) ? parsed.posts : [];
-    const base = emptyMouState();
-    const stored = parsed.mou;
-    const versionChanged =
-      stored?.version && stored.version !== base.version;
-    memory.mou = versionChanged
-      ? base
-      : {
-          ...base,
-          ...(stored || {}),
-          hazem: { ...base.hazem, ...(stored?.hazem || {}) },
-          samer: { ...base.samer, ...(stored?.samer || {}) },
-        };
     const guideBase = emptyAdvisorGuideState();
     const storedGuide = parsed.advisorGuide;
     const guideVersionChanged =
@@ -137,13 +124,17 @@ async function ensureLoaded() {
       text: parsed.merhidDirectives?.text?.trim() || dirBase.text,
     };
     memory.advisorOnboarding = parsed.advisorOnboarding || {};
+    memory.readState =
+      parsed.readState && typeof parsed.readState === 'object'
+        ? parsed.readState
+        : {};
     ensureOnboardingPost();
   } catch {
     memory.posts = [];
-    memory.mou = emptyMouState();
     memory.advisorGuide = emptyAdvisorGuideState();
     memory.merhidDirectives = defaultMerhidDirectives();
     memory.advisorOnboarding = {};
+    memory.readState = {};
     ensureOnboardingPost();
     await persist();
   }
@@ -243,30 +234,6 @@ export async function setHubPostStatus(
   return JSON.parse(JSON.stringify(post)) as HubPost;
 }
 
-export async function signAdvisoryMou(
-  memberId: HubMemberId,
-  signerName: string
-): Promise<MouState> {
-  await ensureLoaded();
-  const stamp = {
-    memberId,
-    signed: true,
-    signedAt: nowIso(),
-    signerName: signerName.trim(),
-  };
-  if (memberId === 'hazem') memory.mou.hazem = stamp;
-  else memory.mou.samer = stamp;
-  await persist();
-  return JSON.parse(JSON.stringify(memory.mou)) as MouState;
-}
-
-export async function resetAdvisoryMou(): Promise<MouState> {
-  await ensureLoaded();
-  memory.mou = emptyMouState();
-  await persist();
-  return JSON.parse(JSON.stringify(memory.mou)) as MouState;
-}
-
 export async function acknowledgeAdvisorGuideSection(
   sectionId: AdvisorGuideSectionId,
   signerName: string
@@ -291,6 +258,18 @@ export async function resetAdvisorGuide(): Promise<ClinicalHubSnapshot['advisorG
   memory.advisorGuide = emptyAdvisorGuideState();
   await persist();
   return JSON.parse(JSON.stringify(memory.advisorGuide));
+}
+
+export async function markHubMeetingRead(
+  memberId: HubMemberId
+): Promise<HubReadState> {
+  await ensureLoaded();
+  memory.readState = {
+    ...memory.readState,
+    [memberId]: { lastReadAt: nowIso() },
+  };
+  await persist();
+  return JSON.parse(JSON.stringify(memory.readState)) as HubReadState;
 }
 
 export async function updateHubMerhidDirectives(

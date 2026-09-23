@@ -102,7 +102,47 @@ function failResult<T>(error: string): SyncResult<T> {
 }
 
 type AirtableRecord = { id: string; fields: Record<string, unknown> };
-type AirtableList = { records?: AirtableRecord[] };
+type AirtableList = { records?: AirtableRecord[]; offset?: string };
+
+const ASSESSMENTS_LIST_PAGE_SIZE = 100;
+const ASSESSMENTS_LIST_MAX_PAGES = 50;
+
+/** مطابقة linked-record IDs من REST API — لا تعتمد على formula {Student} (أسماء primary) */
+export function assessmentRecordMatchesStudentId(
+  record: AirtableRecord,
+  childId: string
+): boolean {
+  if (!childId) return false;
+  const raw = record.fields?.Student;
+  const linkedStudentIds = Array.isArray(raw)
+    ? raw.filter((value): value is string => typeof value === 'string')
+    : typeof raw === 'string'
+      ? [raw]
+      : [];
+  return linkedStudentIds.includes(childId);
+}
+
+async function listAllAssessmentRecords(): Promise<AirtableRecord[]> {
+  const all: AirtableRecord[] = [];
+  let offset: string | undefined;
+  let pages = 0;
+
+  while (pages < ASSESSMENTS_LIST_MAX_PAGES) {
+    const query =
+      `?pageSize=${ASSESSMENTS_LIST_PAGE_SIZE}` +
+      (offset ? `&offset=${encodeURIComponent(offset)}` : '');
+    const payload = await airtableFetch(TABLE_NAMES.assessments, 'GET', {
+      query,
+    });
+    if (!payload?.records?.length) break;
+    all.push(...payload.records);
+    offset = payload.offset;
+    pages += 1;
+    if (!offset) break;
+  }
+
+  return all;
+}
 
 async function airtableFetch(
   table: string,
@@ -297,16 +337,14 @@ export async function fetchAssessmentRecords(
   if (!assertServerOnly() || !isAirtableConfigured()) {
     return localResult('AIRTABLE_NOT_CONFIGURED');
   }
-  const query = `?filterByFormula=${encodeURIComponent(
-    `FIND('${formulaEscape(childId)}', ARRAYJOIN({Student}))`
-  )}&maxRecords=50`;
-  const payload = await airtableFetch(TABLE_NAMES.assessments, 'GET', {
-    query,
-  });
+  const records = await listAllAssessmentRecords();
+  const data = records.filter((record) =>
+    assessmentRecordMatchesStudentId(record, childId)
+  );
   return {
     ok: true,
     source: 'airtable',
-    data: payload?.records || [],
+    data,
   };
 }
 

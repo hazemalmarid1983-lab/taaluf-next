@@ -1,8 +1,10 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import { useSession } from 'next-auth/react';
+import TrainingBridgePrompt from '@/components/training/TrainingBridgePrompt';
 import ClinicalFlowStepper from '@/components/classroom/ClinicalFlowStepper';
 import PreSessionCheckInModal from '@/components/classroom/PreSessionCheckInModal';
 import SensoryPausePivot from '@/components/classroom/SensoryPausePivot';
@@ -62,6 +64,13 @@ import ContractGate from '@/components/contracts/ContractGate';
 import { isContractSigned } from '@/lib/contracts/contractStore';
 import { stashSensoryReinforcerHandoff } from '@/lib/scheduleRewards';
 import {
+  beginSpecializedTrainingFromBridge,
+  hasExecutableTrainingCandidate,
+  resolveSpecializedTrainingBridgeAction,
+  stashTrainingBridgeNotice,
+  TRAINING_BRIDGE_MISMATCH_MESSAGE_AR,
+} from '@/lib/training/trainingBridge';
+import {
   RewardAudio,
   speakText,
   stopSpeaking,
@@ -113,6 +122,9 @@ export default function HomeClassroomPage() {
   );
   const [showCheckInModal, setShowCheckInModal] = useState(false);
   const [contractTick, setContractTick] = useState(0);
+  const [bridgeGoal, setBridgeGoal] = useState<TrackedGoal | null>(null);
+  const [bridgeNotice, setBridgeNotice] = useState<string | null>(null);
+  const { data: session } = useSession();
 
   useEffect(() => {
     const active = readActiveChild();
@@ -345,14 +357,76 @@ export default function HomeClassroomPage() {
     }
   };
 
+  const dismissTrainingBridge = useCallback(() => {
+    setBridgeGoal(null);
+    setBridgeNotice(null);
+  }, []);
+
+  const handleSpecializedTraining = useCallback(() => {
+    if (!bridgeGoal) return;
+    const isParentRole = session?.user?.role === 'parent';
+    const action = resolveSpecializedTrainingBridgeAction(
+      bridgeGoal,
+      isParentRole
+    );
+
+    switch (action.kind) {
+      case 'ready':
+        setBridgeNotice(null);
+        beginSpecializedTrainingFromBridge({
+          launch: action.launch,
+          activityRoute: action.activityRoute,
+          navigate: (href) => router.push(href),
+        });
+        setBridgeGoal(null);
+        return;
+      case 'navigate':
+        if (action.mismatchNotice) {
+          stashTrainingBridgeNotice(TRAINING_BRIDGE_MISMATCH_MESSAGE_AR);
+        }
+        router.push(action.href);
+        setBridgeGoal(null);
+        setBridgeNotice(null);
+        return;
+      case 'blocked':
+        setBridgeNotice(
+          action.reason === 'missing_child'
+            ? isAr
+              ? 'حدّد الطفل النشط قبل بدء التدريب المتخصص. لا يُفتح التدريب على طفل افتراضي.'
+              : 'Choose the active child before specialized training. A placeholder child is not used.'
+            : isAr
+              ? 'هذا الهدف يخص طفلاً غير الطفل النشط.'
+              : 'This goal belongs to a different child than the active child.'
+        );
+        return;
+      case 'unavailable':
+        setBridgeNotice(
+          isAr
+            ? 'لا يوجد نشاط تدريبي منفّذ لهذا الهدف ضمن الفصول المحمّلة.'
+            : 'No implemented training activity is loaded for this goal.'
+        );
+        return;
+      default:
+        return;
+    }
+  }, [bridgeGoal, isAr, router, session?.user?.role]);
+
   const handleGoalSelect = (value: string) => {
     setSelection(value);
     setGenError(null);
+    setBridgeGoal(null);
+    setBridgeNotice(null);
 
     if (value.startsWith(IEP_PREFIX)) {
       const id = value.slice(IEP_PREFIX.length);
       const tracked = iepGoals.find((item) => item.id === id);
       if (tracked) {
+        if (hasExecutableTrainingCandidate(tracked)) {
+          setBridgeGoal(tracked);
+          setGenerated(null);
+          resetSession();
+          return;
+        }
         const text = (tracked.smartText || tracked.title).slice(0, 300);
         void generateActivity(text, tracked.id);
         return;
@@ -562,6 +636,32 @@ export default function HomeClassroomPage() {
             </button>
           </div>
         </header>
+
+        {bridgeGoal ? (
+          <TrainingBridgePrompt
+            goalTitle={bridgeGoal.title}
+            isAr={isAr}
+            onSpecialized={handleSpecializedTraining}
+            onHomeGeneral={() => {
+              const text = (bridgeGoal.smartText || bridgeGoal.title).slice(
+                0,
+                300
+              );
+              setBridgeGoal(null);
+              void generateActivity(text, bridgeGoal.id);
+            }}
+            onDismiss={dismissTrainingBridge}
+          />
+        ) : null}
+
+        {bridgeNotice ? (
+          <p
+            className="rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-6 text-amber-950"
+            role="status"
+          >
+            {bridgeNotice}
+          </p>
+        ) : null}
 
         {!generating && (
           <ClinicalFlowStepper currentStep={clinicalStep} isAr={isAr} />

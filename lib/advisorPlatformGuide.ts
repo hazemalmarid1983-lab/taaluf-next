@@ -38,13 +38,13 @@ export const ADVISOR_PLATFORM_SECTIONS: readonly AdvisorGuideSection[] = [
       'الاجتماع الأول في غرفة الاجتماعات — اقرأ محتوى المنصة كاملاً',
       'استخدم الدردشة ومرشد تآلف (بتوجيه الإدارة) لأي استفسار',
       'قدّم ملاحظاتك واقتراحاتك في خانة النقاش',
-      'بعد ذلك: توقيع اتفاقية الشراكة وبدء المقترحات',
+      'بعد ذلك: ابدأ بمشاركة الملاحظات والمقترحات',
     ],
     methodologyEn: [
       'First meeting in the meeting room — read the full platform overview',
       'Use the discussion thread and Merhid (admin-directed) for questions',
       'Submit your notes and proposals in the chat thread',
-      'Then: sign the partnership agreement and begin proposals',
+      'Then: begin sharing notes and proposals',
     ],
     advisorRoleAr:
       'اقرأ هذا القسم لتكوين صورة شاملة عن هوية المنصة ودورك الاستشاري قبل أي مراجعة علمية.',
@@ -247,7 +247,7 @@ export const ADVISOR_PLATFORM_SECTIONS: readonly AdvisorGuideSection[] = [
     bodyAr:
       '**٩ غرفاً حسية** (فقاعات، نجوم، تتبع، رمل، حيوانات، أمواج، مطر، مرآة…): بيئات **تجريبية** لقياس الاستجابة الحسية مع حدود آمنة للصوت والإضاءة. تُسجَّل مقاييس الجلسة (مدة، تفاعل، هدوء). **ليست** جزءاً رسمياً من Canon 36 لكنها محور **الدراسة الميدانية** في اتفاقيتك.',
     bodyEn:
-      '**9 sensory rooms** (bubbles, stars, tracing, sand, animals, waves, rain, mirror…): **pilot** environments measuring sensory response with safe audio/light limits. Session metrics (duration, engagement, calm) are logged. **Not** part of official Canon 36 but central to your agreement\'s **field study**.',
+      '**9 sensory rooms** (bubbles, stars, tracing, sand, animals, waves, rain, mirror…): **pilot** environments measuring sensory response with safe audio/light limits. Session metrics (duration, engagement, calm) are logged. They are not part of the official Canon 36 and remain available for supervised platform review.',
     methodologyAr: [
       'الدخول من /sensory-rooms',
       'كل جلسة تُسجَّل محلياً مع مقاييس',
@@ -310,9 +310,9 @@ export const ADVISOR_PLATFORM_SECTIONS: readonly AdvisorGuideSection[] = [
     summaryAr: 'Hub، غرفة الاجتماعات، الاعتماد، والخطوات العملية.',
     summaryEn: 'Hub, meeting room, approval, and practical steps.',
     bodyAr:
-      '**سير عملك (Async Mode):** (١) أكمل اعتماد كل أقسام هذا الدليل. (٢) وقّع اتفاقية الشراكة. (٣) **غرفة الاجتماعات:** قدّم مقترحات (تقييم سريري · ملاحظة بحثية · مقاييس حسية · نقاش) — تبدأ «قيد المراجعة». (٤) **حازم** يعتمد أو يرفض — لا نشر دون موافقته. (٥) اختبر في `/sensory-rooms` و`/dashboard` (وضع اختبار). **لا** تعديل هيكلي · **لا** `/admin`.',
+      '**سير عملك (Async Mode):** (١) أكمل الاطلاع على أقسام هذا الدليل. (٢) **غرفة الاجتماعات:** قدّم مقترحات (تقييم سريري · ملاحظة بحثية · مقاييس حسية · نقاش) — تبدأ «قيد المراجعة». (٣) **حازم** يعتمد أو يرفض — لا نشر دون موافقته. (٤) اختبر في `/sensory-rooms` و`/dashboard` (وضع اختبار). **لا** تعديل هيكلي · **لا** `/admin`.',
     bodyEn:
-      '**Your workflow (Async Mode):** (1) Complete acknowledgment of every guide section. (2) Sign the partnership agreement. (3) **Meeting room:** submit proposals (clinical evaluation · research note · sensory metrics · discussion) — they start as "Pending." (4) **Hazem** approves or rejects — no deploy without his consent. (5) Test in `/sensory-rooms` and `/dashboard` (test mode). **No** structural changes · **No** `/admin`.',
+      '**Your workflow (Async Mode):** (1) Review every guide section. (2) **Meeting room:** submit proposals (clinical evaluation · research note · sensory metrics · discussion) — they start as "Pending." (3) **Hazem** approves or rejects — no deploy without his consent. (4) Test in `/sensory-rooms` and `/dashboard` (test mode). **No** structural changes · **No** `/admin`.',
     methodologyAr: [
       'اقتراح → pending → اعتماد حازم → approved → قرار نشر',
       'الردود غير المتزامنة داخل كل منشور',
@@ -326,16 +326,11 @@ export const ADVISOR_PLATFORM_SECTIONS: readonly AdvisorGuideSection[] = [
       'Sensory room field study = two-year priority',
     ],
     advisorRoleAr:
-      'بعد اعتماد هذا القسم — انتقل لتوقيع المذكرة ثم قدّم أول مقترح في غرفة الاجتماعات.',
+      'بعد الاطلاع على هذا القسم — قدّم أول ملاحظة أو مقترح في غرفة الاجتماعات.',
     advisorRoleEn:
-      'After acknowledging this section — proceed to sign the MOU, then submit your first meeting-room proposal.',
+      'After reviewing this section — submit your first meeting-room note or proposal.',
     explore: [
       { href: '/hub?focus=meeting', labelAr: 'غرفة الاجتماعات', labelEn: 'Meeting room' },
-      {
-        href: '/hub?focus=agreement',
-        labelAr: 'اتفاقية الشراكة',
-        labelEn: 'Partnership agreement',
-      },
     ],
   },
 ] as const;

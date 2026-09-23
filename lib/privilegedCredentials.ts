@@ -20,7 +20,9 @@ export type PrivilegedCredentialsFile = {
   accounts: Partial<Record<PrivilegedAccountId, PrivilegedCredentialRecord>>;
 };
 
-const DATA_FILE = path.join(getHubDataDir(), PRIVILEGED_CREDENTIALS_FILE);
+function dataFilePath() {
+  return path.join(getHubDataDir(), PRIVILEGED_CREDENTIALS_FILE);
+}
 
 const EMAIL_TO_ACCOUNT: Record<string, PrivilegedAccountId> = {
   'admin@taaluf.local': 'admin',
@@ -131,5 +133,5 @@ export function resetPrivilegedCredentialsMemoryForTests() {
 }
 
 export function privilegedCredentialsFilePath() {
-  return DATA_FILE;
+  return dataFilePath();
 }

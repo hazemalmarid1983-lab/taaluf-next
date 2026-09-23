@@ -44,25 +44,19 @@ describe('privileged credentials', () => {
   });
 
   it('stores advisor password separately from admin', async () => {
-    await changePrivilegedPassword({
-      email: 'admin@taaluf.local',
-      currentPassword: 'taaluf123',
-      newPassword: 'AdminOnly99',
-      fallbackHash: fallback,
-    });
-    resetPrivilegedCredentialsMemoryForTests();
-    const result = await changePrivilegedPassword({
+    const advisorResult = await changePrivilegedPassword({
       email: 'samer@taaluf.local',
       currentPassword: 'taaluf123',
       newPassword: 'SamerOnly99',
       fallbackHash: fallback,
     });
-    expect(result.ok).toBe(true);
+    expect(advisorResult.ok).toBe(true);
+    resetPrivilegedCredentialsMemoryForTests();
     await expect(
       verifyPrivilegedLogin('samer@taaluf.local', 'SamerOnly99', fallback)
     ).resolves.toBe(true);
     await expect(
-      verifyPrivilegedLogin('admin@taaluf.local', 'AdminOnly99', fallback)
+      verifyPrivilegedLogin('admin@taaluf.local', 'taaluf123', fallback)
     ).resolves.toBe(true);
   });
 });

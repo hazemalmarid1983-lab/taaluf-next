@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { HUB_MEMBERS, type HubActor, type MouOverallStatus } from '@/lib/clinicalHub';
+import { HUB_MEMBERS, type HubActor } from '@/lib/clinicalHub';
 
 const MATRIX: {
   actionAr: string;
@@ -56,39 +56,19 @@ const MATRIX: {
 export default function HubRbacPanel({
   actor,
   pendingCount,
-  mouStatus,
   isAr,
   onOpenMeeting,
-  onOpenAgreement,
 }: {
   actor: HubActor;
   pendingCount: number;
-  mouStatus: MouOverallStatus;
   isAr: boolean;
   onOpenMeeting: () => void;
-  onOpenAgreement: () => void;
 }) {
   const isAdvisor = actor.role === 'scientific_advisor';
-  const mouLabel =
-    mouStatus === 'executed'
-      ? isAr
-        ? 'نافذة بعد توقيع الطرفين'
-        : 'In force — both signed'
-      : mouStatus === 'awaiting_hazem'
-        ? isAr
-          ? 'بانتظار تأكيد حازم'
-          : 'Awaiting Hazem'
-        : mouStatus === 'awaiting_samer'
-          ? isAr
-            ? 'بانتظار تأكيد د. سامر'
-            : 'Awaiting Dr. Samer'
-          : isAr
-            ? 'غير موقّعة بعد'
-            : 'Not yet signed';
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-3 sm:grid-cols-3">
+      <div className="grid gap-3 sm:grid-cols-2">
         <button
           type="button"
           onClick={onOpenMeeting}
@@ -100,19 +80,6 @@ export default function HubRbacPanel({
           <p className="mt-1 text-2xl font-bold text-[#2D8B5A]">{pendingCount}</p>
           <p className="mt-1 text-xs text-slate-500">
             {isAr ? 'مقترحات قيد المراجعة' : 'Proposals pending review'}
-          </p>
-        </button>
-        <button
-          type="button"
-          onClick={onOpenAgreement}
-          className="rounded-3xl border border-emerald-100 bg-white p-5 text-start shadow-sm"
-        >
-          <p className="text-xs text-slate-500">
-            {isAr ? 'مذكرة التفاهم' : 'Advisory MOU'}
-          </p>
-          <p className="mt-1 text-lg font-bold text-[#0b1f14]">{mouLabel}</p>
-          <p className="mt-1 text-xs text-slate-500">
-            {isAr ? 'سنتان · اعتماد رسمي' : 'Two-year · formal sign-off'}
           </p>
         </button>
         <div className="rounded-3xl border border-emerald-100 bg-white p-5">

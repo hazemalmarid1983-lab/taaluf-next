@@ -1,9 +1,4 @@
-import {
-  emptyMouState,
-  HUB_MEMBERS,
-  HUB_ONBOARDING_POST_ID,
-  mouOverallStatus,
-} from '../lib/clinicalHub';
+import { HUB_MEMBERS, HUB_ONBOARDING_POST_ID } from '../lib/clinicalHub';
 import {
   defaultHubTab,
   hubFocusFromQuery,
@@ -13,29 +8,6 @@ import {
   resolveSpecialistLoginDestination,
   specialistNeedsFirstAssessment,
 } from '../lib/nextBestActionFlow';
-
-const samerActor = {
-  memberId: 'samer' as const,
-  role: 'scientific_advisor' as const,
-  nameAr: HUB_MEMBERS.samer.nameAr,
-  nameEn: HUB_MEMBERS.samer.nameEn,
-  titleAr: HUB_MEMBERS.samer.titleAr,
-  titleEn: HUB_MEMBERS.samer.titleEn,
-};
-
-const onboardingPost = {
-  id: HUB_ONBOARDING_POST_ID,
-  category: 'discussion' as const,
-  title: 'First meeting',
-  body: 'Overview',
-  status: 'approved' as const,
-  authorRole: 'admin' as const,
-  authorName: HUB_MEMBERS.hazem.nameAr,
-  authorMemberId: 'hazem' as const,
-  createdAt: '2026-01-01',
-  updatedAt: '2026-01-01',
-  replies: [] as const,
-};
 
 describe('nextBestActionFlow', () => {
   it('keeps explicit deep-link callback over role home', () => {
@@ -48,7 +20,9 @@ describe('nextBestActionFlow', () => {
   });
 
   it('falls back to role home when no callback', () => {
-    expect(resolvePostLoginDestination('scientific_advisor', null)).toBe('/hub');
+    expect(resolvePostLoginDestination('scientific_advisor', null)).toBe(
+      '/dashboard/consultant'
+    );
     expect(resolvePostLoginDestination('specialist', null)).toBe(
       '/dashboard/assessments/new'
     );
@@ -68,60 +42,95 @@ describe('nextBestActionFlow', () => {
     ).toBe('/dashboard/games');
   });
 
-  it('sends advisor to agreement before MOU sign (after welcome)', () => {
-    const mou = emptyMouState();
+  it('sends advisor to first meeting when onboarding chat is empty', () => {
     const action = resolveHubNextAction({
-      actor: samerActor,
-      mou,
-      posts: [onboardingPost],
-      advisorOnboarding: { welcomeSeenAt: '2026-01-01T00:00:00.000Z' },
-    });
-    expect(action.autoRedirect).toBe(false);
-    expect(action.href).toBe('/hub?focus=agreement');
-  });
-
-  it('sends advisor to first meeting after MOU sign', () => {
-    const mou = emptyMouState();
-    mou.samer.signed = true;
-    const action = resolveHubNextAction({
-      actor: samerActor,
-      mou,
-      posts: [onboardingPost],
-      advisorOnboarding: { welcomeSeenAt: '2026-01-01T00:00:00.000Z' },
+      actor: {
+        memberId: 'samer',
+        role: 'scientific_advisor',
+        nameAr: HUB_MEMBERS.samer.nameAr,
+        nameEn: HUB_MEMBERS.samer.nameEn,
+        titleAr: HUB_MEMBERS.samer.titleAr,
+        titleEn: HUB_MEMBERS.samer.titleEn,
+      },
+      posts: [
+        {
+          id: HUB_ONBOARDING_POST_ID,
+          category: 'discussion',
+          title: 'First meeting',
+          body: 'Overview',
+          status: 'approved',
+          authorRole: 'admin',
+          authorName: HUB_MEMBERS.hazem.nameAr,
+          authorMemberId: 'hazem',
+          createdAt: '2026-01-01',
+          updatedAt: '2026-01-01',
+          replies: [],
+        },
+      ],
     });
     expect(action.autoRedirect).toBe(true);
     expect(action.href).toBe('/hub?focus=meeting');
   });
 
-  it('prioritizes pending hub reviews for admin after MOU executed', () => {
-    const mou = emptyMouState();
-    mou.hazem.signed = true;
-    mou.samer.signed = true;
+  it('sends advisor to meeting workspace after onboarding reply', () => {
+    const action = resolveHubNextAction({
+      actor: {
+        memberId: 'samer',
+        role: 'scientific_advisor',
+        nameAr: HUB_MEMBERS.samer.nameAr,
+        nameEn: HUB_MEMBERS.samer.nameEn,
+        titleAr: HUB_MEMBERS.samer.titleAr,
+        titleEn: HUB_MEMBERS.samer.titleEn,
+      },
+      posts: [
+        {
+          id: HUB_ONBOARDING_POST_ID,
+          category: 'discussion',
+          title: 'First meeting',
+          body: 'Overview',
+          status: 'approved',
+          authorRole: 'admin',
+          authorName: HUB_MEMBERS.hazem.nameAr,
+          authorMemberId: 'hazem',
+          createdAt: '2026-01-01',
+          updatedAt: '2026-01-01',
+          replies: [
+            {
+              id: 'reply_1',
+              authorRole: 'scientific_advisor',
+              authorName: HUB_MEMBERS.samer.nameAr,
+              authorMemberId: 'samer',
+              body: 'ملاحظاتي الأولى',
+              createdAt: '2026-01-02',
+            },
+          ],
+        },
+      ],
+    });
+    expect(action.id).toBe('hub_propose_or_test');
+    expect(action.href).toBe('/hub?focus=meeting');
+  });
+
+  it('prioritizes pending hub reviews for admin', () => {
     const action = resolveAdminNextAction({
-      mouStatus: mouOverallStatus(mou),
       pendingHubPosts: 2,
     });
     expect(action.href).toBe('/hub?focus=meeting');
     expect(action.titleEn).toContain('2');
   });
 
-  it('defaults hub tab to agreement when MOU is unsigned', () => {
+  it('defaults hub tab to meeting for advisor', () => {
     expect(
       defaultHubTab({
-        mouStatus: 'pending',
         pendingCount: 0,
         actorRole: 'scientific_advisor',
-        posts: [onboardingPost],
-        mou: emptyMouState(),
-        advisorOnboarding: { welcomeSeenAt: '2026-01-01T00:00:00.000Z' },
       })
-    ).toBe('agreement');
+    ).toBe('meeting');
   });
 
   it('opens meeting tab for admin when proposals are pending', () => {
     expect(
       defaultHubTab({
-        mouStatus: 'executed',
         pendingCount: 3,
         actorRole: 'admin',
       })

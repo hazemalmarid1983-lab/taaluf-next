@@ -8,6 +8,7 @@ import {
   homePathForRole,
   parseEntitlements,
 } from '@/lib/access';
+import { canAccessConsultantRoom } from '@/lib/consultantRoom/access';
 import { CONSENT_COOKIE } from '@/lib/consentConstants';
 import { ensureAuthUrl } from '@/lib/ensureAuthUrl';
 import {
@@ -54,16 +55,9 @@ export default withAuth(
         return NextResponse.redirect(new URL('/parent/booking', req.url));
       }
       if (path.startsWith('/specialist/pay') || path.startsWith('/payments/')) {
-        const dest =
-          role === 'parent'
-            ? '/parent'
-            : role === 'admin'
-              ? '/admin'
-              : role === 'scientific_advisor'
-                ? '/hub'
-                : role
-                  ? '/dashboard'
-                  : '/login?portal=specialist';
+        const dest = role
+          ? homePathForRole(role)
+          : '/login?portal=specialist';
         return NextResponse.redirect(new URL(dest, req.url));
       }
     }
@@ -112,6 +106,15 @@ export default withAuth(
       }
     }
 
+    if (
+      path.startsWith('/dashboard/consultant') &&
+      !canAccessConsultantRoom(role)
+    ) {
+      return NextResponse.redirect(
+        new URL(role ? homePathForRole(role) : '/login?portal=hub', req.url)
+      );
+    }
+
     if (path.startsWith('/dashboard')) {
       const parentAllowed =
         path.startsWith('/dashboard/pathways') ||
@@ -120,6 +123,7 @@ export default withAuth(
         path.startsWith('/dashboard/screening') ||
         path.startsWith('/dashboard/parent-assessment') ||
         path.startsWith('/dashboard/games') ||
+        path.startsWith('/dashboard/training') ||
         path.startsWith('/dashboard/home-classroom') ||
         path.startsWith('/dashboard/tools-bank') ||
         path.startsWith('/dashboard/messages') ||
@@ -133,6 +137,7 @@ export default withAuth(
       const paidParentPath =
         path.startsWith('/dashboard/parent-assessment') ||
         path.startsWith('/dashboard/games') ||
+        path.startsWith('/dashboard/training') ||
         path.startsWith('/dashboard/goals');
 
       if (
@@ -162,7 +167,9 @@ export default withAuth(
       return NextResponse.redirect(new URL('/consent', req.url));
     }
 
-    return NextResponse.next();
+    const requestHeaders = new Headers(req.headers);
+    requestHeaders.set('x-pathname', path);
+    return NextResponse.next({ request: { headers: requestHeaders } });
   },
   {
     secret: process.env.NEXTAUTH_SECRET,

@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { hubForbidden, requireHubActor } from '@/lib/clinicalHubApi';
-import { resolveAdvisorOnboardingStep } from '@/lib/advisorOnboardingFlow';
 import { markAdvisorWelcomeSeen } from '@/lib/clinicalHubStore';
 
 export async function POST(req: Request) {
@@ -21,7 +20,7 @@ export async function POST(req: Request) {
     return NextResponse.json({
       ok: true,
       onboarding,
-      nextStep: 'agreement',
+      nextStep: 'meeting',
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'ONBOARDING_FAILED';
@@ -35,12 +34,12 @@ export async function GET() {
 
   const { getClinicalHubSnapshot } = await import('@/lib/clinicalHubStore');
   const snapshot = await getClinicalHubSnapshot();
-  const step = resolveAdvisorOnboardingStep({
-    actor: gate.actor,
-    mou: snapshot.mou,
-    posts: snapshot.posts,
-    onboarding: snapshot.advisorOnboarding,
-  });
+  const step =
+    gate.actor.role !== 'scientific_advisor'
+      ? 'complete'
+      : snapshot.advisorOnboarding.welcomeSeenAt
+        ? 'meeting'
+        : 'welcome';
 
   return NextResponse.json({
     ok: true,

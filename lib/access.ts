@@ -1,3 +1,5 @@
+import { CONSULTANT_ROOM_PATH } from '@/lib/consultantRoom/access';
+
 /** صلاحيات البوابات والدفع والاشتراك */
 
 export type PortalRole = 'admin' | 'specialist' | 'parent' | 'scientific_advisor';
@@ -95,7 +97,7 @@ export function serializeEntitlements(e: Entitlements) {
 
 export function homePathForRole(role?: string) {
   if (role === 'admin') return '/admin';
-  if (role === 'scientific_advisor') return '/hub';
+  if (role === 'scientific_advisor') return CONSULTANT_ROOM_PATH;
   if (role === 'parent') return '/parent';
   if (role === 'specialist' || role === 'teacher') return '/dashboard';
   return '/login';

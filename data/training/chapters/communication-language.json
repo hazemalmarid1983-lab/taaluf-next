@@ -1,0 +1,248 @@
+{
+  "version": "1.0",
+  "platform": "تآلف",
+  "chapter": {
+    "chapterId": "communication-language",
+    "titleAr": "التواصل واللغة",
+    "titleEn": "Communication & Language",
+    "descriptionAr": "فصل تدريبي رقمي أولي للطلب الوظيفي، فهم تعليمات بسيطة، الإشارة/الاختيار التواصلي، والاستجابة للنداء — PROVISIONAL · Scientific Review Pending.",
+    "descriptionEn": "Pilot digital chapter for functional requesting, simple receptive instructions, communicative pointing/selection, and name orienting — provisional.",
+    "domain": "communication",
+    "skillIds": [
+      "skill-functional-request",
+      "skill-symbol-request",
+      "skill-receptive-one-step",
+      "skill-communicative-point",
+      "skill-name-orienting"
+    ],
+    "criterionIds": ["C1", "C2", "C3", "C6", "C8"],
+    "ageBands": ["3-4", "5-6", "7-9", "10-12"],
+    "difficultyLevels": [1, 2, 3],
+    "orderedMedia": [
+      "tap-to-request",
+      "symbol-board-request",
+      "listen-then-tap",
+      "point-to-item",
+      "name-call-tap"
+    ]
+  },
+  "skills": [
+    {
+      "skillId": "skill-functional-request",
+      "domainId": "communication",
+      "titleAr": "الطلب الوظيفي بالاختيار البصري",
+      "titleEn": "Functional Request via Visual Choice",
+      "descriptionAr": "يلمس الطفل صورة/رمزاً للحاجة المرغوبة خلال الجلسة — مؤشر أداء تدريبي أولي (Preparatory/Substitute) — يحتاج مراجعة علمية.",
+      "descriptionEn": "Child taps a need pictogram during the session — preliminary training indicator.",
+      "criterionIds": ["C1"]
+    },
+    {
+      "skillId": "skill-symbol-request",
+      "domainId": "communication",
+      "titleAr": "اختيار رمز/صورة للطلب (AAC رقمي)",
+      "titleEn": "Symbol/Picture Selection for Request",
+      "descriptionAr": "يختار الطفل رمزاً واحداً من لوحة صغيرة لطلب احتياج — تدريب رقمي لا يثبت إتقان AAC ميداني.",
+      "descriptionEn": "Selects one symbol from a small board — digital training only.",
+      "criterionIds": ["C8"]
+    },
+    {
+      "skillId": "skill-receptive-one-step",
+      "domainId": "communication",
+      "titleAr": "فهم تعليم بصري من خطوة واحدة",
+      "titleEn": "Receptive One-Step Instruction",
+      "descriptionAr": "يلمس الطفل الصورة المطابقة لتعليم بصري (تعال/اجلس/أعطني) — استقبال رقمي بمساعدة بصرية.",
+      "descriptionEn": "Taps picture matching a one-step visual instruction.",
+      "criterionIds": ["C3"]
+    },
+    {
+      "skillId": "skill-communicative-point",
+      "domainId": "communication",
+      "titleAr": "الإشارة/اللمس التواصلي نحو الهدف",
+      "titleEn": "Communicative Point/Tap to Target",
+      "descriptionAr": "يلمس الطفل العنصر المطلوب في مشهد واحد كبير — بديل رقمي للإشارة — يحتاج مراجعة علمية.",
+      "descriptionEn": "Taps requested item in a single scene — digital pointing proxy.",
+      "criterionIds": ["C6"]
+    },
+    {
+      "skillId": "skill-name-orienting",
+      "domainId": "communication",
+      "titleAr": "الاستجابة للنداء (محاكاة رقمية)",
+      "titleEn": "Name Call Response (Digital Proxy)",
+      "descriptionAr": "يلمس الطفل الوجه/الشخصية عند إشارة النداء البصرية والصوتية — لا يقيس الالتفات الحقيقي في البيئة.",
+      "descriptionEn": "Taps character on name cue — digital proxy only.",
+      "criterionIds": ["C2"]
+    }
+  ],
+  "media": [
+    {
+      "mediaId": "tap-to-request",
+      "titleAr": "أريد هذا",
+      "titleEn": "I Want This",
+      "descriptionAr": "صورة كبيرة للحاجة ثم اختيار من بطاقات — تدريب رقمي على الطلب الوظيفي.",
+      "descriptionEn": "Large need cue then tap the matching card.",
+      "engineType": "expressive_choice",
+      "skillIds": ["skill-functional-request"],
+      "goalLinks": [
+        {
+          "goalType": "functional_request",
+          "labelAr": "طلب وظيفي باختيار بصري",
+          "labelEn": "Functional request via visual choice",
+          "skillIds": ["skill-functional-request"],
+          "criterionIds": ["C1"]
+        }
+      ],
+      "criterionIds": ["C1"],
+      "ageBands": ["3-4", "5-6", "7-9", "10-12"],
+      "difficultyLevels": [1, 2, 3],
+      "config": {
+        "trialCount": 8,
+        "choices": 2,
+        "difficulty": 1,
+        "prompting": true,
+        "reinforcement": true,
+        "responseWindowMs": 9000,
+        "content": {
+          "pool": "daily_needs",
+          "mode": "expressive_request",
+          "choiceLevel": 1
+        }
+      }
+    },
+    {
+      "mediaId": "symbol-board-request",
+      "titleAr": "لوحة الرموز",
+      "titleEn": "Symbol Board",
+      "descriptionAr": "لوحة رموز/صور لطلب احتياج — AAC رقمي تمهيدي.",
+      "descriptionEn": "Symbol board for requesting — preparatory AAC.",
+      "engineType": "expressive_choice",
+      "skillIds": ["skill-symbol-request"],
+      "goalLinks": [
+        {
+          "goalType": "symbol_request",
+          "labelAr": "اختيار رمز للطلب",
+          "labelEn": "Symbol selection for request",
+          "skillIds": ["skill-symbol-request"],
+          "criterionIds": ["C8"]
+        }
+      ],
+      "criterionIds": ["C8"],
+      "ageBands": ["3-4", "5-6", "7-9", "10-12"],
+      "difficultyLevels": [1, 2, 3],
+      "config": {
+        "trialCount": 8,
+        "choices": 3,
+        "difficulty": 1,
+        "prompting": true,
+        "reinforcement": true,
+        "responseWindowMs": 10000,
+        "content": {
+          "pool": "daily_needs",
+          "mode": "symbol_board",
+          "choiceLevel": 2
+        }
+      }
+    },
+    {
+      "mediaId": "listen-then-tap",
+      "titleAr": "افعل كما ترى",
+      "titleEn": "Do What You See",
+      "descriptionAr": "تعليم بصري من خطوة واحدة — يلمس الطفل الصورة الصحيحة.",
+      "descriptionEn": "One-step visual instruction — tap the correct picture.",
+      "engineType": "receptive_choice",
+      "skillIds": ["skill-receptive-one-step"],
+      "goalLinks": [
+        {
+          "goalType": "receptive_instruction",
+          "labelAr": "فهم تعليم بصري بخطوة واحدة",
+          "labelEn": "Receptive one-step instruction",
+          "skillIds": ["skill-receptive-one-step"],
+          "criterionIds": ["C3"]
+        }
+      ],
+      "criterionIds": ["C3"],
+      "ageBands": ["3-4", "5-6", "7-9", "10-12"],
+      "difficultyLevels": [1, 2, 3],
+      "config": {
+        "trialCount": 8,
+        "choices": 3,
+        "difficulty": 1,
+        "prompting": true,
+        "reinforcement": true,
+        "responseWindowMs": 9000,
+        "content": {
+          "pool": "actions",
+          "mode": "receptive_instruction",
+          "choiceLevel": 1
+        }
+      }
+    },
+    {
+      "mediaId": "point-to-item",
+      "titleAr": "أين؟",
+      "titleEn": "Where Is It?",
+      "descriptionAr": "مشهد واحد — يلمس الطفل العنصر المطلوب (إشارة رقمية).",
+      "descriptionEn": "Single scene — tap the requested item.",
+      "engineType": "receptive_choice",
+      "skillIds": ["skill-communicative-point"],
+      "goalLinks": [
+        {
+          "goalType": "communicative_point",
+          "labelAr": "لمس/إشارة رقمية نحو الهدف",
+          "labelEn": "Digital tap toward target",
+          "skillIds": ["skill-communicative-point"],
+          "criterionIds": ["C6"]
+        }
+      ],
+      "criterionIds": ["C6"],
+      "ageBands": ["3-4", "5-6", "7-9", "10-12"],
+      "difficultyLevels": [1, 2, 3],
+      "config": {
+        "trialCount": 8,
+        "choices": 4,
+        "difficulty": 1,
+        "prompting": true,
+        "reinforcement": true,
+        "responseWindowMs": 10000,
+        "content": {
+          "pool": "scene_objects",
+          "mode": "point_in_scene",
+          "choiceLevel": 1
+        }
+      }
+    },
+    {
+      "mediaId": "name-call-tap",
+      "titleAr": "اسمك هنا",
+      "titleEn": "Your Name Here",
+      "descriptionAr": "نداء بصري/صوتي — يلمس الطفل الشخصية للاستجابة — محاكاة رقمية.",
+      "descriptionEn": "Name cue — tap the character to respond.",
+      "engineType": "receptive_choice",
+      "skillIds": ["skill-name-orienting"],
+      "goalLinks": [
+        {
+          "goalType": "name_orienting",
+          "labelAr": "استجابة للنداء (رقمي)",
+          "labelEn": "Name orienting (digital)",
+          "skillIds": ["skill-name-orienting"],
+          "criterionIds": ["C2"]
+        }
+      ],
+      "criterionIds": ["C2"],
+      "ageBands": ["3-4", "5-6", "7-9", "10-12"],
+      "difficultyLevels": [1, 2, 3],
+      "config": {
+        "trialCount": 6,
+        "choices": 2,
+        "difficulty": 1,
+        "prompting": true,
+        "reinforcement": true,
+        "responseWindowMs": 8000,
+        "content": {
+          "pool": "name_call",
+          "mode": "name_orienting",
+          "choiceLevel": 1
+        }
+      }
+    }
+  ]
+}

@@ -8,7 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { STUDENT_COPY } from '@/lib/content';
 import { useLanguage } from '@/components/LanguageProvider';
-import { saveActiveChild } from '@/lib/parentJourney';
+import { hydrateActiveChildClinicalSlice } from '@/lib/clinical/hydrateActiveChild';
 import {
   addToCaseload,
   upsertLocalStudent,
@@ -61,7 +61,7 @@ export default function NewStudentPage() {
     try {
       upsertLocalStudent(row);
       if (session?.user?.email) addToCaseload(session.user.email, row.id);
-      saveActiveChild({
+      void hydrateActiveChildClinicalSlice({
         id: row.id,
         name: row.name,
         age: row.age,

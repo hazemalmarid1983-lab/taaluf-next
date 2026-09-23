@@ -164,21 +164,17 @@ export async function createAssessment(fields: {
   next_assessment_date?: string;
 }) {
   const t = getTables();
+  /** حقول موجودة فقط في جدول Assessments الفعلي — لا AssessmentType/AI/DomainAverages/NextAssessmentDate */
   const payload: FieldSet = {
     AssessmentDate: (fields.assessment_date || new Date().toISOString()).slice(
       0,
       10
     ),
-    AssessmentType: 'أولي',
     TotalScore: fields.total_score ?? 0,
     MaxScore: fields.max_score ?? 108,
     Classification: fields.classification || '',
-    AIConfidence: fields.ai_confidence ?? undefined,
-    AIAnalysis: fields.ai_analysis || '',
     Status: 'مكتمل',
     ScoresJSON: fields.scores_json,
-    DomainAveragesJSON: fields.domain_averages_json || '',
-    NextAssessmentDate: fields.next_assessment_date || '',
   };
 
   // روابط Airtable — مصفوفة معرفات سجلات

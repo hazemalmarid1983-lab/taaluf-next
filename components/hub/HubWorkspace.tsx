@@ -1,35 +1,29 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useLanguage } from '@/components/LanguageProvider';
 import FrictionlessNextAction from '@/components/flow/FrictionlessNextAction';
 import { useHubNextAction } from '@/components/flow/useNextBestAction';
-import HubAdvisorWelcome from '@/components/hub/HubAdvisorWelcome';
 import HubMeetingRoom from '@/components/hub/HubMeetingRoom';
-import HubMouSection from '@/components/hub/HubMouSection';
 import HubRbacPanel from '@/components/hub/HubRbacPanel';
 import {
   HUB_MEMBERS,
   HUB_NAME_AR,
   HUB_NAME_EN,
   HUB_ONBOARDING_POST_ID,
-  mouOverallStatus,
   type ClinicalHubSnapshot,
   type HubActor,
   type HubPost,
   type HubPostCategory,
   type HubPostStatus,
-  type MouOverallStatus,
-  type MouState,
 } from '@/lib/clinicalHub';
 import {
   defaultHubTab,
   hubFocusFromQuery,
 } from '@/lib/nextBestActionFlow';
-import { resolveAdvisorOnboardingStep } from '@/lib/advisorOnboardingFlow';
 
-type TabId = 'overview' | 'meeting' | 'agreement';
+type TabId = 'overview' | 'meeting';
 
 export default function HubWorkspace() {
   const { lang } = useLanguage();
@@ -39,24 +33,9 @@ export default function HubWorkspace() {
   const [tab, setTab] = useState<TabId>('overview');
   const [actor, setActor] = useState<HubActor | null>(null);
   const [snapshot, setSnapshot] = useState<ClinicalHubSnapshot | null>(null);
-  const [mouStatus, setMouStatus] = useState<MouOverallStatus>('pending');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
-  const [welcomeBusy, setWelcomeBusy] = useState(false);
   const nextAction = useHubNextAction(actor, snapshot);
-
-  const onboardingStep = useMemo(() => {
-    if (!actor || !snapshot) return null;
-    return resolveAdvisorOnboardingStep({
-      actor,
-      mou: snapshot.mou,
-      posts: snapshot.posts,
-      onboarding: snapshot.advisorOnboarding || {},
-    });
-  }, [actor, snapshot]);
-
-  const showWelcome =
-    onboardingStep === 'welcome' && !focusParam && !loading && !!actor;
 
   const load = useCallback(async () => {
     setError('');
@@ -67,7 +46,6 @@ export default function HubWorkspace() {
     }
     setActor(data.actor);
     setSnapshot(data.snapshot);
-    setMouStatus(data.mouStatus);
   }, []);
 
   useEffect(() => {
@@ -84,43 +62,15 @@ export default function HubWorkspace() {
       return;
     }
     if (!actor || !snapshot) return;
-    if (onboardingStep === 'welcome') return;
     setTab(
       defaultHubTab({
-        mouStatus,
         pendingCount: snapshot.posts.filter((p) => p.status === 'pending')
           .length,
         actorRole: actor.role,
         posts: snapshot.posts,
-        advisorOnboarding: snapshot.advisorOnboarding,
-        mou: snapshot.mou,
       })
     );
-  }, [focusParam, actor, snapshot, mouStatus, onboardingStep]);
-
-  const dismissWelcome = async () => {
-    setWelcomeBusy(true);
-    setError('');
-    try {
-      const res = await fetch('/api/hub/onboarding', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'welcome_seen' }),
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.message || data.error || 'تعذر المتابعة');
-      }
-      setSnapshot((prev) =>
-        prev ? { ...prev, advisorOnboarding: data.onboarding } : prev
-      );
-      setTab('agreement');
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'تعذر المتابعة');
-    } finally {
-      setWelcomeBusy(false);
-    }
-  };
+  }, [focusParam, actor, snapshot]);
 
   const applyPost = (post: HubPost) => {
     setSnapshot((prev) => {
@@ -133,11 +83,6 @@ export default function HubWorkspace() {
           : [post, ...prev.posts],
       };
     });
-  };
-
-  const applyMou = (mou: MouState, status: MouOverallStatus) => {
-    setSnapshot((prev) => (prev ? { ...prev, mou } : prev));
-    setMouStatus(status);
   };
 
   const applyMerhidDirectives = (
@@ -186,34 +131,8 @@ export default function HubWorkspace() {
     applyPost(data.post);
   };
 
-  const signMou = async (signerName: string) => {
-    const res = await fetch('/api/hub/mou', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'sign', signerName }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || data.error || 'تعذر التوقيع');
-    applyMou(data.mou, data.mouStatus);
-    if (actor?.role === 'scientific_advisor' && data.mou.samer.signed) {
-      setTab('meeting');
-    }
-  };
-
-  const resetMou = async () => {
-    const res = await fetch('/api/hub/mou', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'reset' }),
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message || data.error || 'تعذر الضبط');
-    applyMou(data.mou, data.mouStatus);
-  };
-
   const pendingCount =
     snapshot?.posts.filter((p) => p.status === 'pending').length ?? 0;
-  const executed = mouStatus === 'executed';
   const onboardingPost = snapshot?.posts.find((p) => p.id === HUB_ONBOARDING_POST_ID);
   const advisorBriefed = onboardingPost?.replies.some(
     (r) => r.authorMemberId === 'samer'
@@ -222,7 +141,6 @@ export default function HubWorkspace() {
   const tabs: { id: TabId; ar: string; en: string }[] = [
     { id: 'overview', ar: 'لوحة العمل', en: 'Workspace' },
     { id: 'meeting', ar: 'غرفة الاجتماعات', en: 'Meeting room' },
-    { id: 'agreement', ar: 'الشراكة والمذكرة', en: 'Partnership' },
   ];
 
   return (
@@ -276,7 +194,7 @@ export default function HubWorkspace() {
         )}
       </div>
 
-      {!loading && nextAction && !showWelcome ? (
+      {!loading && nextAction ? (
         <FrictionlessNextAction action={nextAction} isAr={isAr} />
       ) : null}
 
@@ -303,23 +221,6 @@ export default function HubWorkspace() {
                 {pendingCount}
               </span>
             ) : null}
-            {item.id === 'agreement' ? (
-              <span
-                className={`ms-2 rounded-full px-2 py-0.5 text-[10px] ${
-                  executed
-                    ? 'bg-emerald-100 text-emerald-800'
-                    : 'bg-slate-100 text-slate-600'
-                }`}
-              >
-                {executed
-                  ? isAr
-                    ? 'معتمدة'
-                    : 'Executed'
-                  : isAr
-                    ? 'بانتظار التوقيع'
-                    : 'Awaiting'}
-              </span>
-            ) : null}
           </button>
         ))}
       </nav>
@@ -332,10 +233,8 @@ export default function HubWorkspace() {
         <HubRbacPanel
           actor={actor}
           pendingCount={pendingCount}
-          mouStatus={mouOverallStatus(snapshot.mou)}
           isAr={isAr}
           onOpenMeeting={() => setTab('meeting')}
-          onOpenAgreement={() => setTab('agreement')}
         />
       ) : tab === 'meeting' ? (
         <HubMeetingRoom
@@ -347,24 +246,6 @@ export default function HubWorkspace() {
           onReply={(id, reply) => patchPost(id, { reply })}
           onToggleStatus={(id, status) => patchPost(id, { status })}
           onSaveDirectives={saveMerhidDirectives}
-        />
-      ) : (
-        <HubMouSection
-          actor={actor}
-          mou={snapshot.mou}
-          mouStatus={mouStatus}
-          isAr={isAr}
-          onSign={signMou}
-          onReset={resetMou}
-        />
-      )}
-
-      {showWelcome && actor ? (
-        <HubAdvisorWelcome
-          actor={actor}
-          isAr={isAr}
-          busy={welcomeBusy}
-          onContinue={dismissWelcome}
         />
       ) : null}
     </section>
