@@ -21,6 +21,7 @@ type SensoryFocusOverlayProps = {
   pickedId: string | null;
   feedback: 'ok' | 'miss' | null;
   tapTone: (id: string) => string;
+  inputLocked?: boolean;
   onChoiceTap: (item: InteractiveToolItem) => void;
   onBinTap: (bin: SortingBin) => void;
   onSpeakTarget: () => void;
@@ -42,6 +43,7 @@ export default function SensoryFocusOverlay({
   pickedId,
   feedback,
   tapTone,
+  inputLocked = false,
   onChoiceTap,
   onBinTap,
   onSpeakTarget,
@@ -91,7 +93,8 @@ export default function SensoryFocusOverlay({
                   key={bin.id}
                   type="button"
                   onClick={() => onBinTap(bin)}
-                  className={`rounded-3xl border-2 p-6 transition active:scale-95 ${tapTone(bin.id)}`}
+                  disabled={inputLocked}
+                  className={`rounded-3xl border-2 p-6 transition active:scale-95 disabled:pointer-events-none ${tapTone(bin.id)}`}
                 >
                   <span className="block text-5xl">{bin.emoji}</span>
                   <span className="mt-2 block text-sm font-bold text-slate-700">
@@ -111,7 +114,8 @@ export default function SensoryFocusOverlay({
                   key={item.id}
                   type="button"
                   onClick={() => onChoiceTap(item)}
-                  className={`flex h-24 w-24 items-center justify-center rounded-3xl border-2 text-5xl transition active:scale-95 sm:h-28 sm:w-28 ${tapTone(item.id)}`}
+                  disabled={inputLocked}
+                  className={`flex h-24 w-24 items-center justify-center rounded-3xl border-2 text-5xl transition active:scale-95 disabled:pointer-events-none sm:h-28 sm:w-28 ${tapTone(item.id)}`}
                   aria-label={isAr ? item.nameAr : item.nameEn}
                 >
                   {item.imageUrl}

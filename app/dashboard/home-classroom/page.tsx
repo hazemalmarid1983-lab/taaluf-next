@@ -18,6 +18,7 @@ import VisualScheduleBoard, {
 import SensoryFocusOverlay from '@/components/classroom/SensoryFocusOverlay';
 import PromptHierarchyChart from '@/components/classroom/PromptHierarchyChart';
 import PromptRecordingBar from '@/components/classroom/PromptRecordingBar';
+import PromptSelectionOverlay from '@/components/classroom/PromptSelectionOverlay';
 import ReinforcerDeliveryTimer from '@/components/classroom/ReinforcerDeliveryTimer';
 import SessionMilestoneCard from '@/components/classroom/SessionMilestoneCard';
 import SupportToolsCard from '@/components/home/SupportToolsCard';
@@ -49,7 +50,6 @@ import {
   type RegulationZoneId,
 } from '@/lib/regulationZones';
 import { readActiveChild, type ParentChild } from '@/lib/parentJourney';
-import type { PromptHierarchyLevel } from '@/lib/promptHierarchy';
 import { SENSORY_FOCUS_BODY_CLASS } from '@/lib/sensoryFocusMode';
 import {
   clearSessionPause,
@@ -114,8 +114,6 @@ export default function HomeClassroomPage() {
   const [genReadyNotice, setGenReadyNotice] = useState(false);
   const [focusMode, setFocusMode] = useState(false);
   const [awaitingPrompt, setAwaitingPrompt] = useState(false);
-  const [suggestedPrompt, setSuggestedPrompt] =
-    useState<PromptHierarchyLevel | null>(null);
   const [checkInComplete, setCheckInComplete] = useState(false);
   const [readinessState, setReadinessState] = useState<ReadinessState | null>(
     null
@@ -267,19 +265,19 @@ export default function HomeClassroomPage() {
   };
 
   const handleChoiceTap = (item: InteractiveToolItem) => {
+    if (awaitingPrompt) return;
     const isCorrect = item.id === target.id;
     setPickedId(item.id);
     reactToTap(isCorrect, isAr ? item.nameAr : item.nameEn);
     setAwaitingPrompt(true);
-    setSuggestedPrompt(isCorrect ? 'independent' : null);
   };
 
   const handleBinTap = (bin: SortingBin) => {
+    if (awaitingPrompt) return;
     const isCorrect = binIdForItem(goal, target.id) === bin.id;
     setPickedId(bin.id);
     reactToTap(isCorrect, sortingSpokenFeedback(target, bin, lang));
     setAwaitingPrompt(true);
-    setSuggestedPrompt(isCorrect ? 'independent' : null);
   };
 
   const resetSession = () => {
@@ -295,7 +293,6 @@ export default function HomeClassroomPage() {
     cancelSpeech();
     exitFocusMode();
     setAwaitingPrompt(false);
-    setSuggestedPrompt(null);
   };
 
   const handleCheckInComplete = (state: ReadinessState, path: ReadinessPath) => {
@@ -461,7 +458,6 @@ export default function HomeClassroomPage() {
     setPickedId(null);
     setFeedback(null);
     setAwaitingPrompt(false);
-    setSuggestedPrompt(null);
     cancelSpeech();
 
     if (updated.length >= HOME_SESSION_TARGET_TRIALS) {
@@ -490,7 +486,6 @@ export default function HomeClassroomPage() {
     setPickedId(null);
     setFeedback(null);
     setAwaitingPrompt(false);
-    setSuggestedPrompt(null);
   };
 
   const progressPct = Math.round(
@@ -1244,7 +1239,8 @@ export default function HomeClassroomPage() {
                           key={bin.id}
                           type="button"
                           onClick={() => handleBinTap(bin)}
-                          className={`rounded-2xl border-2 p-4 transition hover:scale-[1.03] active:scale-95 ${tapTone(bin.id)}`}
+                          disabled={awaitingPrompt}
+                          className={`rounded-2xl border-2 p-4 transition hover:scale-[1.03] active:scale-95 disabled:pointer-events-none ${tapTone(bin.id)}`}
                         >
                           <span className="block text-3xl">{bin.emoji}</span>
                           <span className="mt-1 block text-xs font-bold text-slate-700">
@@ -1277,7 +1273,8 @@ export default function HomeClassroomPage() {
                           key={item.id}
                           type="button"
                           onClick={() => handleChoiceTap(item)}
-                          className={`flex h-20 w-20 items-center justify-center rounded-2xl border-2 text-4xl transition hover:scale-105 active:scale-95 ${tapTone(item.id)}`}
+                          disabled={awaitingPrompt}
+                          className={`flex h-20 w-20 items-center justify-center rounded-2xl border-2 text-4xl transition hover:scale-105 active:scale-95 disabled:pointer-events-none ${tapTone(item.id)}`}
                           aria-label={isAr ? item.nameAr : item.nameEn}
                         >
                           {item.imageUrl}
@@ -1290,10 +1287,7 @@ export default function HomeClassroomPage() {
 
               <PromptRecordingBar
                 isAr={isAr}
-                visible={showPromptBar}
-                suggestedLevel={
-                  awaitingPrompt ? suggestedPrompt : null
-                }
+                visible={showPromptBar && !awaitingPrompt}
                 onRecord={recordTrial}
               />
 
@@ -1325,6 +1319,7 @@ export default function HomeClassroomPage() {
             pickedId={pickedId}
             feedback={feedback}
             tapTone={tapTone}
+            inputLocked={awaitingPrompt}
             onChoiceTap={handleChoiceTap}
             onBinTap={handleBinTap}
             onSpeakTarget={() => speak(targetName)}
@@ -1354,6 +1349,10 @@ export default function HomeClassroomPage() {
           readiness={readinessState}
         />
       )}
+
+      {awaitingPrompt && inTrainingActivity && !summary ? (
+        <PromptSelectionOverlay isAr={isAr} onSelect={recordTrial} />
+      ) : null}
 
       {!focusMode && (
         <ClassroomQuickTools

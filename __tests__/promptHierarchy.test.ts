@@ -3,11 +3,31 @@ import {
   compareIndependence,
   countPromptBreakdown,
   independencePercentage,
+  noResponseCount,
   normalizePromptLevel,
+  promptedCount,
   summarizePromptLevels,
 } from '../lib/promptHierarchy';
 
 describe('prompt hierarchy', () => {
+  it('counts a trial as independent only when that level was recorded', () => {
+    const trials = [
+      { promptLevel: 'verbal' as const },
+      { promptLevel: 'partial_physical' as const },
+      { promptLevel: 'no_response' as const },
+      { promptLevel: 'verbal' as const },
+      { promptLevel: 'independent' as const },
+    ];
+    expect(independencePercentage(trials)).toBe(20);
+    expect(promptedCount(trials)).toBe(3);
+    expect(noResponseCount(trials)).toBe(1);
+    expect(
+      independencePercentage(
+        trials.map(() => ({ promptLevel: 'verbal' as const }))
+      )
+    ).toBe(0);
+  });
+
   it('normalizes legacy prompt levels', () => {
     expect(normalizePromptLevel('verbal_gestural')).toBe('gestural');
     expect(normalizePromptLevel('physical_prompt')).toBe('full_physical');
