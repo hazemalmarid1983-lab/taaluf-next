@@ -50,6 +50,7 @@ import {
   zoneNeedsCalming,
   type RegulationZoneId,
 } from '@/lib/regulationZones';
+import type { RoomCustomActivity } from '@/lib/childRoom/customActivityStore';
 import { readActiveChild, type ParentChild } from '@/lib/parentJourney';
 import { SENSORY_FOCUS_BODY_CLASS } from '@/lib/sensoryFocusMode';
 import {
@@ -140,6 +141,32 @@ export default function HomeClassroomPage() {
       setCheckInComplete(true);
       setShowCheckInModal(false);
       clearSessionPause();
+    }
+
+    const customId = new URLSearchParams(window.location.search).get('customId');
+    if (customId) {
+      try {
+        const stored = sessionStorage.getItem('taaluf.childRoom.customPlay.v1');
+        const parsed = stored
+          ? (JSON.parse(stored) as RoomCustomActivity)
+          : null;
+        if (parsed?.id === customId && parsed.activity) {
+          setGenerated(parsed.activity);
+        } else if (active?.id) {
+          void fetch(
+            `/api/child-room/custom-activities?childId=${encodeURIComponent(active.id)}`
+          )
+            .then((response) => response.json())
+            .then((data: { activity?: RoomCustomActivity; activities?: RoomCustomActivity[] }) => {
+              const match =
+                data.activities?.find((item) => item.id === customId) || data.activity;
+              if (match?.activity) setGenerated(match.activity);
+            })
+            .catch(() => undefined);
+        }
+      } catch {
+        /* ignore */
+      }
     }
 
     warmUpVoices();

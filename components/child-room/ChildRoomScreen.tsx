@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import ClinicalBookingButton from '@/components/child-room/ClinicalBookingButton';
+import CustomGoalComposer from '@/components/child-room/CustomGoalComposer';
 import RoomConversation from '@/components/child-room/RoomConversation';
 import TeacherCorner from '@/components/child-room/TeacherCorner';
 import TrainingActiveChildHeader from '@/components/training/TrainingActiveChildHeader';
@@ -40,6 +41,7 @@ export default function ChildRoomScreen() {
         التمرين التالي. إكمال الجلسة الرقمية لا يعني إتقان المعيار.
       </p>
       <TrainingPlanEntry />
+      {profile?.id ? <CustomGoalComposer childId={profile.id} /> : null}
       {profile?.id ? (
         <ClinicalBookingButton childId={profile.id} childName={profile.name} />
       ) : null}

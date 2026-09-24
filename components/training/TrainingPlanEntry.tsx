@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import ActiveChildTrainingPrompt from '@/components/training/ActiveChildTrainingPrompt';
+import type { RoomCustomActivity } from '@/lib/childRoom/customActivityStore';
 import { listRoomSources, saveTeacherForm } from '@/lib/childRoom/gate';
 import {
   ensureActiveTrainingPlanFromAssessment,
@@ -62,6 +63,7 @@ export default function TrainingPlanEntry() {
   const childId = profile?.id ?? null;
   const [bridgeNotice, setBridgeNotice] = useState<string | null>(null);
   const [entryState, setEntryState] = useState<TrainingEntryState | null>(null);
+  const [customActivity, setCustomActivity] = useState<RoomCustomActivity | null>(null);
 
   useEffect(() => {
     setBridgeNotice(consumeTrainingBridgeNotice());
@@ -88,6 +90,20 @@ export default function TrainingPlanEntry() {
   useEffect(() => {
     refreshEntry();
   }, [refreshEntry]);
+
+  useEffect(() => {
+    if (!childId) return undefined;
+    let stopped = false;
+    void fetch(`/api/child-room/custom-activities?childId=${encodeURIComponent(childId)}`)
+      .then((response) => response.json())
+      .then((data: { activity?: RoomCustomActivity | null }) => {
+        if (!stopped && data.activity) setCustomActivity(data.activity);
+      })
+      .catch(() => undefined);
+    return () => {
+      stopped = true;
+    };
+  }, [childId]);
 
   useEffect(() => {
     if (!childId) return undefined;
@@ -171,6 +187,39 @@ export default function TrainingPlanEntry() {
   const sources = listRoomSources(childId);
   const gateOpen = sources.every((source) => source.done);
   const anySource = sources.some((source) => source.done);
+
+  if (customActivity) {
+    return (
+      <div className="mx-auto max-w-lg space-y-4">
+        {notice}
+        <div className="rounded-2xl bg-white p-8 text-center shadow-sm">
+          <p className="text-xs font-bold text-[#2E7D8E]">هدف خاص نشط</p>
+          <h2 className="mt-2 text-xl font-bold text-slate-900">{customActivity.goalText}</h2>
+          <p className="mt-2 text-sm text-slate-600">
+            {customActivity.activity.titleAr || 'وسيلة مولّدة من الهدف المكتوب'}
+          </p>
+          <p className="mt-2 text-xs leading-5 text-slate-500">
+            إكمال الوسيلة الرقمية لا يعني إتقان المعيار.
+          </p>
+          <button
+            type="button"
+            onClick={() => {
+              sessionStorage.setItem(
+                'taaluf.childRoom.customPlay.v1',
+                JSON.stringify(customActivity)
+              );
+              router.push(
+                `/dashboard/home-classroom?from=child-room&customId=${encodeURIComponent(customActivity.id)}`
+              );
+            }}
+            className="mt-6 w-full rounded-xl bg-indigo-600 px-6 py-3 text-base font-semibold text-white"
+          >
+            ابدأ الوسيلة
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (entryState.kind === 'no_plan' && anySource && !gateOpen) {
     return (

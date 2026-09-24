@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { useLanguage } from '@/components/LanguageProvider';
 import { hasActiveParentQuestionnaire } from '@/lib/assessmentGate';
 import {
@@ -10,17 +9,18 @@ import {
   mapParentToCriteria,
 } from '@/lib/parentAssessment';
 import { localizeParentItem } from '@/lib/i18n/parentAssessmentI18n';
-import { PARENT_ROUTES } from '@/lib/parentJourney';
+import { CHILD_ROOM_PATH } from '@/lib/childRoom/gate';
+import { readSelectedTier } from '@/lib/subscriptionTiers';
 
 export default function ParentAssessmentPage() {
   const { lang, dir, t } = useLanguage();
-  const router = useRouter();
   const [currentIdx, setCurrentIdx] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [selectedScore, setSelectedScore] = useState<number | null>(null);
   const [busy, setBusy] = useState(false);
   const [msg, setMsg] = useState('');
   const [toast, setToast] = useState('');
+  const [cooldownBanner, setCooldownBanner] = useState('');
   const advancing = useRef(false);
 
   const item = PARENT_ITEMS[currentIdx] || PARENT_ITEMS[0];
@@ -35,36 +35,54 @@ export default function ParentAssessmentPage() {
         }));
 
   useEffect(() => {
-    try {
-      let childId = '';
-      const active = JSON.parse(
-        localStorage.getItem('taaluf.activeStudent') || 'null'
-      );
-      if (active?.id) childId = active.id;
+    let cancelled = false;
+    void (async () => {
+      try {
+        let childId = '';
+        const active = JSON.parse(
+          localStorage.getItem('taaluf.activeStudent') || 'null'
+        );
+        if (active?.id) childId = active.id;
 
-      const gate = hasActiveParentQuestionnaire(childId);
-      if (gate.active && gate.reason === 'completed') {
-        setToast(gate.message);
-        window.setTimeout(() => {
-          router.replace('/parent');
-        }, 1200);
-        return;
-      }
+        if (childId) {
+          const response = await fetch(
+            `/api/assessment-cooldown?childId=${encodeURIComponent(childId)}&planId=${encodeURIComponent(readSelectedTier())}`
+          );
+          const data = (await response.json().catch(() => null)) as {
+            cooldown?: { open?: boolean; message?: string };
+          } | null;
+          if (
+            !cancelled &&
+            data?.cooldown &&
+            data.cooldown.open === false &&
+            data.cooldown.message
+          ) {
+            setCooldownBanner(data.cooldown.message);
+            return;
+          }
+        }
 
-      const raw = localStorage.getItem('taaluf.parentAssessment.draft');
-      if (raw) {
-        const draft = JSON.parse(raw) as Record<string, number>;
-        setAnswers(draft);
-        const firstOpen = PARENT_ITEMS.findIndex((q) => draft[q.id] == null);
-        setCurrentIdx(firstOpen === -1 ? PARENT_ITEMS.length - 1 : firstOpen);
+        const gate = hasActiveParentQuestionnaire(childId);
+        const raw = localStorage.getItem('taaluf.parentAssessment.draft');
+        if (raw) {
+          const draft = JSON.parse(raw) as Record<string, number>;
+          if (!cancelled) {
+            setAnswers(draft);
+            const firstOpen = PARENT_ITEMS.findIndex((q) => draft[q.id] == null);
+            setCurrentIdx(firstOpen === -1 ? PARENT_ITEMS.length - 1 : firstOpen);
+          }
+        }
+        if (!cancelled && gate.active && gate.reason === 'draft') {
+          setToast(gate.message);
+        }
+      } catch {
+        /* ignore */
       }
-      if (gate.active && gate.reason === 'draft') {
-        setToast(gate.message);
-      }
-    } catch {
-      /* ignore */
-    }
-  }, [router]);
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     localStorage.setItem(
@@ -100,10 +118,21 @@ export default function ParentAssessmentPage() {
       const res = await fetch('/api/parent-assessment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ childId, answers: list }),
+        body: JSON.stringify({
+          childId,
+          answers: list,
+          planId: readSelectedTier(),
+        }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || t('saveConsentError'));
+      if (!res.ok) {
+        if (data.cooldown?.message) {
+          setCooldownBanner(data.cooldown.message);
+          setBusy(false);
+          return;
+        }
+        throw new Error(data.error || t('saveConsentError'));
+      }
 
       const storeKey = 'taaluf.parentAssessment.v1';
       const prev = JSON.parse(localStorage.getItem(storeKey) || '[]');
@@ -123,7 +152,11 @@ export default function ParentAssessmentPage() {
         )
       );
       localStorage.removeItem('taaluf.parentAssessment.draft');
-      router.push(PARENT_ROUTES.games);
+      setCooldownBanner(
+        data.cooldown?.message ||
+          'تم حفظ التقييم بنجاح. التقييم الدوري القادم يُحدد حسب الباقة.'
+      );
+      setBusy(false);
     } catch (err) {
       setMsg(err instanceof Error ? err.message : t('saveConsentError'));
       setBusy(false);
@@ -150,6 +183,22 @@ export default function ParentAssessmentPage() {
       }
     }, 120);
   };
+
+  if (cooldownBanner) {
+    return (
+      <section className="mx-auto max-w-lg px-4 py-16 text-right" dir="rtl">
+        <div className="rounded-2xl border border-emerald-200 bg-emerald-50 p-6 text-center">
+          <p className="text-sm font-semibold leading-7 text-emerald-950">{cooldownBanner}</p>
+          <a
+            href={CHILD_ROOM_PATH}
+            className="mt-4 inline-block text-sm font-bold text-[#2E7D8E] underline"
+          >
+            العودة إلى غرفة الطفل
+          </a>
+        </div>
+      </section>
+    );
+  }
 
   if (!item) {
     return (

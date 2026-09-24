@@ -874,6 +874,18 @@ export function recommendToolsForGoal(
   return picked;
 }
 
+/** ربط نوع الوسيلة المولّدة بوسيلة تدريبية موجودة في غرفة الطفل */
+export const ROOM_MEDIA_FOR_TOOL_TYPE: Record<HomeToolType, string> = {
+  identical_matching: 'match-me',
+  receptive_discrimination: 'find-the-target',
+  sorting_categories: 'match-me',
+  functional_naming: 'find-the-target',
+};
+
+export function trainingMediaForGoal(goalText: string): string {
+  return ROOM_MEDIA_FOR_TOOL_TYPE[detectToolType(goalText)];
+}
+
 /** تعليمات المزوّد الذكي — مبنية على نفس مفاهيم المحرك حتى يطابق ناتجه شكله */
 export function activityGenerationPrompt() {
   return `أنت مصمم وسائل تعليمية لأطفال ذوي اضطراب طيف التوحل واحتياجات نمائية، وفق مبادئ ABA وTEACCH.
