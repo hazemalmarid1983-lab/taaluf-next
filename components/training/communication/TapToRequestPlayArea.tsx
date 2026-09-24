@@ -6,6 +6,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import PromptRecordingBar from '@/components/classroom/PromptRecordingBar';
 
+import ActivityFocusShell from '@/components/training/ActivityFocusShell';
+
+import { useActivityFeedback } from '@/components/training/useActivityFeedback';
+
 import CommunicationVisualCard, {
 
   type CommunicationVisualCardState,
@@ -162,6 +166,8 @@ export default function TapToRequestPlayArea({
 
   const [selectedId, setSelectedId] = useState<string | null>(null);
 
+  const audio = useActivityFeedback();
+
   const [reducedMotion, setReducedMotion] = useState(false);
 
 
@@ -232,6 +238,9 @@ export default function TapToRequestPlayArea({
 
       stopSpeaking();
 
+      if (feedback === 'success') audio.playSuccess();
+      else audio.playIncorrect();
+
       setChildFeedback(feedback);
 
 
@@ -250,7 +259,7 @@ export default function TapToRequestPlayArea({
 
     },
 
-    [reducedMotion, settings.reinforcement]
+    [audio, reducedMotion, settings.reinforcement]
 
   );
 
@@ -278,6 +287,8 @@ export default function TapToRequestPlayArea({
 
       if (!next) return;
 
+      audio.playTap();
+
       setSelectedId(choiceId);
 
       setPhase(next.phase);
@@ -286,7 +297,7 @@ export default function TapToRequestPlayArea({
 
     },
 
-    [phase]
+    [audio, phase]
 
   );
 
@@ -390,9 +401,11 @@ export default function TapToRequestPlayArea({
 
   return (
 
+    <ActivityFocusShell>
+
     <div
 
-      className="flex min-h-[100dvh] flex-col bg-[#F4F7FA] px-4 py-6 pb-32 sm:px-8"
+      className="flex h-full min-h-[100dvh] flex-col bg-[#F4F7FA] px-4 py-6 pb-32 sm:px-8"
 
       dir="rtl"
 
@@ -611,6 +624,8 @@ export default function TapToRequestPlayArea({
       </div>
 
     </div>
+
+    </ActivityFocusShell>
 
   );
 

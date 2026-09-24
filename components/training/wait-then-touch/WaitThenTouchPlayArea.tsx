@@ -1,13 +1,15 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import ActivityFocusShell from '@/components/training/ActivityFocusShell';
 import FieldPromptRecordBar from '@/components/training/FieldPromptRecordBar';
 import MatchVisual, { matchVisualAriaLabel } from '@/components/training/match-me/MatchVisual';
+import { useActivityFeedback } from '@/components/training/useActivityFeedback';
 import type { PromptHierarchyLevel } from '@/lib/promptHierarchy';
 import type { TrainingAssistanceStage } from '@/lib/training/assistanceSemantics';
+import { shouldAutoFinishTrial } from '@/lib/training/activityResponsePolicy';
 import {
   buildWaitThenTouchTrialSpec,
-  resolveWaitThenTouchAssistanceStage,
   resolveWaitThenTouchTrialOutcome,
   shouldStrengthenGoCueVisual,
   type WaitThenTouchRuntimeSettings,
@@ -35,6 +37,7 @@ export default function WaitThenTouchPlayArea({
   const waitStartedAt = useRef<number | null>(null);
   const goStartedAt = useRef<number | null>(null);
   const completedRef = useRef(false);
+  const audio = useActivityFeedback();
 
   const spec = buildWaitThenTouchTrialSpec(settings, trialNumber, sessionSeed);
 
@@ -72,6 +75,8 @@ export default function WaitThenTouchPlayArea({
         responseWindowMs: spec.responseWindowMs,
       });
 
+      if (outcomeKind === 'correct') audio.playSuccess();
+      else audio.playIncorrect();
       setFeedback(
         outcomeKind === 'correct'
           ? 'success'
@@ -82,7 +87,7 @@ export default function WaitThenTouchPlayArea({
       setPendingOutcome(outcome);
       setPhase('feedback');
     },
-    [settings, spec.responseWindowMs]
+    [audio, settings, spec.responseWindowMs]
   );
 
   const recordPrompt = (level: PromptHierarchyLevel) => {
@@ -132,25 +137,22 @@ export default function WaitThenTouchPlayArea({
   ]);
 
   useEffect(() => {
-    if (phase !== 'go') return;
+    if (!shouldAutoFinishTrial() || phase !== 'go') return;
 
     const tick = window.setInterval(() => {
       if (goStartedAt.current === null) return;
       const goElapsed = Date.now() - goStartedAt.current;
-      setAssistanceStage(
-        resolveWaitThenTouchAssistanceStage(goElapsed, settings.prompting)
-      );
-
       if (goElapsed >= spec.responseWindowMs) {
         finishTrial('timeout', { goPhaseElapsedMs: goElapsed });
       }
     }, 120);
 
     return () => window.clearInterval(tick);
-  }, [finishTrial, phase, settings.prompting, spec.responseWindowMs]);
+  }, [finishTrial, phase, spec.responseWindowMs]);
 
   const handleTargetPointer = () => {
     if (completedRef.current) return;
+    audio.playTap();
 
     if (phase === 'wait') {
       const waitElapsedMs =
@@ -207,8 +209,9 @@ export default function WaitThenTouchPlayArea({
           : '';
 
   return (
+    <ActivityFocusShell>
     <div
-      className="relative flex min-h-[100dvh] flex-col bg-gradient-to-b from-[#F5F2EB] via-[#EDE8DC] to-[#E2DDD0]"
+      className="relative flex h-full min-h-[100dvh] flex-col bg-gradient-to-b from-[#F5F2EB] via-[#EDE8DC] to-[#E2DDD0]"
       dir="rtl"
     >
       <div className="flex items-center justify-between px-5 pb-2 pt-5 sm:px-8">
@@ -307,5 +310,6 @@ export default function WaitThenTouchPlayArea({
         ) : null}
       </div>
     </div>
+    </ActivityFocusShell>
   );
 }

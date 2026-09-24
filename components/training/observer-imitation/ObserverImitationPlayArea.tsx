@@ -1,6 +1,8 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import ActivityFocusShell from '@/components/training/ActivityFocusShell';
+import { useActivityFeedback } from '@/components/training/useActivityFeedback';
 import { Button } from '@/components/ui/button';
 import ObserverImitationModelVisual from '@/components/training/observer-imitation/ObserverImitationModelVisual';
 import { PROMPT_HIERARCHY_LEVELS, type PromptHierarchyLevel } from '@/lib/promptHierarchy';
@@ -43,6 +45,7 @@ export default function ObserverImitationPlayArea({
   const [modelReplays, setModelReplays] = useState(0);
   const [modelPlayKey, setModelPlayKey] = useState(0);
   const performStartedAt = useRef<number | null>(null);
+  const audio = useActivityFeedback();
   const [selectedPrompt, setSelectedPrompt] =
     useState<PromptHierarchyLevel | null>(null);
   const [reinforcementKind, setReinforcementKind] = useState<'success' | 'retry' | null>(
@@ -64,22 +67,28 @@ export default function ObserverImitationPlayArea({
 
   const replayModel = useCallback(() => {
     if (!replayAllowed || !movement.replayAllowed) return;
+    audio.playTap();
     setModelReplays((n) => n + 1);
     setModelPlayKey((k) => k + 1);
-  }, [movement.replayAllowed, replayAllowed]);
+  }, [audio, movement.replayAllowed, replayAllowed]);
 
   const goToPerform = () => {
+    audio.playTap();
     performStartedAt.current = Date.now();
     setPhase('perform');
   };
 
   const openObserve = () => {
+    audio.playTap();
     setSelectedPrompt(null);
     setPhase('observe');
   };
 
   const submitRecord = (success: boolean) => {
     if (!selectedPrompt) return;
+    audio.playTap();
+    if (success) audio.playSuccess();
+    else audio.playIncorrect();
 
     const elapsed =
       performStartedAt.current !== null
@@ -109,8 +118,9 @@ export default function ObserverImitationPlayArea({
   };
 
   return (
+    <ActivityFocusShell>
     <div
-      className="relative flex min-h-[100dvh] flex-col bg-gradient-to-b from-[#0f2a2e] via-[#163840] to-[#0b1f14] text-white"
+      className="relative flex h-full min-h-[100dvh] flex-col bg-gradient-to-b from-[#0f2a2e] via-[#163840] to-[#0b1f14] text-white"
       dir="rtl"
       data-model-duration-ms={modelDurationMs}
     >
@@ -226,5 +236,6 @@ export default function ObserverImitationPlayArea({
         </div>
       ) : null}
     </div>
+    </ActivityFocusShell>
   );
 }

@@ -1,14 +1,16 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import ActivityFocusShell from '@/components/training/ActivityFocusShell';
 import FieldPromptRecordBar from '@/components/training/FieldPromptRecordBar';
 import FollowStarVisual from '@/components/training/follow-star/FollowStarVisual';
+import { useActivityFeedback } from '@/components/training/useActivityFeedback';
 import type { PromptHierarchyLevel } from '@/lib/promptHierarchy';
+import { shouldAutoFinishTrial } from '@/lib/training/activityResponsePolicy';
 import {
   getFollowStarPath,
   getFollowStarTargetPoint,
   isFollowStarHit,
-  resolveFollowStarAssistanceStage,
   resolveFollowStarTrialOutcome,
   shouldShowFollowStarVisualCue,
   type FollowStarRuntimeSettings,
@@ -37,6 +39,7 @@ export default function FollowStarPlayArea({
   const readyStartedAt = useRef<number | null>(null);
   const movementStartedAt = useRef<number>(0);
   const completedRef = useRef(false);
+  const audio = useActivityFeedback();
 
   const path = getFollowStarPath(trialNumber, pathOrderSeed);
   const startPoint = path[0];
@@ -78,11 +81,13 @@ export default function FollowStarPlayArea({
         movementMs,
       });
 
+      if (input.hit) audio.playSuccess();
+      else audio.playIncorrect();
       setFeedback(input.hit ? 'success' : 'miss');
       setPendingOutcome(outcome);
       setPhase('feedback');
     },
-    [reducedMotion, settings.prompting]
+    [audio, reducedMotion, settings.prompting]
   );
 
   const recordPrompt = (level: PromptHierarchyLevel) => {
@@ -121,13 +126,11 @@ export default function FollowStarPlayArea({
   }, [trialNumber, pathOrderSeed, reducedMotion, settings.movementDurationMs]);
 
   useEffect(() => {
-    if (phase !== 'ready') return;
+    if (!shouldAutoFinishTrial() || phase !== 'ready') return;
 
     const tick = window.setInterval(() => {
       if (readyStartedAt.current === null) return;
       const elapsed = Date.now() - readyStartedAt.current;
-      setAssistanceStage(resolveFollowStarAssistanceStage(elapsed, settings.prompting));
-
       if (elapsed >= settings.readyWindowMs) {
         finishTrial({
           tapped: false,
@@ -138,10 +141,11 @@ export default function FollowStarPlayArea({
     }, 120);
 
     return () => window.clearInterval(tick);
-  }, [finishTrial, phase, settings.prompting, settings.readyWindowMs]);
+  }, [finishTrial, phase, settings.readyWindowMs]);
 
   const handleArenaPointer = (event: React.PointerEvent<HTMLDivElement>) => {
     if (phase !== 'ready' || completedRef.current || !arenaRef.current) return;
+    audio.playTap();
 
     const rect = arenaRef.current.getBoundingClientRect();
     const tap = {
@@ -168,8 +172,9 @@ export default function FollowStarPlayArea({
   const showVisualCue = shouldShowFollowStarVisualCue(assistanceStage);
 
   return (
+    <ActivityFocusShell>
     <div
-      className="relative flex min-h-[100dvh] flex-col bg-gradient-to-b from-[#081224] via-[#0f2240] to-[#081224]"
+      className="relative flex h-full min-h-[100dvh] flex-col bg-gradient-to-b from-[#081224] via-[#0f2240] to-[#081224]"
       dir="rtl"
     >
       <div className="flex items-center justify-between px-5 pb-2 pt-5 sm:px-8">
@@ -240,5 +245,6 @@ export default function FollowStarPlayArea({
         </div>
       ) : null}
     </div>
+    </ActivityFocusShell>
   );
 }

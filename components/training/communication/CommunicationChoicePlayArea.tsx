@@ -2,13 +2,14 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import PromptRecordingBar from '@/components/classroom/PromptRecordingBar';
+import ActivityFocusShell from '@/components/training/ActivityFocusShell';
 import CommPictogramVisual, {
   commPictogramAriaLabel,
 } from '@/components/training/communication/CommPictogramVisual';
+import { useActivityFeedback } from '@/components/training/useActivityFeedback';
+import { shouldAutoFinishTrial } from '@/lib/training/activityResponsePolicy';
 import {
   buildCommTrialSpec,
-  getCommDisplayedChoices,
-  resolveCommAssistanceStage,
   resolveCommTrialOutcome,
   shouldPulseCommPrompt,
   type CommChoice,
@@ -39,6 +40,7 @@ export default function CommunicationChoicePlayArea({
 }: Props) {
   const trialStartedAt = useRef(Date.now());
   const completedRef = useRef(false);
+  const audio = useActivityFeedback();
   const assistanceStageRef = useRef<TrainingAssistanceStage>('none');
   const onTrialCompleteRef = useRef(onTrialComplete);
 
@@ -94,11 +96,13 @@ export default function CommunicationChoicePlayArea({
       if (completedRef.current) return;
       completedRef.current = true;
 
+      if (kind === 'success') audio.playSuccess();
+      else if (kind === 'miss') audio.playIncorrect();
       setFeedback(kind);
       setPhase('feedback');
       setPendingOutcome(outcome);
     },
-    []
+    [audio]
   );
 
   const recordPrompt = (level: PromptHierarchyLevel) => {
@@ -108,21 +112,12 @@ export default function CommunicationChoicePlayArea({
   };
 
   useEffect(() => {
-    if (phase !== 'choosing') return;
+    if (!shouldAutoFinishTrial() || phase !== 'choosing') return;
 
     const tick = window.setInterval(() => {
       if (completedRef.current) return;
-
       const spec = trialSpecRef.current;
       const elapsed = Date.now() - trialStartedAt.current;
-      const stage = resolveCommAssistanceStage(elapsed, settings.prompting);
-
-      if (stage !== assistanceStageRef.current) {
-        assistanceStageRef.current = stage;
-        setAssistanceStage(stage);
-        setDisplayedChoices(getCommDisplayedChoices(spec, stage));
-      }
-
       if (elapsed >= spec.responseWindowMs) {
         window.clearInterval(tick);
         finishTrial(
@@ -139,11 +134,12 @@ export default function CommunicationChoicePlayArea({
     }, 200);
 
     return () => window.clearInterval(tick);
-  }, [finishTrial, phase, settings, trialNumber, trialSpec.responseWindowMs]);
+  }, [finishTrial, phase, settings.prompting, trialSpec.responseWindowMs]);
 
   const handlePick = useCallback(
     (choiceId: string) => {
       if (phase !== 'choosing' || completedRef.current) return;
+      audio.playTap();
       setSelectedId(choiceId);
       const spec = trialSpecRef.current;
       const elapsed = Date.now() - trialStartedAt.current;
@@ -156,7 +152,7 @@ export default function CommunicationChoicePlayArea({
       });
       finishTrial(outcome, outcome.correct ? 'success' : 'miss');
     },
-    [finishTrial, phase, settings.prompting]
+    [audio, finishTrial, phase, settings.prompting]
   );
 
   const pulsePrompt = shouldPulseCommPrompt(assistanceStage);
@@ -164,8 +160,9 @@ export default function CommunicationChoicePlayArea({
     phase === 'choosing' && assistanceStage === 'direct_visual_assistance';
 
   return (
+    <ActivityFocusShell>
     <div
-      className="flex h-[100dvh] flex-col overflow-hidden bg-gradient-to-b from-[#F7FAFC] to-[#E2EEF3] py-4 pl-4 pr-4 lg:pl-[18.5rem]"
+      className="flex h-full min-h-[100dvh] flex-col overflow-hidden bg-gradient-to-b from-[#F7FAFC] to-[#E2EEF3] px-4 py-4"
       dir="rtl"
     >
       <div className="mx-auto flex w-full max-w-lg flex-1 flex-col">
@@ -265,5 +262,6 @@ export default function CommunicationChoicePlayArea({
         ) : null}
       </div>
     </div>
+    </ActivityFocusShell>
   );
 }

@@ -1,14 +1,15 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import ActivityFocusShell from '@/components/training/ActivityFocusShell';
 import FieldPromptRecordBar from '@/components/training/FieldPromptRecordBar';
 import MatchVisual, { matchVisualAriaLabel } from '@/components/training/match-me/MatchVisual';
+import { useActivityFeedback } from '@/components/training/useActivityFeedback';
 import type { PromptHierarchyLevel } from '@/lib/promptHierarchy';
 import type { TrainingAssistanceStage } from '@/lib/training/assistanceSemantics';
+import { shouldAutoFinishTrial } from '@/lib/training/activityResponsePolicy';
 import {
   buildWhereDidItGoTrialSpec,
-  getWhereDidItGoDisplayedLocations,
-  resolveWhereDidItGoAssistanceStage,
   resolveWhereDidItGoTrialOutcome,
   shouldHighlightWhereDidItGoCorrectLocation,
   shouldPulseWhereDidItGoScene,
@@ -33,6 +34,7 @@ export default function WhereDidItGoPlayArea({
 }: Props) {
   const chooseStartedAt = useRef<number | null>(null);
   const completedRef = useRef(false);
+  const audio = useActivityFeedback();
 
   const spec = buildWhereDidItGoTrialSpec(settings, trialNumber);
 
@@ -74,11 +76,13 @@ export default function WhereDidItGoPlayArea({
         chooseElapsedMs,
       });
 
+      if (outcome.correct) audio.playSuccess();
+      else audio.playIncorrect();
       setFeedback(outcome.correct ? 'success' : 'miss');
       setPendingOutcome(outcome);
       setPhase('feedback');
     },
-    [settings, trialNumber]
+    [audio, settings, trialNumber]
   );
 
   const recordPrompt = (level: PromptHierarchyLevel) => {
@@ -124,30 +128,22 @@ export default function WhereDidItGoPlayArea({
   }, [trialNumber, settings, reducedMotion]);
 
   useEffect(() => {
-    if (phase !== 'choose') return;
+    if (!shouldAutoFinishTrial() || phase !== 'choose') return;
 
     const tick = window.setInterval(() => {
       if (chooseStartedAt.current === null) return;
       const chooseElapsed = Date.now() - chooseStartedAt.current;
-      const stage = resolveWhereDidItGoAssistanceStage(
-        chooseElapsed,
-        settings.prompting
-      );
-      setAssistanceStage(stage);
-
-      const currentSpec = buildWhereDidItGoTrialSpec(settings, trialNumber);
-      setDisplayedLocations(getWhereDidItGoDisplayedLocations(currentSpec, stage));
-
       if (chooseElapsed >= spec.chooseWindowMs) {
         finishTrial({ selected: false });
       }
     }, 150);
 
     return () => window.clearInterval(tick);
-  }, [finishTrial, phase, settings, spec.chooseWindowMs, trialNumber]);
+  }, [finishTrial, phase, spec.chooseWindowMs]);
 
   const handleLocationSelect = (choiceId: string) => {
     if (phase !== 'choose' || completedRef.current) return;
+    audio.playTap();
     setSelectedId(choiceId);
     finishTrial({ selected: true, locationChoiceId: choiceId });
   };
@@ -180,8 +176,9 @@ export default function WhereDidItGoPlayArea({
           : '';
 
   return (
+    <ActivityFocusShell>
     <div
-      className="relative flex min-h-[100dvh] flex-col bg-gradient-to-b from-[#EEF4F8] via-[#E8F0F5] to-[#DDE8EF]"
+      className="relative flex h-full min-h-[100dvh] flex-col bg-gradient-to-b from-[#EEF4F8] via-[#E8F0F5] to-[#DDE8EF]"
       dir="rtl"
     >
       <div className="flex items-center justify-between px-5 pb-2 pt-5 sm:px-8">
@@ -297,5 +294,6 @@ export default function WhereDidItGoPlayArea({
         ) : null}
       </div>
     </div>
+    </ActivityFocusShell>
   );
 }

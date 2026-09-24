@@ -72,8 +72,8 @@ import {
   stashTrainingBridgeNotice,
   TRAINING_BRIDGE_MISMATCH_MESSAGE_AR,
 } from '@/lib/training/trainingBridge';
+import { ActivityFeedbackAudio } from '@/lib/training/activityFeedbackAudio';
 import {
-  RewardAudio,
   speakText,
   stopSpeaking,
   warmUpVoices,
@@ -110,7 +110,8 @@ export default function HomeClassroomPage() {
   const [moodBefore, setMoodBefore] = useState<RegulationZoneId | null>(null);
   const [quickTool, setQuickTool] = useState<QuickToolId | null>(null);
   const [summary, setSummary] = useState<HomeSessionSummary | null>(null);
-  const audioRef = useRef(new RewardAudio());
+  const audioRef = useRef(new ActivityFeedbackAudio());
+  const autoFocusArmed = useRef(true);
   const speechTimerRef = useRef<number | null>(null);
   const scrollAfterGenRef = useRef(false);
   const [genReadyNotice, setGenReadyNotice] = useState(false);
@@ -197,18 +198,10 @@ export default function HomeClassroomPage() {
   };
 
   useEffect(() => {
-    const onFullscreenChange = () => {
-      if (!document.fullscreenElement && focusMode) {
-        setFocusMode(false);
-        document.body.classList.remove(SENSORY_FOCUS_BODY_CLASS);
-      }
-    };
-    document.addEventListener('fullscreenchange', onFullscreenChange);
     return () => {
-      document.removeEventListener('fullscreenchange', onFullscreenChange);
       document.body.classList.remove(SENSORY_FOCUS_BODY_CLASS);
     };
-  }, [focusMode]);
+  }, []);
 
   useEffect(() => {
     if (summary && focusMode) exitFocusMode();
@@ -279,8 +272,9 @@ export default function HomeClassroomPage() {
   const reactToTap = (isCorrect: boolean, spokenText: string) => {
     setFeedback(isCorrect ? 'ok' : 'miss');
     if (!soundOn) return;
+    audioRef.current.playTap();
     if (!isCorrect) {
-      audioRef.current.playMiss();
+      audioRef.current.playIncorrect();
       return;
     }
     audioRef.current.playSuccess();
@@ -525,6 +519,18 @@ export default function HomeClassroomPage() {
     !summary &&
     !(scheduleOn && !schedulePassed) &&
     checkInComplete;
+
+  useEffect(() => {
+    if (!inTrainingActivity) {
+      autoFocusArmed.current = true;
+      return;
+    }
+    if (!autoFocusArmed.current) return;
+    autoFocusArmed.current = false;
+    setFocusMode(true);
+    document.body.classList.add(SENSORY_FOCUS_BODY_CLASS);
+    void document.documentElement.requestFullscreen?.().catch(() => undefined);
+  }, [inTrainingActivity]);
 
   const clinicalStep = deriveClinicalFlowStep({
     checkInComplete,

@@ -2,12 +2,13 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import PromptRecordingBar from '@/components/classroom/PromptRecordingBar';
+import ActivityFocusShell from '@/components/training/ActivityFocusShell';
 import MatchVisual, { matchVisualAriaLabel } from '@/components/training/match-me/MatchVisual';
+import { useActivityFeedback } from '@/components/training/useActivityFeedback';
+import { shouldAutoFinishTrial } from '@/lib/training/activityResponsePolicy';
 import type { PromptHierarchyLevel } from '@/lib/promptHierarchy';
 import {
   buildMatchMeTrialSpec,
-  getMatchMeDisplayedChoices,
-  resolveMatchMeAssistanceStage,
   resolveMatchMeTrialOutcome,
   shouldHighlightMatchMeCorrectChoice,
   shouldHighlightMatchMeModel,
@@ -35,6 +36,7 @@ export default function MatchMePlayArea({
 }: Props) {
   const trialStartedAt = useRef<number>(Date.now());
   const completedRef = useRef(false);
+  const audio = useActivityFeedback();
 
   const spec = buildMatchMeTrialSpec(settings, trialNumber);
 
@@ -79,11 +81,13 @@ export default function MatchMePlayArea({
       });
 
       const wasCorrect = outcome.correct;
+      if (wasCorrect) audio.playSuccess();
+      else audio.playIncorrect();
       setFeedback(wasCorrect ? 'success' : 'miss');
       setPendingOutcome(outcome);
       setPhase('feedback');
     },
-    [settings, trialNumber]
+    [audio, settings, trialNumber]
   );
 
   const recordPrompt = (level: PromptHierarchyLevel) => {
@@ -93,26 +97,19 @@ export default function MatchMePlayArea({
   };
 
   useEffect(() => {
-    if (phase !== 'choosing') return;
-
+    if (!shouldAutoFinishTrial() || phase !== 'choosing') return;
     const tick = window.setInterval(() => {
       const elapsed = Date.now() - trialStartedAt.current;
-      const stage = resolveMatchMeAssistanceStage(elapsed, settings.prompting);
-      setAssistanceStage(stage);
-
-      const currentSpec = buildMatchMeTrialSpec(settings, trialNumber);
-      setDisplayedChoices(getMatchMeDisplayedChoices(currentSpec, stage));
-
       if (elapsed >= spec.responseWindowMs) {
         finishTrial({ selected: false });
       }
     }, 150);
-
     return () => window.clearInterval(tick);
-  }, [finishTrial, phase, settings, spec.responseWindowMs, trialNumber]);
+  }, [finishTrial, phase, spec.responseWindowMs]);
 
   const handleChoice = (choiceId: string) => {
     if (phase !== 'choosing' || completedRef.current) return;
+    audio.playTap();
     setSelectedId(choiceId);
     finishTrial({ selected: true, choiceId });
   };
@@ -132,8 +129,9 @@ export default function MatchMePlayArea({
     phase === 'choosing';
 
   return (
+    <ActivityFocusShell>
     <div
-      className="relative flex h-[100dvh] flex-col overflow-hidden bg-gradient-to-b from-[#F7F3EB] via-[#F0EBE1] to-[#E8E2D6]"
+      className="relative flex h-full min-h-[100dvh] flex-col overflow-hidden bg-gradient-to-b from-[#F7F3EB] via-[#F0EBE1] to-[#E8E2D6]"
       dir="rtl"
     >
       <div className="flex items-center justify-between px-5 pb-2 pt-5 sm:px-8">
@@ -247,6 +245,7 @@ export default function MatchMePlayArea({
         ) : null}
       </div>
     </div>
+    </ActivityFocusShell>
   );
 }
 

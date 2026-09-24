@@ -1,15 +1,16 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import ActivityFocusShell from '@/components/training/ActivityFocusShell';
 import FieldPromptRecordBar from '@/components/training/FieldPromptRecordBar';
 import MatchVisual, { matchVisualAriaLabel } from '@/components/training/match-me/MatchVisual';
+import { useActivityFeedback } from '@/components/training/useActivityFeedback';
 import type { PromptHierarchyLevel } from '@/lib/promptHierarchy';
 import type { TrainingAssistanceStage } from '@/lib/training/assistanceSemantics';
+import { shouldAutoFinishTrial } from '@/lib/training/activityResponsePolicy';
 import {
   buildFindTheTargetTrialSpec,
-  getFindTheTargetDisplayedItems,
   getFindTheTargetHintRegion,
-  resolveFindTheTargetAssistanceStage,
   resolveFindTheTargetTrialOutcome,
   shouldHighlightFindTheTargetItem,
   type FindTheTargetFieldItem,
@@ -47,6 +48,7 @@ export default function FindTheTargetPlayArea({
 }: Props) {
   const searchStartedAt = useRef<number | null>(null);
   const completedRef = useRef(false);
+  const audio = useActivityFeedback();
 
   const spec = buildFindTheTargetTrialSpec(settings, trialNumber, fieldSeed);
 
@@ -91,11 +93,13 @@ export default function FindTheTargetPlayArea({
         searchElapsedMs,
       });
 
+      if (outcome.correct) audio.playSuccess();
+      else audio.playIncorrect();
       setFeedback(outcome.correct ? 'success' : 'miss');
       setPendingOutcome(outcome);
       setPhase('feedback');
     },
-    [fieldSeed, settings, trialNumber]
+    [audio, fieldSeed, settings, trialNumber]
   );
 
   const recordPrompt = (level: PromptHierarchyLevel) => {
@@ -133,34 +137,22 @@ export default function FindTheTargetPlayArea({
   }, [fieldSeed, reducedMotion, settings, trialNumber]);
 
   useEffect(() => {
-    if (phase !== 'search') return;
+    if (!shouldAutoFinishTrial() || phase !== 'search') return;
 
     const tick = window.setInterval(() => {
       if (searchStartedAt.current === null) return;
       const searchElapsed = Date.now() - searchStartedAt.current;
-      const stage = resolveFindTheTargetAssistanceStage(
-        searchElapsed,
-        settings.prompting
-      );
-      setAssistanceStage(stage);
-
-      const currentSpec = buildFindTheTargetTrialSpec(
-        settings,
-        trialNumber,
-        fieldSeed
-      );
-      setDisplayedItems(getFindTheTargetDisplayedItems(currentSpec, stage));
-
       if (searchElapsed >= spec.searchWindowMs) {
         finishTrial({ selected: false });
       }
     }, 150);
 
     return () => window.clearInterval(tick);
-  }, [fieldSeed, finishTrial, phase, settings, spec.searchWindowMs, trialNumber]);
+  }, [finishTrial, phase, spec.searchWindowMs]);
 
   const handleSelect = (fieldItemId: string) => {
     if (phase !== 'search' || completedRef.current) return;
+    audio.playTap();
     setSelectedId(fieldItemId);
     finishTrial({ selected: true, fieldItemId });
   };
@@ -184,8 +176,9 @@ export default function FindTheTargetPlayArea({
     phase === 'target' ? 'تذكّر' : phase === 'search' ? 'ابحث' : '';
 
   return (
+    <ActivityFocusShell>
     <div
-      className="relative flex min-h-[100dvh] flex-col bg-gradient-to-b from-[#F3F6FA] via-[#E8EEF5] to-[#DDE5EF]"
+      className="relative flex h-full min-h-[100dvh] flex-col bg-gradient-to-b from-[#F3F6FA] via-[#E8EEF5] to-[#DDE5EF]"
       dir="rtl"
     >
       <div className="flex items-center justify-between px-5 pb-2 pt-5 sm:px-8">
@@ -302,5 +295,6 @@ export default function FindTheTargetPlayArea({
         ) : null}
       </div>
     </div>
+    </ActivityFocusShell>
   );
 }
