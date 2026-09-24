@@ -3,7 +3,9 @@
 import { useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { PARENT_ROUTES } from '@/lib/parentJourney';
+import { publishChildJourney } from '@/lib/childRoom/journeyClient';
+import { CHILD_ROOM_PATH } from '@/lib/childRoom/gate';
+import { PARENT_ROUTES, readActiveChild } from '@/lib/parentJourney';
 import { DEFAULT_CURRENCY, SUPPORTED_CURRENCIES } from '@/lib/pricing';
 import {
   SUBSCRIPTION_TIERS,
@@ -34,11 +36,19 @@ export default function SubscriptionTierCards({
 
   const choose = (id: SubscriptionTierId) => {
     saveSelectedTier(id);
+    const child = readActiveChild();
+    if (child?.id && id !== 'free_screening') {
+      void publishChildJourney({
+        childId: child.id,
+        childName: child.name,
+        planId: id,
+      });
+    }
     if (id === 'free_screening') {
       router.push(PARENT_ROUTES.community);
       return;
     }
-    router.push(PARENT_ROUTES.register);
+    router.push(child?.id ? CHILD_ROOM_PATH : PARENT_ROUTES.register);
   };
 
   return (
@@ -88,6 +98,11 @@ export default function SubscriptionTierCards({
             <p className="mt-2 text-3xl font-bold text-[#2D8B5A]">
               {price === 0 ? 'مجاني' : `${price} ${currency}`}
             </p>
+            {price > 0 ? (
+              <p className="mt-1 text-xs leading-5 text-slate-500">
+                مرجع الكتالوج. المسار التجريبي يُفعَّل الآن دون فاتورة فورية.
+              </p>
+            ) : null}
             <ul className="mt-4 flex-1 space-y-2 text-sm leading-6 text-slate-600">
               {tier.features.map((feature) => (
                 <li key={feature}>{feature}</li>

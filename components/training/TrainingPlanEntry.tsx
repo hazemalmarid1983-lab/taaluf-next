@@ -89,6 +89,9 @@ export default function TrainingPlanEntry() {
 
   useEffect(() => {
     refreshEntry();
+    const onHydrated = () => refreshEntry();
+    window.addEventListener('taaluf-journey-hydrated', onHydrated);
+    return () => window.removeEventListener('taaluf-journey-hydrated', onHydrated);
   }, [refreshEntry]);
 
   useEffect(() => {

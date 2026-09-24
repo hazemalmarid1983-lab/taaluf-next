@@ -30,7 +30,7 @@ export function resolveTrainingChildPromptRole(
 export function resolveParentTrainingChildHref(
   hasRegisteredChild: boolean
 ): string {
-  return hasRegisteredChild ? PARENT_ROUTES.home : PARENT_ROUTES.register;
+  return hasRegisteredChild ? PARENT_ROUTES.home : PARENT_ROUTES.screening;
 }
 
 export function parentHasRegisteredChildForTraining(): boolean {
@@ -81,11 +81,14 @@ export function attachActiveTrainingStudentRefresh(
     if (document.visibilityState === 'visible') onRefresh();
   };
 
+  const handleJourney = () => onRefresh();
   window.addEventListener('focus', handleFocus);
   document.addEventListener('visibilitychange', handleVisibility);
+  window.addEventListener('taaluf-journey-hydrated', handleJourney);
 
   return () => {
     window.removeEventListener('focus', handleFocus);
     document.removeEventListener('visibilitychange', handleVisibility);
+    window.removeEventListener('taaluf-journey-hydrated', handleJourney);
   };
 }

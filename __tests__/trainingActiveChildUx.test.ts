@@ -97,8 +97,8 @@ describe('training active child UX', () => {
   });
 
   describe('parent CTA targets', () => {
-    it('routes to register when no registered child', () => {
-      expect(resolveParentTrainingChildHref(false)).toBe('/parent/register-child');
+    it('routes to screening when no registered child', () => {
+      expect(resolveParentTrainingChildHref(false)).toBe('/dashboard/screening');
       expect(parentHasRegisteredChildForTraining()).toBe(false);
     });
 

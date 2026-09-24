@@ -2,6 +2,7 @@ import { getServerSession } from 'next-auth';
 import { NextResponse } from 'next/server';
 import { authOptions } from '@/lib/auth';
 import { getSlotById } from '@/lib/booking';
+import { loadChildJourneys } from '@/lib/childRoom/journeyStore';
 import { canUseRoomChannel } from '@/lib/childRoom/roomMessages';
 import {
   loadClinicalBookings,
@@ -43,6 +44,11 @@ export async function POST(req: Request) {
   const slot = getSlotById(String(body?.slotId || ''));
   if (!slot) {
     return NextResponse.json({ error: 'SLOT_REQUIRED' }, { status: 400 });
+  }
+  const childId = String(body?.childId || '').trim();
+  const journey = (await loadChildJourneys()).find((row) => row.childId === childId);
+  if (journey?.planId !== 'clinical') {
+    return NextResponse.json({ error: 'PLAN_REQUIRED' }, { status: 403 });
   }
   const current = await loadClinicalBookings();
   const saved = requestClinicalBooking(current, {

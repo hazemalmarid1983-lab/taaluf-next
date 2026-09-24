@@ -6,6 +6,10 @@ import {
   saveTeacherInvites,
   toPublicInvite,
 } from '@/lib/childRoom/inviteStore';
+import {
+  registerTeacherFromInvite,
+  teacherLoginEmail,
+} from '@/lib/childRoom/teacherAccounts';
 
 type Params = { params: { token: string } };
 
@@ -16,7 +20,11 @@ export async function GET(_req: Request, { params }: Params) {
   if (!invite) {
     return NextResponse.json({ error: 'INVITE_NOT_FOUND' }, { status: 404 });
   }
-  return NextResponse.json({ ok: true, invite: toPublicInvite(invite) });
+  return NextResponse.json({
+    ok: true,
+    invite: toPublicInvite(invite),
+    loginEmail: teacherLoginEmail(invite.token),
+  });
 }
 
 export async function POST(req: Request, { params }: Params) {
@@ -59,5 +67,16 @@ export async function POST(req: Request, { params }: Params) {
     return NextResponse.json({ error: accepted.error }, { status });
   }
   await saveTeacherInvites(accepted.invites);
-  return NextResponse.json({ ok: true, invite: toPublicInvite(accepted.invite) });
+  const account = await registerTeacherFromInvite({
+    token,
+    name: accepted.invite.teacherName || body?.teacherName || '',
+    password: body?.password || '',
+    childId: accepted.invite.childId,
+    childName: accepted.invite.childName,
+  });
+  return NextResponse.json({
+    ok: true,
+    invite: toPublicInvite(accepted.invite),
+    loginEmail: account.email,
+  });
 }

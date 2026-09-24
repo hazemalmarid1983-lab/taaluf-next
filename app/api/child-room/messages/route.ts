@@ -2,12 +2,22 @@ import { getServerSession } from 'next-auth';
 import { NextResponse } from 'next/server';
 import { authOptions } from '@/lib/auth';
 import {
+  findTeacherAccountById,
+  teacherMayAccessRoom,
+} from '@/lib/childRoom/teacherAccounts';
+import {
   appendRoomMessage,
   canUseRoomChannel,
   loadRoomMessages,
   messagesForChild,
   saveRoomMessages,
 } from '@/lib/childRoom/roomMessages';
+
+async function roomAllowed(role: string | undefined, userId: string | undefined, childId: string) {
+  if (role !== 'teacher' || !userId) return role !== 'teacher';
+  const account = await findTeacherAccountById(userId);
+  return teacherMayAccessRoom(account, childId);
+}
 
 export async function GET(req: Request) {
   const session = await getServerSession(authOptions);
@@ -20,6 +30,9 @@ export async function GET(req: Request) {
   const childId = new URL(req.url).searchParams.get('childId')?.trim() || '';
   if (!childId) {
     return NextResponse.json({ error: 'CHILD_REQUIRED' }, { status: 400 });
+  }
+  if (!(await roomAllowed(session.user.role, session.user.id, childId))) {
+    return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
   }
   const messages = messagesForChild(await loadRoomMessages(), childId);
   return NextResponse.json({ ok: true, messages });
@@ -37,9 +50,13 @@ export async function POST(req: Request) {
     childId?: string;
     body?: string;
   } | null;
+  const childId = body?.childId?.trim() || '';
+  if (!(await roomAllowed(session.user.role, session.user.id, childId))) {
+    return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
+  }
   const current = await loadRoomMessages();
   const saved = appendRoomMessage(current, {
-    childId: body?.childId || '',
+    childId,
     body: body?.body || '',
     authorId: session.user.id || '',
     authorName: session.user.name || 'مشارك',

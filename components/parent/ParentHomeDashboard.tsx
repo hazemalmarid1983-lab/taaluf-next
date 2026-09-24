@@ -17,6 +17,7 @@ import {
   readParentJourneyState,
   type ParentJourneyState,
 } from '@/lib/parentJourney';
+import { PRICING_PATH } from '@/lib/subscriptionTiers';
 
 export default function ParentHomeDashboard({
   unlocked,
@@ -60,10 +61,16 @@ export default function ParentHomeDashboard({
         </p>
         <div className="space-y-3">
           <Link
-            href={PARENT_ROUTES.register}
+            href={PARENT_ROUTES.screening}
             className="block w-full rounded-xl bg-[#2E7D8E] py-3.5 font-bold text-white shadow transition hover:bg-[#256675]"
           >
-            {t('registerNewChild')}
+            ابدأ الفرز السريع
+          </Link>
+          <Link
+            href={PRICING_PATH}
+            className="block w-full rounded-xl border border-[#2E7D8E]/30 bg-white py-3 font-bold text-[#2E7D8E] transition hover:bg-gray-50"
+          >
+            استعراض باقات الاشتراك
           </Link>
           <Link
             href="/login?portal=parent"

@@ -6,7 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useLanguage } from '@/components/LanguageProvider';
+import { publishChildJourney } from '@/lib/childRoom/journeyClient';
 import { assignScreeningToChild, TEACHER_CHOICE_PATH } from '@/lib/childRoom/gate';
+import { SCREENING_RESULT_KEY } from '@/lib/parentJourney';
+import { readSelectedTier } from '@/lib/subscriptionTiers';
 import { CONSENT_STORAGE_KEY } from '@/lib/consentConstants';
 import { hydrateActiveChildClinicalSlice } from '@/lib/clinical/hydrateActiveChild';
 
@@ -123,6 +126,21 @@ export default function ParentRegisterChildPage() {
       }),
     }).catch(() => undefined);
     assignScreeningToChild(row.id);
+    let screening: Record<string, unknown> | undefined;
+    try {
+      const stored = JSON.parse(localStorage.getItem(SCREENING_RESULT_KEY) || 'null') as
+        | Record<string, unknown>
+        | null;
+      if (stored) screening = { ...stored, childId: row.id };
+    } catch {
+      screening = undefined;
+    }
+    await publishChildJourney({
+      childId: row.id,
+      childName: childName,
+      planId: readSelectedTier(),
+      ...(screening ? { screening } : {}),
+    });
     setMsg(t('childSaved'));
     const consented =
       typeof localStorage !== 'undefined' &&

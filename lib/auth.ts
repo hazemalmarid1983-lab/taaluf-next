@@ -5,6 +5,7 @@ import { findUserByEmail, isAirtableConfigured } from '@/lib/airtable';
 import { logAction } from '@/lib/auditLog';
 import { ensureAuthUrl } from '@/lib/ensureAuthUrl';
 import { portalFromEmail, type PortalId } from '@/lib/loginPortal';
+import { authorizeTeacherAccount } from '@/lib/childRoom/teacherAccounts';
 import { hashPasswordSync, verifyPassword } from '@/lib/password';
 import { verifyPrivilegedLogin } from '@/lib/privilegedCredentials';
 
@@ -142,6 +143,9 @@ export const authOptions: NextAuthOptions = {
             /* fall through */
           }
         }
+
+        const teacher = await authorizeTeacherAccount(email, password);
+        if (teacher) return teacher;
 
         return null;
       },

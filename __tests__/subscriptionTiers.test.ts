@@ -15,8 +15,10 @@ describe('parent subscription tiers', () => {
     expect(subscriptionPrice('clinical', 'OMR')).toBe(75);
   });
 
-  it('puts the child-room registration label on the basic plan only', () => {
+  it('uses the open-path label on both paid plans', () => {
+    expect(CHILD_ROOM_CTA).toBe('تسجيل الطفل وتفعيل المسار المفتوح');
     expect(subscriptionTierById('child_room')?.cta).toBe(CHILD_ROOM_CTA);
+    expect(subscriptionTierById('clinical')?.cta).toBe(CHILD_ROOM_CTA);
     expect(subscriptionTierById('child_room')?.features.join(' ')).toMatch(/التقييمات الأربعة/);
     expect(subscriptionTierById('free_screening')?.features.join(' ')).toMatch(/12/);
     expect(subscriptionTierById('clinical')?.features.join(' ')).toMatch(/المختص السريري/);

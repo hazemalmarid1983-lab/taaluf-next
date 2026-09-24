@@ -16,6 +16,7 @@ import {
   mapParentToCriteria,
   type ParentAnswer,
 } from '@/lib/parentAssessment';
+import { loadChildJourneys, saveChildJourneys, upsertJourney } from '@/lib/childRoom/journeyStore';
 import type { SubscriptionTierId } from '@/lib/subscriptionTiers';
 
 function asPlan(value: unknown): SubscriptionTierId {
@@ -66,6 +67,21 @@ export async function POST(req: Request) {
         upsertCooldownRecord(await loadAssessmentCooldowns(), record)
       );
       cooldown = { ...resolveCooldown(record, planId), childId };
+      const savedAt = new Date().toISOString();
+      if (childId !== 'child_local') await saveChildJourneys(
+        upsertJourney(await loadChildJourneys(), {
+          childId,
+          parentUserId: session.user.role === 'parent' ? session.user.id : undefined,
+          planId,
+          parentAssessment: {
+            id,
+            childId,
+            answers,
+            mappedScores,
+            savedAt,
+          },
+        })
+      );
     }
 
     return NextResponse.json({

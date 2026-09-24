@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import ClinicalBookingButton from '@/components/child-room/ClinicalBookingButton';
 import CustomGoalComposer from '@/components/child-room/CustomGoalComposer';
 import RoomConversation from '@/components/child-room/RoomConversation';
@@ -14,6 +14,11 @@ import { useActiveTrainingStudent } from '@/lib/training/useActiveTrainingStuden
 
 export default function ChildRoomScreen() {
   const profile = useActiveTrainingStudent();
+  const [openBooking, setOpenBooking] = useState(false);
+
+  useEffect(() => {
+    setOpenBooking(new URLSearchParams(window.location.search).get('book') === '1');
+  }, []);
 
   useEffect(() => {
     const childId = new URLSearchParams(window.location.search).get('child');
@@ -43,7 +48,11 @@ export default function ChildRoomScreen() {
       <TrainingPlanEntry />
       {profile?.id ? <CustomGoalComposer childId={profile.id} /> : null}
       {profile?.id ? (
-        <ClinicalBookingButton childId={profile.id} childName={profile.name} />
+        <ClinicalBookingButton
+          childId={profile.id}
+          childName={profile.name}
+          autoOpen={openBooking}
+        />
       ) : null}
       <TrainingSessionResultsList />
       {profile?.id ? <RoomConversation childId={profile.id} /> : null}

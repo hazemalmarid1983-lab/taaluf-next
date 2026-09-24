@@ -2,6 +2,7 @@ import { getServerSession } from 'next-auth';
 import { NextResponse } from 'next/server';
 import { FieldSet } from 'airtable';
 import { authOptions } from '@/lib/auth';
+import { loadChildJourneys, saveChildJourneys, upsertJourney } from '@/lib/childRoom/journeyStore';
 import { isAirtableConfigured } from '@/lib/airtable';
 import { logAction } from '@/lib/auditLog';
 
@@ -116,6 +117,22 @@ export async function POST(req: Request) {
       entityType: 'assessment',
       entityId: id,
     });
+
+    if (childId !== 'child_local') {
+      await saveChildJourneys(
+        upsertJourney(await loadChildJourneys(), {
+          childId,
+          parentUserId: session.user.role === 'parent' ? session.user.id : undefined,
+          childResponse: {
+            id,
+            childId,
+            gameCode,
+            score: payload.score,
+            endedAt: payload.ended_at,
+          },
+        })
+      );
+    }
 
     return NextResponse.json({ ok: true, id, source, fields: payload });
   } catch (err) {

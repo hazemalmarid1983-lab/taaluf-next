@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import AdminPreviewBar from '@/components/access/AdminPreviewBar';
 import SubscriberGate from '@/components/access/SubscriberGate';
 import MerhidChat from '@/components/merhid/MerhidChat';
+import JourneyHydrator from '@/components/parent/JourneyHydrator';
 import ParentShellNav from '@/components/parent/ParentShellNav';
 import { arePaymentsDisabled, homePathForRole } from '@/lib/access';
 import { authOptions } from '@/lib/auth';
@@ -25,6 +26,7 @@ export default async function ParentLayout({
       {isAdmin && <AdminPreviewBar portalLabel="بوابة أولياء الأمور" />}
       <div className="mx-auto max-w-5xl px-4 py-6 sm:px-6 print:max-w-none print:px-0 print:py-0">
         <ParentShellNav name={session.user?.name} isAdmin={isAdmin} />
+        <JourneyHydrator />
         {children}
       </div>
       <MerhidChat scope={isAdmin ? 'admin' : 'parent'} compact />

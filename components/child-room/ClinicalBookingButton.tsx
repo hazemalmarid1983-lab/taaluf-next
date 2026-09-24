@@ -13,9 +13,11 @@ import {
 export default function ClinicalBookingButton({
   childId,
   childName,
+  autoOpen = false,
 }: {
   childId: string;
   childName?: string;
+  autoOpen?: boolean;
 }) {
   const [open, setOpen] = useState(false);
   const [slots, setSlots] = useState<BookingSlot[]>([]);
@@ -28,9 +30,33 @@ export default function ClinicalBookingButton({
 
   useEffect(() => {
     setSlots(getAvailableSlots());
-    setClinical(tierAllowsClinicalBooking(readSelectedTier()));
-    setReady(true);
-  }, []);
+    let cancelled = false;
+    void fetch(`/api/child-journey?childId=${encodeURIComponent(childId)}`)
+      .then((response) => response.json())
+      .then((data: { journey?: { planId?: string } | null }) => {
+        if (cancelled) return;
+        const planId = data.journey?.planId;
+        const allowed =
+          planId === 'clinical' ||
+          planId === 'child_room' ||
+          planId === 'free_screening'
+            ? tierAllowsClinicalBooking(planId)
+            : tierAllowsClinicalBooking(readSelectedTier());
+        setClinical(allowed);
+        if (autoOpen && allowed) setOpen(true);
+        setReady(true);
+      })
+      .catch(() => {
+        if (cancelled) return;
+        const allowed = tierAllowsClinicalBooking(readSelectedTier());
+        setClinical(allowed);
+        if (autoOpen && allowed) setOpen(true);
+        setReady(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [autoOpen, childId]);
 
   useEffect(() => {
     if (!open) return;

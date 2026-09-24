@@ -4,7 +4,9 @@ import Link from 'next/link';
 import TaalufLogo from '@/components/branding/TaalufLogo';
 import PermissionGate from '@/components/access/PermissionGate';
 import { LanguageToggleBtn, useLanguage } from '@/components/LanguageProvider';
+import { CHILD_ROOM_PATH } from '@/lib/childRoom/gate';
 import { PARENT_ROUTES } from '@/lib/parentJourney';
+import { PRICING_PATH } from '@/lib/subscriptionTiers';
 
 export default function ParentShellNav({
   name,
@@ -17,12 +19,11 @@ export default function ParentShellNav({
 
   const links = [
     { href: PARENT_ROUTES.home, label: t('home') },
-    { href: PARENT_ROUTES.games, label: t('games') },
-    { href: PARENT_ROUTES.homeClassroom, label: t('homeClassroom') },
-    { href: PARENT_ROUTES.toolsBank, label: t('toolsBank') },
+    { href: PARENT_ROUTES.screening, label: 'الفرز السريع' },
+    { href: CHILD_ROOM_PATH, label: 'غرفة الطفل' },
+    { href: PRICING_PATH, label: 'الباقات والاشتراكات' },
     { href: PARENT_ROUTES.community, label: t('community') },
-    { href: PARENT_ROUTES.booking, label: t('appointments') },
-    { href: PARENT_ROUTES.messages, label: t('messages') },
+    { href: `${CHILD_ROOM_PATH}?book=1`, label: t('appointments') },
   ];
 
   return (

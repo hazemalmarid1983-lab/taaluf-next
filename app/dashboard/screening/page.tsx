@@ -4,7 +4,9 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import ScreeningResultsHero from '@/components/screening/ScreeningResultsHero';
 import { useStepNav } from '@/hooks/useStepNav';
+import { publishChildJourney } from '@/lib/childRoom/journeyClient';
 import { unlockFullPath } from '@/lib/parentJourney';
+import { readSelectedTier } from '@/lib/subscriptionTiers';
 import {
   SCREENING_ITEMS,
   SCREENING_LIKERT,
@@ -115,6 +117,11 @@ export default function ScreeningPage() {
         savedAt: new Date().toISOString(),
       };
       localStorage.setItem(SCREENING_STORE_KEY, JSON.stringify(payload));
+      void publishChildJourney({
+        childId,
+        planId: readSelectedTier(),
+        screening: payload,
+      });
       unlockFullPath();
       setResult(computed);
       setMsg('تم حفظ نتيجة الفرز');
