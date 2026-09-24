@@ -10,29 +10,43 @@ export default function TeacherAssessmentForm({
   childId,
   filler,
   teacherName,
+  inviteToken,
   onSaved,
 }: {
   childId: string;
   filler: 'teacher' | 'parent';
   teacherName?: string;
+  inviteToken?: string;
   onSaved: () => void;
 }) {
   const [scores, setScores] = useState<Record<string, number>>({});
   const [error, setError] = useState('');
 
-  const submit = () => {
+  const submit = async () => {
     if (ITEMS.some((item) => scores[item.id] == null)) {
       setError('أجب عن كل البنود قبل الحفظ.');
       return;
+    }
+    const payload = ITEMS.map((item) => ({
+      criterionId: item.mappedCriterion,
+      score: scores[item.id],
+    }));
+    if (inviteToken) {
+      const response = await fetch(`/api/teacher-invites/${encodeURIComponent(inviteToken)}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'form', scores: payload }),
+      });
+      if (!response.ok) {
+        setError('تعذر حفظ النموذج على الخادم. حاول مرة أخرى.');
+        return;
+      }
     }
     saveTeacherForm({
       childId,
       filler,
       teacherName,
-      scores: ITEMS.map((item) => ({
-        criterionId: item.mappedCriterion,
-        score: scores[item.id],
-      })),
+      scores: payload,
     });
     onSaved();
   };

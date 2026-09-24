@@ -2,14 +2,16 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { TEACHER_FORM_PATH, createTeacherInvite } from '@/lib/childRoom/gate';
+import { TEACHER_FORM_PATH } from '@/lib/childRoom/gate';
 import { readActiveChild, setJourneyMode } from '@/lib/parentJourney';
 
 export default function TeacherChoicePage() {
   const router = useRouter();
   const [invitePath, setInvitePath] = useState('');
+  const [error, setError] = useState('');
+  const [busy, setBusy] = useState(false);
 
-  const choose = (hasTeacher: boolean) => {
+  const choose = async (hasTeacher: boolean) => {
     const child = readActiveChild();
     if (!child) {
       router.push('/parent/register-child');
@@ -21,8 +23,24 @@ export default function TeacherChoicePage() {
       return;
     }
     setJourneyMode('specialist_guided');
-    const invite = createTeacherInvite(child.id, child.name);
-    setInvitePath(`/invite/teacher/${invite.token}`);
+    setBusy(true);
+    setError('');
+    try {
+      const response = await fetch('/api/teacher-invites', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ childId: child.id, childName: child.name }),
+      });
+      const data = (await response.json()) as { invite?: { path?: string }; error?: string };
+      if (!response.ok || !data.invite?.path) {
+        throw new Error(data.error || 'INVITE_FAILED');
+      }
+      setInvitePath(data.invite.path);
+    } catch {
+      setError('تعذر حفظ الدعوة على الخادم. تأكد من تسجيل الدخول ثم أعد المحاولة.');
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (
@@ -34,8 +52,9 @@ export default function TeacherChoicePage() {
       <div className="mt-6 grid gap-3">
         <button
           type="button"
-          onClick={() => choose(true)}
-          className="rounded-2xl bg-[#2E7D8E] px-4 py-3 text-sm font-bold text-white"
+          onClick={() => void choose(true)}
+          disabled={busy}
+          className="rounded-2xl bg-[#2E7D8E] px-4 py-3 text-sm font-bold text-white disabled:opacity-60"
         >
           نعم، لدى الطفل مدرس
         </button>
@@ -50,7 +69,7 @@ export default function TeacherChoicePage() {
       {invitePath ? (
         <div className="mt-6 rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
           <p className="text-sm font-bold text-emerald-900">
-            أرسل هذا الرابط للمدرس. عند فتحه يسجّل اسمه وكلمة المرور ويُربَط بالغرفة.
+            أرسل هذا الرابط للمدرس. يُفتح من أي جهاز ويُربط بغرفة الطفل على الخادم.
           </p>
           <p className="mt-2 break-all text-sm font-semibold text-slate-800" dir="ltr">
             {invitePath}
@@ -64,6 +83,7 @@ export default function TeacherChoicePage() {
           </button>
         </div>
       ) : null}
+      {error ? <p className="mt-4 text-sm text-rose-600">{error}</p> : null}
     </section>
   );
 }

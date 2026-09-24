@@ -3,18 +3,21 @@
 import { FormEvent, useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import TeacherAssessmentForm from '@/components/child-room/TeacherAssessmentForm';
-import {
-  CHILD_ROOM_PATH,
-  acceptTeacherInvite,
-  readTeacherInvite,
-  type TeacherInvite,
-} from '@/lib/childRoom/gate';
+import { CHILD_ROOM_PATH } from '@/lib/childRoom/gate';
 import { saveActiveChild } from '@/lib/parentJourney';
+
+type PublicInvite = {
+  token: string;
+  childId: string;
+  childName: string;
+  teacherName?: string;
+  accepted: boolean;
+};
 
 export default function TeacherInvitePage() {
   const params = useParams<{ inviteToken: string }>();
   const token = String(params.inviteToken || '');
-  const [invite, setInvite] = useState<TeacherInvite | null>(null);
+  const [invite, setInvite] = useState<PublicInvite | null>(null);
   const [ready, setReady] = useState(false);
   const [name, setName] = useState('');
   const [password, setPassword] = useState('');
@@ -23,21 +26,39 @@ export default function TeacherInvitePage() {
   const [formSaved, setFormSaved] = useState(false);
 
   useEffect(() => {
-    const found = readTeacherInvite(token);
-    setInvite(found);
-    setLinked(Boolean(found?.acceptedAt));
-    setReady(true);
+    let cancelled = false;
+    void (async () => {
+      const response = await fetch(`/api/teacher-invites/${encodeURIComponent(token)}`);
+      const data = (await response.json().catch(() => null)) as {
+        invite?: PublicInvite;
+      } | null;
+      if (cancelled) return;
+      setInvite(response.ok && data?.invite ? data.invite : null);
+      setLinked(Boolean(data?.invite?.accepted));
+      setReady(true);
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [token]);
 
-  const onSubmit = (event: FormEvent) => {
+  const onSubmit = async (event: FormEvent) => {
     event.preventDefault();
-    const accepted = acceptTeacherInvite(token, name, password);
-    if (!accepted) {
+    setError('');
+    const response = await fetch(`/api/teacher-invites/${encodeURIComponent(token)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ teacherName: name, password }),
+    });
+    const data = (await response.json().catch(() => null)) as {
+      invite?: PublicInvite;
+    } | null;
+    if (!response.ok || !data?.invite) {
       setError('تعذر الربط. تحقق من الاسم وكلمة المرور (4 أحرف على الأقل).');
       return;
     }
-    saveActiveChild({ id: accepted.childId, name: accepted.childName });
-    setInvite(accepted);
+    saveActiveChild({ id: data.invite.childId, name: data.invite.childName });
+    setInvite(data.invite);
     setLinked(true);
   };
 
@@ -46,7 +67,7 @@ export default function TeacherInvitePage() {
   if (!invite) {
     return (
       <p className="px-4 py-16 text-center text-sm text-slate-600">
-        رابط الدعوة غير موجود على هذا الجهاز.
+        رابط الدعوة غير موجود على الخادم.
       </p>
     );
   }
@@ -95,6 +116,7 @@ export default function TeacherInvitePage() {
               childId={invite.childId}
               filler="teacher"
               teacherName={invite.teacherName}
+              inviteToken={token}
               onSaved={() => setFormSaved(true)}
             />
           )}

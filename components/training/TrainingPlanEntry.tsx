@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import ActiveChildTrainingPrompt from '@/components/training/ActiveChildTrainingPrompt';
-import { listRoomSources } from '@/lib/childRoom/gate';
+import { listRoomSources, saveTeacherForm } from '@/lib/childRoom/gate';
 import {
   ensureActiveTrainingPlanFromAssessment,
   isAssessmentPreparedPlan,
@@ -88,6 +88,39 @@ export default function TrainingPlanEntry() {
   useEffect(() => {
     refreshEntry();
   }, [refreshEntry]);
+
+  useEffect(() => {
+    if (!childId) return undefined;
+    let stopped = false;
+    const pullTeacherForm = async () => {
+      const response = await fetch(
+        `/api/teacher-invites?childId=${encodeURIComponent(childId)}`
+      );
+      if (!response.ok || stopped) return;
+      const data = (await response.json()) as {
+        form?: {
+          childId: string;
+          filler: 'teacher' | 'parent';
+          teacherName?: string;
+          scores: Array<{ criterionId: string; score: number }>;
+        } | null;
+      };
+      if (!data.form?.scores?.length || stopped) return;
+      saveTeacherForm({
+        childId: data.form.childId,
+        filler: data.form.filler,
+        teacherName: data.form.teacherName,
+        scores: data.form.scores,
+      });
+      refreshEntry();
+    };
+    void pullTeacherForm();
+    const timer = window.setInterval(() => void pullTeacherForm(), 8000);
+    return () => {
+      stopped = true;
+      window.clearInterval(timer);
+    };
+  }, [childId, refreshEntry]);
 
   const startExecution = useCallback(
     (execution: TrainingPlanExecutionResult) => {
