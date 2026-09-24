@@ -139,36 +139,13 @@ export default function ScreeningResultsHero({
       </div>
 
       <div className="rounded-2xl border border-gray-100 bg-white p-6 text-center print:hidden">
-        <span className="block text-xs text-gray-400">اختر الخطوة التالية</span>
-        <h2 className="mt-1 text-lg font-bold text-[#1F2A37]">
-          الألعاب أو إكمال التقييم
-        </h2>
-        <div className="mt-4 flex flex-col justify-center gap-3 sm:flex-row">
-          <Link
-            href={`${PARENT_ROUTES.pay}?plan=assessment`}
-            className="rounded-xl bg-[#2E7D8E] px-8 py-3 text-sm font-bold text-white shadow-md transition hover:bg-[#256675]"
-          >
-            إكمال التقييم الشامل وإصدار التقرير
-          </Link>
-          <Link
-            href={PARENT_ROUTES.community}
-            className="rounded-xl border border-[#2E7D8E]/30 bg-[#FAF7F1] px-6 py-3 text-sm font-bold text-[#2E7D8E] transition hover:bg-gray-50"
-          >
-            تصفح أنشطة المجتمع
-          </Link>
-        </div>
-        <div className="mt-4 space-y-2">
-          <Link href={PARENT_ROUTES.games} className="block">
-            <Button variant="outline" className="h-11 w-full font-bold">
-              العب مغامرة البطل الصغير
-            </Button>
-          </Link>
-          <Link href={PARENT_ROUTES.booking} className="block">
-            <Button variant="secondary" className="h-11 w-full font-bold">
-              حجز موعد للتواصل مع المختص
-            </Button>
-          </Link>
-        </div>
+        <h2 className="text-lg font-bold text-[#1F2A37]">النتيجة الأولية فقط</h2>
+        <p className="mt-2 text-sm leading-6 text-slate-600">
+          هذه نتيجة الفرز المجاني. الخطوة التالية هي تسجيل الطفل رسمياً لفتح غرفته.
+        </p>
+        <Link href={PARENT_ROUTES.register} className="mt-4 block">
+          <Button className="h-12 w-full font-bold">تسجيل الطفل رسمياً</Button>
+        </Link>
         <div className="mt-4 flex flex-wrap justify-center gap-4 text-xs text-slate-400">
           {onRetake ? (
             <button type="button" onClick={onRetake} className="underline">

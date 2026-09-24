@@ -8,9 +8,14 @@ import {
   getLatestAssessmentForChild,
   type AssessmentDraft,
 } from '@/lib/assessmentGate';
-import type { StoredAssessment } from '@/lib/assessmentHelpers';
 import {
-  createTrackedGoalsFromScores,
+  childResponseNeed,
+  collectMergedAssessmentScores,
+  isFourSourceGateOpen,
+  screeningDomainNeeds,
+} from '@/lib/childRoom/gate';
+import {
+  buildActiveTargetedGoals,
   type TrackedGoal,
 } from '@/lib/goalsEngine';
 import { loadGoalsLocal, saveGoalsLocal } from '@/lib/goalsStore';
@@ -63,29 +68,6 @@ function readJson<T>(key: string, fallback: T): T {
   }
 }
 
-function scoresFromStored(assessment: StoredAssessment | null): ScoreRow[] {
-  if (!assessment?.scores?.length) return [];
-  return assessment.scores
-    .filter((row) => row.criterionId)
-    .map((row) => ({
-      criterionId: row.criterionId,
-      score: Number(row.score),
-    }));
-}
-
-function scoresFromParent(childId: string): ScoreRow[] {
-  const rows = readJson<ParentAssessmentRow[]>(PARENT_ASSESSMENT_KEY, []);
-  if (!Array.isArray(rows)) return [];
-  const mine = rows.find((row) => row?.childId === childId);
-  if (!mine) return [];
-  return (mine.mappedScores ?? [])
-    .filter((row) => row?.criterionId)
-    .map((row) => ({
-      criterionId: String(row.criterionId),
-      score: Number(row.score ?? 0),
-    }));
-}
-
 function parentAssessmentCompleted(childId: string): boolean {
   const rows = readJson<ParentAssessmentRow[]>(PARENT_ASSESSMENT_KEY, []);
   if (!Array.isArray(rows)) return false;
@@ -119,19 +101,16 @@ export function hasCompletedAssessmentForTraining(childId: string): boolean {
   return scoresFromDraft(childId).length > 0;
 }
 
-function readAssessmentScores(childId: string): ScoreRow[] {
-  const stored = scoresFromStored(getLatestAssessmentForChild(childId));
-  if (stored.length > 0) return stored;
-  const parent = scoresFromParent(childId);
-  if (parent.length > 0) return parent;
-  return scoresFromDraft(childId);
-}
-
-function ensureGoals(childId: string, scores: ScoreRow[]): TrackedGoal[] {
+function ensureGoals(childId: string): TrackedGoal[] {
   const existing = loadGoalsLocal(childId);
   if (existing.length > 0) return existing;
-  if (scores.length === 0) return [];
-  const created = createTrackedGoalsFromScores(childId, scores);
+  const created = buildActiveTargetedGoals({
+    childId,
+    parentScores: collectMergedAssessmentScores(childId),
+    teacherScores: [],
+    screeningDomains: screeningDomainNeeds(childId),
+    childResponseNeed: childResponseNeed(childId),
+  });
   if (created.length === 0) return [];
   saveGoalsLocal([...created, ...loadGoalsLocal()]);
   return created;
@@ -215,8 +194,8 @@ function pickChapterActivities(goals: TrackedGoal[]): {
   };
 }
 
-function buildPreparedPlan(childId: string, scores: ScoreRow[]): TrainingPlan {
-  const goals = ensureGoals(childId, scores);
+function buildPreparedPlan(childId: string): TrainingPlan {
+  const goals = ensureGoals(childId);
   const picked = pickChapterActivities(goals);
   const chapterId = picked?.chapterId ?? ATTENTION_FOCUS_CHAPTER_ID;
   const mediaIds = picked?.mediaIds ?? [...STARTER_MEDIA];
@@ -274,9 +253,9 @@ export function ensureActiveTrainingPlanFromAssessment(
   if (existing.some((plan) => plan.status === 'completed')) {
     return null;
   }
-  if (!hasCompletedAssessmentForTraining(childId)) {
+  if (!isFourSourceGateOpen(childId)) {
     return null;
   }
 
-  return saveTrainingPlan(buildPreparedPlan(childId, readAssessmentScores(childId)));
+  return saveTrainingPlan(buildPreparedPlan(childId));
 }

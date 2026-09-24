@@ -275,6 +275,55 @@ export function createTrackedGoalsFromScores(
   });
 }
 
+export type FourSourceGoalInput = {
+  childId: string;
+  parentScores: AssessmentScore[];
+  teacherScores: AssessmentScore[];
+  screeningDomains: Array<{ domain: string; score: number }>;
+  childResponseNeed: number | null;
+};
+
+/**
+ * يقرأ المصادر الأربعة معاً ويستخرج أهداف الدعم النشطة.
+ * الهدف هنا هدف تدريب موجّه، وليس حكم إتقان معيار.
+ */
+export function buildActiveTargetedGoals(input: FourSourceGoalInput): TrackedGoal[] {
+  const buckets = new Map<string, number[]>();
+  const push = (criterionId: string, score: number) => {
+    const list = buckets.get(criterionId) ?? [];
+    list.push(score);
+    buckets.set(criterionId, list);
+  };
+
+  for (const row of [...input.parentScores, ...input.teacherScores]) {
+    if (!row.criterionId || !Number.isFinite(row.score)) continue;
+    push(row.criterionId, row.score);
+  }
+
+  const merged: AssessmentScore[] = [];
+  for (const [criterionId, values] of buckets) {
+    const criterion = getCriterionById(criterionId);
+    if (!criterion) continue;
+    let score = values.reduce((sum, value) => sum + value, 0) / values.length;
+    const domainSignal = input.screeningDomains.find(
+      (item) => item.domain === criterion.domain
+    );
+    if (domainSignal && domainSignal.score >= 2) {
+      score = Math.max(score, domainSignal.score);
+    }
+    if (
+      input.childResponseNeed != null &&
+      input.childResponseNeed >= 2 &&
+      criterion.domain === 'النمو المعرفي والحلول الإدراكية'
+    ) {
+      score = Math.max(score, input.childResponseNeed);
+    }
+    merged.push({ criterionId, score });
+  }
+
+  return createTrackedGoalsFromScores(input.childId, merged);
+}
+
 export function todayPracticeFromGoal(goal: TrackedGoal | null) {
   if (!goal) {
     return {

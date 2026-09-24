@@ -6,7 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useLanguage } from '@/components/LanguageProvider';
-import { parentScreeningEntryHref } from '@/lib/parentJourney';
+import { assignScreeningToChild, TEACHER_CHOICE_PATH } from '@/lib/childRoom/gate';
+import { CONSENT_STORAGE_KEY } from '@/lib/consentConstants';
 import { hydrateActiveChildClinicalSlice } from '@/lib/clinical/hydrateActiveChild';
 
 function toWesternDigits(value: string) {
@@ -121,8 +122,20 @@ export default function ParentRegisterChildPage() {
         dob: childDob,
       }),
     }).catch(() => undefined);
+    assignScreeningToChild(row.id);
     setMsg(t('childSaved'));
-    setTimeout(() => router.push(parentScreeningEntryHref()), 400);
+    const consented =
+      typeof localStorage !== 'undefined' &&
+      localStorage.getItem(CONSENT_STORAGE_KEY) === 'true';
+    setTimeout(
+      () =>
+        router.push(
+          consented
+            ? TEACHER_CHOICE_PATH
+            : `/consent?next=${encodeURIComponent(TEACHER_CHOICE_PATH)}`
+        ),
+      400
+    );
   };
 
   return (

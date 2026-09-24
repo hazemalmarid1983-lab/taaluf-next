@@ -1,11 +1,12 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import ActiveChildTrainingPrompt from '@/components/training/ActiveChildTrainingPrompt';
+import { listRoomSources } from '@/lib/childRoom/gate';
 import {
   ensureActiveTrainingPlanFromAssessment,
-  hasCompletedAssessmentForTraining,
   isAssessmentPreparedPlan,
 } from '@/lib/training/assessmentTrainingPlan';
 import { findMediaInChapter, loadChapterById } from '@/lib/training/loadChapter';
@@ -134,10 +135,34 @@ export default function TrainingPlanEntry() {
     </p>
   ) : null;
 
-  const assessmentReady =
-    entryState.kind === 'no_plan' && hasCompletedAssessmentForTraining(childId);
+  const sources = listRoomSources(childId);
+  const gateOpen = sources.every((source) => source.done);
+  const anySource = sources.some((source) => source.done);
 
-  if (assessmentReady) {
+  if (entryState.kind === 'no_plan' && anySource && !gateOpen) {
+    return (
+      <div className="mx-auto max-w-lg space-y-4">
+        {notice}
+        <div className="rounded-2xl bg-white p-8 text-center shadow-sm">
+          <p className="text-lg font-bold text-slate-900">غرفة الطفل لم تُفتح بعد</p>
+          <p className="mt-2 text-sm leading-6 text-slate-600">
+            الخطة والجلسات تُفعَّل بعد اكتمال التقييمات الأربعة معاً.
+          </p>
+          <ul className="mt-4 space-y-2 text-right text-sm">
+            {sources.map((source) => (
+              <li key={source.id}>
+                <Link href={source.href} className="font-semibold text-[#2E7D8E] underline">
+                  {source.done ? '✓' : '○'} {source.labelAr}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      </div>
+    );
+  }
+
+  if (entryState.kind === 'no_plan' && gateOpen) {
     return (
       <div className="mx-auto max-w-lg space-y-4">
         {notice}

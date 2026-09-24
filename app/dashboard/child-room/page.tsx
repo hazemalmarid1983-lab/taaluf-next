@@ -2,6 +2,6 @@
 
 import ChildRoomScreen from '@/components/child-room/ChildRoomScreen';
 
-export default function TrainingDashboardPage() {
+export default function ChildRoomPage() {
   return <ChildRoomScreen />;
 }

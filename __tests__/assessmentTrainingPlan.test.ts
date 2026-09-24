@@ -49,7 +49,7 @@ describe('ensureActiveTrainingPlanFromAssessment', () => {
     expect(listTrainingPlans('child_1')).toHaveLength(0);
   });
 
-  it('activates a practice plan from a completed assessment and does not duplicate it', () => {
+  it('does not activate a plan from one assessment before the four sources are complete', () => {
     persistLocalAssessment({
       studentId: 'child_1',
       percentage: 40,
@@ -60,34 +60,57 @@ describe('ensureActiveTrainingPlanFromAssessment', () => {
       scores: [{ criterionId: 'C25', score: 2 }],
     });
 
-    const plan = ensureActiveTrainingPlanFromAssessment('child_1');
-    expect(plan?.status).toBe('active');
-    expect(plan?.chapterId).toBe('attention-focus');
-    expect(plan?.assignments[0]?.mediaId).toBe('follow-star');
-    expect(plan?.goalIds?.length).toBeGreaterThan(0);
-
-    const again = ensureActiveTrainingPlanFromAssessment('child_1');
-    expect(again?.id).toBe(plan?.id);
-    expect(listTrainingPlans('child_1')).toHaveLength(1);
-    expect(getActiveTrainingPlan('child_1')?.id).toBe(plan?.id);
+    expect(ensureActiveTrainingPlanFromAssessment('child_1')).toBeNull();
+    expect(listTrainingPlans('child_1')).toHaveLength(0);
   });
 
-  it('activates from a completed parent questionnaire when no specialist report exists', () => {
+  it('activates one practice plan after screening, parent, teacher, and child responses', () => {
+    localStorage.setItem(
+      'taaluf.screening.v1',
+      JSON.stringify({
+        childId: 'child_1',
+        answers: [{ id: 'S1', value: 2 }],
+        result: {
+          domainScores: [
+            { label_ar: 'النمو المعرفي والحلول الإدراكية', scorePercent: 70 },
+          ],
+        },
+      })
+    );
     localStorage.setItem(
       'taaluf.parentAssessment.v1',
       JSON.stringify([
         {
-          childId: 'child_parent',
-          answers: [{ id: 'p1', value: 2 }],
+          childId: 'child_1',
+          answers: [{ id: 'P1', value: 2 }],
           mappedScores: [{ criterionId: 'C25', score: 2 }],
         },
       ])
     );
+    localStorage.setItem(
+      'taaluf.childRoom.teacherForms.v1',
+      JSON.stringify([
+        {
+          childId: 'child_1',
+          filler: 'parent',
+          scores: [{ criterionId: 'C25', score: 2 }],
+          savedAt: new Date().toISOString(),
+        },
+      ])
+    );
+    localStorage.setItem(
+      'taaluf.gameSessions.v1',
+      JSON.stringify([{ childId: 'child_1', score: 1 }])
+    );
 
-    const plan = ensureActiveTrainingPlanFromAssessment('child_parent');
+    const plan = ensureActiveTrainingPlanFromAssessment('child_1');
     expect(plan?.status).toBe('active');
-    expect(plan?.childId).toBe('child_parent');
-    expect(plan?.assignments.length).toBeGreaterThan(0);
+    expect(plan?.chapterId).toBe('attention-focus');
+    expect(plan?.assignments[0]?.mediaId).toBe('follow-star');
+
+    const again = ensureActiveTrainingPlanFromAssessment('child_1');
+    expect(again?.id).toBe(plan?.id);
+    expect(listTrainingPlans('child_1')).toHaveLength(1);
   });
 
   it('does not replace an existing active plan or reopen a finished plan', () => {

@@ -124,6 +124,7 @@ export default withAuth(
         path.startsWith('/dashboard/parent-assessment') ||
         path.startsWith('/dashboard/games') ||
         path.startsWith('/dashboard/training') ||
+        path.startsWith('/dashboard/child-room') ||
         path.startsWith('/dashboard/home-classroom') ||
         path.startsWith('/dashboard/tools-bank') ||
         path.startsWith('/dashboard/messages') ||

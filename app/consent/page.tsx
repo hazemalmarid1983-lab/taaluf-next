@@ -71,8 +71,12 @@ export default function ConsentPage() {
         60 * 60 * 24 * 365
       }; samesite=lax`;
       const role = session?.user?.role;
+      const next = new URLSearchParams(window.location.search).get('next');
+      const safeNext =
+        next && next.startsWith('/') && !next.startsWith('//') ? next : null;
       router.push(
-        role === 'parent' ? PARENT_ROUTES.home : '/dashboard/assessments/new'
+        safeNext ||
+          (role === 'parent' ? PARENT_ROUTES.home : '/dashboard/assessments/new')
       );
     } catch (err) {
       setError(err instanceof Error ? err.message : t('saveConsentError'));
