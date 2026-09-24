@@ -228,6 +228,21 @@ export function resolveWhereDidItGoRuntimeSettings(
   };
 }
 
+/** يثبّت محتوى المحاولة على المستوى المفتوح فقط. */
+export function whereDidItGoSettingsForLevel(
+  settings: WhereDidItGoRuntimeSettings,
+  level: number
+): WhereDidItGoRuntimeSettings {
+  const memoryLevel = clampMemoryLevel(level);
+  return {
+    ...settings,
+    memoryLevel,
+    locationCount: MEMORY_LEVEL_LOCATION_COUNT[memoryLevel] ?? 2,
+    displayDurationMs: resolveDisplayMs(memoryLevel),
+    hideDurationMs: resolveHideMs(memoryLevel),
+  };
+}
+
 function pickTarget(trialNumber: number, memoryLevel: number): MatchVisualItem {
   const base = TARGET_POOL[seededIndex(trialNumber * 11, TARGET_POOL.length)];
 

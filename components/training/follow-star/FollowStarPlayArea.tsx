@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import ActivityFocusShell from '@/components/training/ActivityFocusShell';
+import ActivityLevelBadge from '@/components/training/ActivityLevelBadge';
 import FieldPromptRecordBar from '@/components/training/FieldPromptRecordBar';
 import FollowStarVisual from '@/components/training/follow-star/FollowStarVisual';
 import { useActivityFeedback } from '@/components/training/useActivityFeedback';
@@ -24,6 +25,7 @@ type Props = {
   totalTrials: number;
   pathOrderSeed: number;
   onTrialComplete: (outcome: FollowStarTrialOutcome) => void;
+  level?: number;
 };
 
 type TrialPhase = 'moving' | 'ready' | 'feedback';
@@ -34,6 +36,7 @@ export default function FollowStarPlayArea({
   totalTrials,
   pathOrderSeed,
   onTrialComplete,
+  level = 1,
 }: Props) {
   const arenaRef = useRef<HTMLDivElement>(null);
   const readyStartedAt = useRef<number | null>(null);
@@ -177,7 +180,10 @@ export default function FollowStarPlayArea({
       className="relative flex h-full min-h-[100dvh] flex-col bg-gradient-to-b from-[#081224] via-[#0f2240] to-[#081224]"
       dir="rtl"
     >
-      <div className="flex items-center justify-between px-5 pb-2 pt-5 sm:px-8">
+      <div className="flex justify-center px-5 pt-10">
+        <ActivityLevelBadge level={level} tone="dark" />
+      </div>
+      <div className="flex items-center justify-between px-5 pb-2 pt-3 sm:px-8">
         <div
           className="h-2 flex-1 overflow-hidden rounded-full bg-white/10"
           role="progressbar"

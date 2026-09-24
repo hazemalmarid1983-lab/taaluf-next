@@ -202,6 +202,18 @@ export function resolveCommRuntimeSettings(
   };
 }
 
+export function commSettingsForLevel(
+  settings: CommRuntimeSettings,
+  level: number
+): CommRuntimeSettings {
+  const choiceLevel = Math.min(4, Math.max(1, Math.floor(level)));
+  return {
+    ...settings,
+    choiceLevel,
+    choiceCount: CHOICE_COUNT_BY_LEVEL[choiceLevel] ?? settings.choiceCount,
+  };
+}
+
 export function buildCommTrialSpec(
   settings: CommRuntimeSettings,
   trialNumber: number

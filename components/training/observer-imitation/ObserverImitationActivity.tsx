@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import ObserverImitationComplete from '@/components/training/observer-imitation/ObserverImitationComplete';
 import ObserverImitationPlayArea from '@/components/training/observer-imitation/ObserverImitationPlayArea';
 import ObserverImitationWelcome from '@/components/training/observer-imitation/ObserverImitationWelcome';
+import { useActivityLevelGate } from '@/components/training/useActivityLevelGate';
 import PlanActivityGuardMessage from '@/components/training/PlanActivityGuardMessage';
 import { calculateSessionMetrics, requireTrainingMedia } from '@/lib/training/engine';
 import {
@@ -13,6 +14,7 @@ import {
 } from '@/lib/training/loadChapter';
 import {
   OBSERVER_IMITATION_MEDIA_ID,
+  observerModelDurationForLevel,
   resolveObserverImitationTrialMovement,
   type ObserverImitationTrialOutcome,
 } from '@/lib/training/observerImitationEngine';
@@ -50,6 +52,12 @@ export default function ObserverImitationActivity() {
   const [activeTrial, setActiveTrial] = useState(1);
   const [sessionSaved, setSessionSaved] = useState(true);
   const [blockReason, setBlockReason] = useState<BlockReason | null>(null);
+  const [activeChildId, setActiveChildId] = useState<string | null>(null);
+  const { level, recordAttempt } = useActivityLevelGate({
+    childId: activeChildId,
+    mediaId: media.mediaId,
+    chapterId: MOTOR_SOCIAL_IMITATION_CHAPTER_ID,
+  });
   const [summary, setSummary] = useState({
     accuracy: 0,
     independence: 0,
@@ -66,6 +74,7 @@ export default function ObserverImitationActivity() {
       return;
     }
 
+    setActiveChildId(begin.childId);
     const bundle = beginObserverImitationSession({
       childId: begin.childId,
       chapterId: MOTOR_SOCIAL_IMITATION_CHAPTER_ID,
@@ -108,6 +117,10 @@ export default function ObserverImitationActivity() {
   const handleTrialComplete = useCallback(
     (outcome: ObserverImitationTrialOutcome) => {
       if (!session || !settings) return;
+      recordAttempt({
+        correct: outcome.correct,
+        promptLevel: outcome.promptLevel,
+      });
 
       let nextSession = commitObserverImitationTrial(session, outcome);
 
@@ -137,7 +150,7 @@ export default function ObserverImitationActivity() {
       setSession(nextSession);
       setActiveTrial(nextSession.activeTrialNumber ?? nextSession.trials.length + 1);
     },
-    [session, settings]
+    [recordAttempt, session, settings]
   );
 
   const movement = useMemo(() => {
@@ -173,7 +186,8 @@ export default function ObserverImitationActivity() {
         movement={movement}
         trialNumber={activeTrial}
         totalTrials={settings.trialCount}
-        modelDurationMs={settings.modelDurationMs}
+        modelDurationMs={observerModelDurationForLevel(settings.modelDurationMs, level)}
+        level={level}
         replayAllowed={settings.replayAllowedDefault}
         onTrialComplete={handleTrialComplete}
       />

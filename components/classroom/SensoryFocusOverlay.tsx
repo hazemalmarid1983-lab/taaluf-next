@@ -27,6 +27,7 @@ type SensoryFocusOverlayProps = {
   onBinTap: (bin: SortingBin) => void;
   onSpeakTarget: () => void;
   onExit: () => void;
+  level?: number;
 };
 
 /**
@@ -49,6 +50,7 @@ export default function SensoryFocusOverlay({
   onBinTap,
   onSpeakTarget,
   onExit,
+  level,
 }: SensoryFocusOverlayProps) {
   return (
     <div
@@ -64,6 +66,14 @@ export default function SensoryFocusOverlay({
 
       <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-4 overflow-hidden px-3 pb-4 pt-14 sm:px-6">
         <TrialProgressDots completed={trialsDone} isAr={isAr} />
+        {typeof level === 'number' ? (
+          <p
+            data-activity-level={level}
+            className="rounded-full bg-white/80 px-3 py-1 text-xs font-bold text-[#1F4E5A] ring-1 ring-[#2E7D8E]/20"
+          >
+            {isAr ? `المستوى ${level}` : `Level ${level}`}
+          </p>
+        ) : null}
 
         <div className="max-w-lg space-y-2 text-center">
           <span className="inline-block rounded-full border border-teal-300/50 bg-white/50 px-4 py-1.5 text-xs font-bold text-teal-800/90 backdrop-blur-sm">

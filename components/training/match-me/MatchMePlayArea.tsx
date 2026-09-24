@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import PromptRecordingBar from '@/components/classroom/PromptRecordingBar';
 import ActivityFocusShell from '@/components/training/ActivityFocusShell';
+import ActivityLevelBadge from '@/components/training/ActivityLevelBadge';
 import MatchVisual, { matchVisualAriaLabel } from '@/components/training/match-me/MatchVisual';
 import { useActivityFeedback } from '@/components/training/useActivityFeedback';
 import { shouldAutoFinishTrial } from '@/lib/training/activityResponsePolicy';
@@ -24,6 +25,7 @@ type Props = {
   trialNumber: number;
   totalTrials: number;
   onTrialComplete: (outcome: MatchMeTrialOutcome) => void;
+  level?: number;
 };
 
 type TrialPhase = 'choosing' | 'feedback';
@@ -33,6 +35,7 @@ export default function MatchMePlayArea({
   trialNumber,
   totalTrials,
   onTrialComplete,
+  level = 1,
 }: Props) {
   const trialStartedAt = useRef<number>(Date.now());
   const completedRef = useRef(false);
@@ -134,7 +137,10 @@ export default function MatchMePlayArea({
       className="relative flex h-full min-h-[100dvh] flex-col overflow-hidden bg-gradient-to-b from-[#F7F3EB] via-[#F0EBE1] to-[#E8E2D6]"
       dir="rtl"
     >
-      <div className="flex items-center justify-between px-5 pb-2 pt-5 sm:px-8">
+      <div className="flex justify-center px-5 pt-10">
+        <ActivityLevelBadge level={level} />
+      </div>
+      <div className="flex items-center justify-between px-5 pb-2 pt-3 sm:px-8">
         <div
           className="h-2 flex-1 overflow-hidden rounded-full bg-[#2E7D8E]/10"
           role="progressbar"

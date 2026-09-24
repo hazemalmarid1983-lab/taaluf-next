@@ -241,6 +241,18 @@ export function resolveWaitThenTouchRuntimeSettings(
   };
 }
 
+export function waitThenTouchSettingsForLevel(
+  settings: WaitThenTouchRuntimeSettings,
+  level: number
+): WaitThenTouchRuntimeSettings {
+  const controlLevel = clampControlLevel(level);
+  return {
+    ...settings,
+    controlLevel,
+    readyDurationMs: resolveReadyDurationMs(controlLevel),
+  };
+}
+
 function pickTarget(
   pool: MatchVisualItem[],
   trialNumber: number,

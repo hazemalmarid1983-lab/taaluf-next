@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import ActivityFocusShell from '@/components/training/ActivityFocusShell';
+import ActivityLevelBadge from '@/components/training/ActivityLevelBadge';
 import FieldPromptRecordBar from '@/components/training/FieldPromptRecordBar';
 import MatchVisual, { matchVisualAriaLabel } from '@/components/training/match-me/MatchVisual';
 import { useActivityFeedback } from '@/components/training/useActivityFeedback';
@@ -24,13 +25,32 @@ type Props = {
   trialNumber: number;
   totalTrials: number;
   onTrialComplete: (outcome: WhereDidItGoTrialOutcome) => void;
+  level?: number;
 };
+
+function CupCover({ lifted }: { lifted: boolean }) {
+  return (
+    <svg
+      viewBox="0 0 88 78"
+      className={`h-[4.5rem] w-[4.5rem] transition-transform duration-500 ease-out motion-reduce:transition-none sm:h-24 sm:w-24 ${
+        lifted ? '-translate-y-10' : ''
+      }`}
+      aria-hidden
+    >
+      <ellipse cx="44" cy="64" rx="30" ry="8" fill="#C5D0D8" />
+      <path d="M16 30h56l-7 30H23z" fill="#F7FBFD" stroke="#6D7C89" strokeWidth="3" />
+      <ellipse cx="44" cy="30" rx="28" ry="11" fill="#E7EEF3" stroke="#4E5D6A" strokeWidth="3" />
+      <ellipse cx="44" cy="30" rx="16" ry="5" fill="#D3DDE6" />
+    </svg>
+  );
+}
 
 export default function WhereDidItGoPlayArea({
   settings,
   trialNumber,
   totalTrials,
   onTrialComplete,
+  level = 1,
 }: Props) {
   const chooseStartedAt = useRef<number | null>(null);
   const completedRef = useRef(false);
@@ -50,6 +70,7 @@ export default function WhereDidItGoPlayArea({
   const [pendingOutcome, setPendingOutcome] =
     useState<WhereDidItGoTrialOutcome | null>(null);
   const [targetVisible, setTargetVisible] = useState(true);
+  const [sliding, setSliding] = useState(false);
 
   useEffect(() => {
     setReducedMotion(
@@ -100,6 +121,7 @@ export default function WhereDidItGoPlayArea({
     setFeedback(null);
     setPendingOutcome(null);
     setTargetVisible(true);
+    setSliding(false);
 
     const freshSpec = buildWhereDidItGoTrialSpec(settings, trialNumber);
     setDisplayedLocations(freshSpec.locations);
@@ -108,16 +130,23 @@ export default function WhereDidItGoPlayArea({
       ? Math.min(freshSpec.displayDurationMs, 800)
       : freshSpec.displayDurationMs;
     const hideMs = reducedMotion
-      ? Math.min(freshSpec.hideDurationMs, 400)
+      ? Math.min(freshSpec.hideDurationMs, 280)
       : freshSpec.hideDurationMs;
+    const instantHide = reducedMotion || freshSpec.hideAnimation === 'instant';
 
     const observeTimer = window.setTimeout(() => {
       setPhase('hide');
-      setTargetVisible(false);
+      if (instantHide) {
+        setSliding(true);
+        setTargetVisible(false);
+        return;
+      }
+      window.requestAnimationFrame(() => setSliding(true));
     }, observeMs);
 
     const chooseTimer = window.setTimeout(() => {
       setPhase('choose');
+      setTargetVisible(false);
       chooseStartedAt.current = Date.now();
     }, observeMs + hideMs);
 
@@ -157,9 +186,13 @@ export default function WhereDidItGoPlayArea({
     handleLocationSelect(choiceId);
   };
 
-  const showTarget =
+  const showTravelingObject =
     (phase === 'observe' && targetVisible) ||
+    (phase === 'hide' && targetVisible) ||
     (phase === 'feedback' && feedback === 'success');
+  const objectAtCup = sliding || phase === 'feedback';
+  const objectX = objectAtCup ? spec.observeLocation.x : 50;
+  const objectY = objectAtCup ? spec.observeLocation.y : 34;
   const scenePulse = shouldPulseWhereDidItGoScene(assistanceStage);
   const showCorrectHint = shouldHighlightWhereDidItGoCorrectLocation(
     assistanceStage,
@@ -181,7 +214,10 @@ export default function WhereDidItGoPlayArea({
       className="relative flex h-full min-h-[100dvh] flex-col bg-gradient-to-b from-[#EEF4F8] via-[#E8F0F5] to-[#DDE8EF]"
       dir="rtl"
     >
-      <div className="flex items-center justify-between px-5 pb-2 pt-5 sm:px-8">
+      <div className="flex justify-center px-5 pt-10">
+        <ActivityLevelBadge level={level} />
+      </div>
+      <div className="flex items-center justify-between px-5 pb-2 pt-3 sm:px-8">
         <div
           className="h-2 flex-1 overflow-hidden rounded-full bg-[#2E7D8E]/10"
           role="progressbar"
@@ -215,63 +251,62 @@ export default function WhereDidItGoPlayArea({
           role="application"
           aria-label="مساحة الذاكرة البصرية"
         >
-          {showTarget && (
+          {showTravelingObject && (
             <div
-              className="absolute z-20 -translate-x-1/2 -translate-y-1/2 motion-reduce:transition-none"
+              className={`absolute -translate-x-1/2 -translate-y-1/2 motion-reduce:transition-none ${
+                phase === 'observe' ? 'z-30' : 'z-10'
+              }`}
               style={{
-                left: `${spec.observeLocation.x}%`,
-                top: `${spec.observeLocation.y}%`,
+                left: `${objectX}%`,
+                top: `${objectY}%`,
+                transition:
+                  phase === 'hide' && sliding && !reducedMotion
+                    ? `left ${spec.hideDurationMs}ms linear, top ${spec.hideDurationMs}ms linear`
+                    : 'none',
               }}
             >
               <MatchVisual
                 item={spec.target}
-                sizePx={100}
+                sizePx={88}
                 label={`هدف: ${matchVisualAriaLabel(spec.target)}`}
               />
             </div>
           )}
 
-          {(phase === 'choose' || phase === 'feedback') &&
-            displayedLocations.map((choice) => {
+          {displayedLocations.map((choice) => {
               const isSelected = selectedId === choice.id;
-              const showAsCorrect =
+              const lifted =
                 phase === 'feedback' && choice.isCorrect && feedback === 'success';
               const showAsWrong =
                 phase === 'feedback' && isSelected && feedback === 'miss';
               const directHint =
                 showCorrectHint && choice.isCorrect && phase === 'choose';
+              const canChoose = phase === 'choose';
 
               return (
                 <button
                   key={choice.id}
                   type="button"
-                  aria-label={`موقع: ${choice.location.labelAr}${
-                    showAsCorrect ? ' — صحيح' : ''
+                  aria-label={`غطاء: ${choice.location.labelAr}${
+                    lifted ? ' — صحيح' : ''
                   }${showAsWrong ? ' — خطأ' : ''}`}
                   aria-pressed={isSelected}
-                  disabled={phase !== 'choose'}
+                  disabled={!canChoose}
                   onClick={() => handleLocationSelect(choice.id)}
                   onKeyDown={(event) => handleLocationKeyDown(event, choice.id)}
-                  className={`absolute z-10 flex h-[4.5rem] w-[4.5rem] -translate-x-1/2 -translate-y-1/2 touch-manipulation items-center justify-center rounded-full border-[3px] bg-white/90 shadow-lg transition-all motion-reduce:transition-none focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#2E7D8E]/45 sm:h-24 sm:w-24 ${
-                    showAsCorrect
-                      ? 'border-[#3A9B6E] bg-[#3A9B6E]/10 ring-4 ring-[#3A9B6E]/25'
-                      : showAsWrong
-                        ? 'border-[#C94C4C] bg-[#C94C4C]/8'
-                        : directHint
-                          ? 'border-[#2E7D8E] ring-2 ring-[#2E7D8E]/35'
-                          : isSelected
-                            ? 'border-[#2E7D8E] scale-95'
-                            : 'border-[#CBD5E1] hover:border-[#2E7D8E]/50'
+                  className={`absolute z-20 flex -translate-x-1/2 -translate-y-1/2 touch-manipulation items-end justify-center bg-transparent focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#2E7D8E]/45 ${
+                    showAsWrong
+                      ? 'rounded-full ring-4 ring-[#C94C4C]/35'
+                      : directHint
+                        ? 'rounded-full ring-4 ring-[#2E7D8E]/40'
+                        : ''
                   }`}
                   style={{
                     left: `${choice.location.x}%`,
                     top: `${choice.location.y}%`,
                   }}
                 >
-                  <span
-                    className="h-3 w-3 rounded-full bg-[#94A3B8]/50"
-                    aria-hidden
-                  />
+                  <CupCover lifted={lifted} />
                 </button>
               );
             })}

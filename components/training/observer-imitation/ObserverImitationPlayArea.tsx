@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import ActivityFocusShell from '@/components/training/ActivityFocusShell';
+import ActivityLevelBadge from '@/components/training/ActivityLevelBadge';
 import { useActivityFeedback } from '@/components/training/useActivityFeedback';
 import { Button } from '@/components/ui/button';
 import ObserverImitationModelVisual from '@/components/training/observer-imitation/ObserverImitationModelVisual';
@@ -31,6 +32,7 @@ type Props = {
   modelDurationMs: number;
   replayAllowed: boolean;
   onTrialComplete: (outcome: ObserverImitationTrialOutcome) => void;
+  level?: number;
 };
 
 export default function ObserverImitationPlayArea({
@@ -40,6 +42,7 @@ export default function ObserverImitationPlayArea({
   modelDurationMs,
   replayAllowed,
   onTrialComplete,
+  level = 1,
 }: Props) {
   const [phase, setPhase] = useState<TrialPhase>('model');
   const [modelReplays, setModelReplays] = useState(0);
@@ -124,7 +127,10 @@ export default function ObserverImitationPlayArea({
       dir="rtl"
       data-model-duration-ms={modelDurationMs}
     >
-      <div className="px-4 pt-4 text-center text-xs text-white/60">
+      <div className="flex justify-center px-4 pt-10">
+        <ActivityLevelBadge level={level} tone="dark" />
+      </div>
+      <div className="px-4 pt-2 text-center text-xs text-white/60">
         محاولة {trialNumber} من {totalTrials}
       </div>
 

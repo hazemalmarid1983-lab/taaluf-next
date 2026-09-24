@@ -8,6 +8,8 @@ import PromptRecordingBar from '@/components/classroom/PromptRecordingBar';
 
 import ActivityFocusShell from '@/components/training/ActivityFocusShell';
 
+import ActivityLevelBadge from '@/components/training/ActivityLevelBadge';
+
 import { useActivityFeedback } from '@/components/training/useActivityFeedback';
 
 import CommunicationVisualCard, {
@@ -70,6 +72,8 @@ type Props = {
 
   onTrialComplete: (outcome: CommTrialOutcome) => void;
 
+  level?: number;
+
 };
 
 
@@ -95,6 +99,8 @@ export default function TapToRequestPlayArea({
   totalTrials,
 
   onTrialComplete,
+
+  level = 1,
 
 }: Props) {
 
@@ -412,6 +418,12 @@ export default function TapToRequestPlayArea({
     >
 
       <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col">
+
+        <div className="mb-2 flex justify-center pt-6">
+
+          <ActivityLevelBadge level={level} />
+
+        </div>
 
         <p className="text-center text-xs text-slate-500">
 

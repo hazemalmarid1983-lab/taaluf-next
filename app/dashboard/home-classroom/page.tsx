@@ -72,6 +72,8 @@ import {
   stashTrainingBridgeNotice,
   TRAINING_BRIDGE_MISMATCH_MESSAGE_AR,
 } from '@/lib/training/trainingBridge';
+import ActivityLevelBadge from '@/components/training/ActivityLevelBadge';
+import { useActivityLevelGate } from '@/components/training/useActivityLevelGate';
 import { ActivityFeedbackAudio } from '@/lib/training/activityFeedbackAudio';
 import {
   speakText,
@@ -241,6 +243,10 @@ export default function HomeClassroomPage() {
     () => generated || findHomeGoal(selection) || HOME_CLASSROOM_GOALS[0],
     [generated, selection]
   );
+  const { level, recordAttempt } = useActivityLevelGate({
+    childId: child?.id ?? null,
+    mediaId: `home-classroom:${goal.id}`,
+  });
 
   const trialIndex = trials.length;
   const currentTrial = Math.min(trialIndex + 1, HOME_SESSION_TARGET_TRIALS);
@@ -476,6 +482,10 @@ export default function HomeClassroomPage() {
       },
     ];
 
+    recordAttempt({
+      correct: feedback === 'ok',
+      promptLevel,
+    });
     setTrials(updated);
     setPickedId(null);
     setFeedback(null);
@@ -1155,6 +1165,9 @@ export default function HomeClassroomPage() {
               </div>
             )}
 
+          <div className="mb-3 flex justify-center">
+            <ActivityLevelBadge level={level} />
+          </div>
           <div
             id="training-activity"
             className={`grid grid-cols-1 gap-6 lg:grid-cols-12 ${focusMode ? 'hidden' : ''}`}
@@ -1363,6 +1376,7 @@ export default function HomeClassroomPage() {
             onBinTap={handleBinTap}
             onSpeakTarget={() => speak(targetName)}
             onExit={exitFocusMode}
+            level={level}
           />
         )}
 

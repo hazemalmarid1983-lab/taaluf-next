@@ -18,6 +18,8 @@ import CommunicationChoiceWelcome from '@/components/training/communication/Comm
 
 import PlanActivityGuardMessage from '@/components/training/PlanActivityGuardMessage';
 
+import { useActivityLevelGate } from '@/components/training/useActivityLevelGate';
+
 import { childFacingStars } from '@/lib/training/followStarEngine';
 
 import {
@@ -32,7 +34,7 @@ import {
 
 import { loadChapterById } from '@/lib/training/loadChapter';
 
-import { buildCommTrialSpec, resolveCommRuntimeSettings } from '@/lib/training/communicationChoiceEngine';
+import { buildCommTrialSpec, commSettingsForLevel, resolveCommRuntimeSettings } from '@/lib/training/communicationChoiceEngine';
 
 import {
 
@@ -144,6 +146,14 @@ export default function CommunicationChoiceActivity({
 
   const [blockReason, setBlockReason] = useState<BlockReason | null>(null);
 
+  const [activeChildId, setActiveChildId] = useState<string | null>(null);
+
+  const { level, recordAttempt } = useActivityLevelGate({
+    childId: activeChildId,
+    mediaId: media.mediaId,
+    chapterId,
+  });
+
 
 
   const welcomeSample = useMemo(() => {
@@ -218,6 +228,8 @@ export default function CommunicationChoiceActivity({
 
 
 
+    setActiveChildId(childResolution.childId);
+
     const bundle = beginCommChoiceSession({
 
       childId: childResolution.childId,
@@ -272,6 +284,11 @@ export default function CommunicationChoiceActivity({
 
       if (!session) return;
 
+      recordAttempt({
+        correct: outcome.correct,
+        promptLevel: outcome.promptLevel,
+      });
+
 
 
       let nextSession = commitCommChoiceTrial(session, outcome);
@@ -320,7 +337,7 @@ export default function CommunicationChoiceActivity({
 
     },
 
-    [session]
+    [recordAttempt, session]
 
   );
 
@@ -432,7 +449,9 @@ export default function CommunicationChoiceActivity({
 
         <TapToRequestPlayArea
 
-          settings={sessionBundle.settings}
+          settings={commSettingsForLevel(sessionBundle.settings, level)}
+
+          level={level}
 
           sessionSeed={session.id}
 
@@ -454,7 +473,9 @@ export default function CommunicationChoiceActivity({
 
       <CommunicationChoicePlayArea
 
-        settings={sessionBundle.settings}
+        settings={commSettingsForLevel(sessionBundle.settings, level)}
+
+        level={level}
 
         trialNumber={trialNumber}
 

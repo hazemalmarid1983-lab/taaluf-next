@@ -5,7 +5,8 @@ import { useRouter } from 'next/navigation';
 import FollowStarComplete from '@/components/training/follow-star/FollowStarComplete';
 import FollowStarPlayArea from '@/components/training/follow-star/FollowStarPlayArea';
 import FollowStarWelcome from '@/components/training/follow-star/FollowStarWelcome';
-import { childFacingStars, deriveFollowStarPathOrderSeed } from '@/lib/training/followStarEngine';
+import { useActivityLevelGate } from '@/components/training/useActivityLevelGate';
+import { childFacingStars, deriveFollowStarPathOrderSeed, followStarSettingsForLevel } from '@/lib/training/followStarEngine';
 import {
   ATTENTION_FOCUS_CHAPTER_ID,
   loadAttentionFocusChapter,
@@ -47,6 +48,12 @@ export default function FollowStarActivity() {
   const [resultStars, setResultStars] = useState(1);
   const [sessionSaved, setSessionSaved] = useState(true);
   const [blockReason, setBlockReason] = useState<BlockReason | null>(null);
+  const [activeChildId, setActiveChildId] = useState<string | null>(null);
+  const { level, recordAttempt } = useActivityLevelGate({
+    childId: activeChildId,
+    mediaId: media.mediaId,
+    chapterId: ATTENTION_FOCUS_CHAPTER_ID,
+  });
   const pathOrderSeed = useMemo(
     () =>
       session?.id
@@ -63,6 +70,7 @@ export default function FollowStarActivity() {
       return;
     }
 
+    setActiveChildId(begin.childId);
     const bundle = beginFollowStarSession({
       childId: begin.childId,
       chapterId: ATTENTION_FOCUS_CHAPTER_ID,
@@ -102,6 +110,10 @@ export default function FollowStarActivity() {
   const handleTrialComplete = useCallback(
     (outcome: FollowStarTrialOutcome) => {
       if (!session) return;
+      recordAttempt({
+        correct: outcome.correct,
+        promptLevel: outcome.promptLevel,
+      });
 
       let nextSession = commitFollowStarTrial(session, outcome);
 
@@ -129,7 +141,7 @@ export default function FollowStarActivity() {
       nextSession = startFollowStarTrial(nextSession);
       setSession(nextSession);
     },
-    [session]
+    [recordAttempt, session]
   );
 
   const handleDone = useCallback(() => {
@@ -162,7 +174,8 @@ export default function FollowStarActivity() {
 
     return (
       <FollowStarPlayArea
-        settings={sessionBundle.settings}
+        settings={followStarSettingsForLevel(sessionBundle.settings, level)}
+        level={level}
         trialNumber={trialNumber}
         totalTrials={session.targetTrialCount}
         pathOrderSeed={pathOrderSeed}

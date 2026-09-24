@@ -5,13 +5,14 @@ import { useRouter } from 'next/navigation';
 import MatchMeComplete from '@/components/training/match-me/MatchMeComplete';
 import MatchMePlayArea from '@/components/training/match-me/MatchMePlayArea';
 import MatchMeWelcome from '@/components/training/match-me/MatchMeWelcome';
+import { useActivityLevelGate } from '@/components/training/useActivityLevelGate';
 import { childFacingStars } from '@/lib/training/followStarEngine';
 import {
   ATTENTION_FOCUS_CHAPTER_ID,
   loadAttentionFocusChapter,
 } from '@/lib/training/loadChapter';
 import { requireTrainingMedia, calculateSessionMetrics, resolveMediaRuntimeConfig } from '@/lib/training/engine';
-import { buildMatchMeTrialSpec, resolveMatchMeRuntimeSettings } from '@/lib/training/matchMeEngine';
+import { buildMatchMeTrialSpec, matchMeSettingsForLevel, resolveMatchMeRuntimeSettings } from '@/lib/training/matchMeEngine';
 import {
   beginMatchMeSession,
   commitMatchMeTrial,
@@ -47,6 +48,12 @@ export default function MatchMeActivity() {
   const [resultStars, setResultStars] = useState(1);
   const [sessionSaved, setSessionSaved] = useState(true);
   const [blockReason, setBlockReason] = useState<BlockReason | null>(null);
+  const [activeChildId, setActiveChildId] = useState<string | null>(null);
+  const { level, recordAttempt } = useActivityLevelGate({
+    childId: activeChildId,
+    mediaId: media.mediaId,
+    chapterId: ATTENTION_FOCUS_CHAPTER_ID,
+  });
 
   const welcomeSample = useMemo(() => {
     const config = resolveMediaRuntimeConfig(media);
@@ -62,6 +69,7 @@ export default function MatchMeActivity() {
       return;
     }
 
+    setActiveChildId(begin.childId);
     const bundle = beginMatchMeSession({
       childId: begin.childId,
       chapterId: ATTENTION_FOCUS_CHAPTER_ID,
@@ -95,6 +103,10 @@ export default function MatchMeActivity() {
   const handleTrialComplete = useCallback(
     (outcome: MatchMeTrialOutcome) => {
       if (!session) return;
+      recordAttempt({
+        correct: outcome.correct,
+        promptLevel: outcome.promptLevel,
+      });
 
       let nextSession = commitMatchMeTrial(session, outcome);
 
@@ -122,7 +134,7 @@ export default function MatchMeActivity() {
       nextSession = startMatchMeTrial(nextSession);
       setSession(nextSession);
     },
-    [session]
+    [recordAttempt, session]
   );
 
   const handleDone = useCallback(() => {
@@ -159,7 +171,8 @@ export default function MatchMeActivity() {
 
     return (
       <MatchMePlayArea
-        settings={sessionBundle.settings}
+        settings={matchMeSettingsForLevel(sessionBundle.settings, level)}
+        level={level}
         trialNumber={trialNumber}
         totalTrials={session.targetTrialCount}
         onTrialComplete={handleTrialComplete}

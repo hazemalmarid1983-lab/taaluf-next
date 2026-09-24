@@ -5,11 +5,13 @@ import { useRouter } from 'next/navigation';
 import WaitThenTouchComplete from '@/components/training/wait-then-touch/WaitThenTouchComplete';
 import WaitThenTouchPlayArea from '@/components/training/wait-then-touch/WaitThenTouchPlayArea';
 import WaitThenTouchWelcome from '@/components/training/wait-then-touch/WaitThenTouchWelcome';
+import { useActivityLevelGate } from '@/components/training/useActivityLevelGate';
 import { childFacingStars } from '@/lib/training/followStarEngine';
 import {
   buildWaitThenTouchTrialSpec,
   deriveWaitThenTouchSessionSeed,
   resolveWaitThenTouchRuntimeSettings,
+  waitThenTouchSettingsForLevel,
   type WaitThenTouchTrialOutcome,
 } from '@/lib/training/waitThenTouchEngine';
 import {
@@ -55,6 +57,12 @@ export default function WaitThenTouchActivity() {
   const [resultStars, setResultStars] = useState(1);
   const [sessionSaved, setSessionSaved] = useState(true);
   const [blockReason, setBlockReason] = useState<BlockReason | null>(null);
+  const [activeChildId, setActiveChildId] = useState<string | null>(null);
+  const { level, recordAttempt } = useActivityLevelGate({
+    childId: activeChildId,
+    mediaId: media.mediaId,
+    chapterId: ATTENTION_FOCUS_CHAPTER_ID,
+  });
 
   const welcomeSample = useMemo(() => {
     const config = resolveMediaRuntimeConfig(media);
@@ -78,6 +86,7 @@ export default function WaitThenTouchActivity() {
       return;
     }
 
+    setActiveChildId(begin.childId);
     const bundle = beginWaitThenTouchSession({
       childId: begin.childId,
       chapterId: ATTENTION_FOCUS_CHAPTER_ID,
@@ -117,6 +126,10 @@ export default function WaitThenTouchActivity() {
   const handleTrialComplete = useCallback(
     (outcome: WaitThenTouchTrialOutcome) => {
       if (!session) return;
+      recordAttempt({
+        correct: outcome.correct,
+        promptLevel: outcome.promptLevel,
+      });
 
       let nextSession = commitWaitThenTouchTrial(session, outcome);
 
@@ -144,7 +157,7 @@ export default function WaitThenTouchActivity() {
       nextSession = startWaitThenTouchTrial(nextSession);
       setSession(nextSession);
     },
-    [session]
+    [recordAttempt, session]
   );
 
   const handleDone = useCallback(() => {
@@ -181,7 +194,8 @@ export default function WaitThenTouchActivity() {
 
     return (
       <WaitThenTouchPlayArea
-        settings={sessionBundle.settings}
+        settings={waitThenTouchSettingsForLevel(sessionBundle.settings, level)}
+        level={level}
         trialNumber={trialNumber}
         totalTrials={session.targetTrialCount}
         sessionSeed={sessionSeed}

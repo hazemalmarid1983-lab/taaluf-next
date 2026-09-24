@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import ActivityFocusShell from '@/components/training/ActivityFocusShell';
+import ActivityLevelBadge from '@/components/training/ActivityLevelBadge';
 import FieldPromptRecordBar from '@/components/training/FieldPromptRecordBar';
 import MatchVisual, { matchVisualAriaLabel } from '@/components/training/match-me/MatchVisual';
 import { useActivityFeedback } from '@/components/training/useActivityFeedback';
@@ -25,6 +26,7 @@ type Props = {
   totalTrials: number;
   fieldSeed: number;
   onTrialComplete: (outcome: FindTheTargetTrialOutcome) => void;
+  level?: number;
 };
 
 const REGION_HINT_CLASS: Record<string, string> = {
@@ -45,6 +47,7 @@ export default function FindTheTargetPlayArea({
   totalTrials,
   fieldSeed,
   onTrialComplete,
+  level = 1,
 }: Props) {
   const searchStartedAt = useRef<number | null>(null);
   const completedRef = useRef(false);
@@ -181,7 +184,10 @@ export default function FindTheTargetPlayArea({
       className="relative flex h-full min-h-[100dvh] flex-col bg-gradient-to-b from-[#F3F6FA] via-[#E8EEF5] to-[#DDE5EF]"
       dir="rtl"
     >
-      <div className="flex items-center justify-between px-5 pb-2 pt-5 sm:px-8">
+      <div className="flex justify-center px-5 pt-10">
+        <ActivityLevelBadge level={level} />
+      </div>
+      <div className="flex items-center justify-between px-5 pb-2 pt-3 sm:px-8">
         <div
           className="h-2 flex-1 overflow-hidden rounded-full bg-[#4B5EB8]/10"
           role="progressbar"

@@ -5,10 +5,12 @@ import { useRouter } from 'next/navigation';
 import FindTheTargetComplete from '@/components/training/find-the-target/FindTheTargetComplete';
 import FindTheTargetPlayArea from '@/components/training/find-the-target/FindTheTargetPlayArea';
 import FindTheTargetWelcome from '@/components/training/find-the-target/FindTheTargetWelcome';
+import { useActivityLevelGate } from '@/components/training/useActivityLevelGate';
 import { childFacingStars } from '@/lib/training/followStarEngine';
 import {
   buildFindTheTargetTrialSpec,
   deriveFindTheTargetFieldSeed,
+  findTheTargetSettingsForLevel,
   resolveFindTheTargetRuntimeSettings,
   type FindTheTargetTrialOutcome,
 } from '@/lib/training/findTheTargetEngine';
@@ -55,6 +57,12 @@ export default function FindTheTargetActivity() {
   const [resultStars, setResultStars] = useState(1);
   const [sessionSaved, setSessionSaved] = useState(true);
   const [blockReason, setBlockReason] = useState<BlockReason | null>(null);
+  const [activeChildId, setActiveChildId] = useState<string | null>(null);
+  const { level, recordAttempt } = useActivityLevelGate({
+    childId: activeChildId,
+    mediaId: media.mediaId,
+    chapterId: ATTENTION_FOCUS_CHAPTER_ID,
+  });
 
   const welcomeSample = useMemo(() => {
     const config = resolveMediaRuntimeConfig(media);
@@ -78,6 +86,7 @@ export default function FindTheTargetActivity() {
       return;
     }
 
+    setActiveChildId(begin.childId);
     const bundle = beginFindTheTargetSession({
       childId: begin.childId,
       chapterId: ATTENTION_FOCUS_CHAPTER_ID,
@@ -117,6 +126,10 @@ export default function FindTheTargetActivity() {
   const handleTrialComplete = useCallback(
     (outcome: FindTheTargetTrialOutcome) => {
       if (!session) return;
+      recordAttempt({
+        correct: outcome.correct,
+        promptLevel: outcome.promptLevel,
+      });
 
       let nextSession = commitFindTheTargetTrial(session, outcome);
 
@@ -144,7 +157,7 @@ export default function FindTheTargetActivity() {
       nextSession = startFindTheTargetTrial(nextSession);
       setSession(nextSession);
     },
-    [session]
+    [recordAttempt, session]
   );
 
   const handleDone = useCallback(() => {
@@ -181,7 +194,8 @@ export default function FindTheTargetActivity() {
 
     return (
       <FindTheTargetPlayArea
-        settings={sessionBundle.settings}
+        settings={findTheTargetSettingsForLevel(sessionBundle.settings, level)}
+        level={level}
         trialNumber={trialNumber}
         totalTrials={session.targetTrialCount}
         fieldSeed={fieldSeed}

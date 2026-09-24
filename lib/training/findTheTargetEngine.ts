@@ -262,6 +262,20 @@ export function resolveFindTheTargetRuntimeSettings(
   };
 }
 
+export function findTheTargetSettingsForLevel(
+  settings: FindTheTargetRuntimeSettings,
+  level: number
+): FindTheTargetRuntimeSettings {
+  const searchLevel = clampSearchLevel(level);
+  return {
+    ...settings,
+    searchLevel,
+    itemCount: SEARCH_LEVEL_ITEM_COUNT[searchLevel] ?? 2,
+    choicesOverride: undefined,
+    targetPreviewMs: resolveTargetPreviewMs(searchLevel),
+  };
+}
+
 export function deriveFindTheTargetFieldSeed(sessionId: string): number {
   let hash = 0;
   for (let i = 0; i < sessionId.length; i += 1) {

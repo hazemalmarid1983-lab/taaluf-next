@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import WhereDidItGoComplete from '@/components/training/where-did-it-go/WhereDidItGoComplete';
 import WhereDidItGoPlayArea from '@/components/training/where-did-it-go/WhereDidItGoPlayArea';
 import WhereDidItGoWelcome from '@/components/training/where-did-it-go/WhereDidItGoWelcome';
+import { useActivityLevelGate } from '@/components/training/useActivityLevelGate';
 import { childFacingStars } from '@/lib/training/followStarEngine';
 import {
   ATTENTION_FOCUS_CHAPTER_ID,
@@ -18,6 +19,7 @@ import {
 import {
   buildWhereDidItGoTrialSpec,
   resolveWhereDidItGoRuntimeSettings,
+  whereDidItGoSettingsForLevel,
   type WhereDidItGoTrialOutcome,
 } from '@/lib/training/whereDidItGoEngine';
 import {
@@ -54,6 +56,12 @@ export default function WhereDidItGoActivity() {
   const [resultStars, setResultStars] = useState(1);
   const [sessionSaved, setSessionSaved] = useState(true);
   const [blockReason, setBlockReason] = useState<BlockReason | null>(null);
+  const [activeChildId, setActiveChildId] = useState<string | null>(null);
+  const { level, recordAttempt } = useActivityLevelGate({
+    childId: activeChildId,
+    mediaId: media.mediaId,
+    chapterId: ATTENTION_FOCUS_CHAPTER_ID,
+  });
 
   const welcomeSample = useMemo(() => {
     const config = resolveMediaRuntimeConfig(media);
@@ -69,6 +77,7 @@ export default function WhereDidItGoActivity() {
       return;
     }
 
+    setActiveChildId(begin.childId);
     const bundle = beginWhereDidItGoSession({
       childId: begin.childId,
       chapterId: ATTENTION_FOCUS_CHAPTER_ID,
@@ -108,6 +117,10 @@ export default function WhereDidItGoActivity() {
   const handleTrialComplete = useCallback(
     (outcome: WhereDidItGoTrialOutcome) => {
       if (!session) return;
+      recordAttempt({
+        correct: outcome.correct,
+        promptLevel: outcome.promptLevel,
+      });
 
       let nextSession = commitWhereDidItGoTrial(session, outcome);
 
@@ -135,7 +148,7 @@ export default function WhereDidItGoActivity() {
       nextSession = startWhereDidItGoTrial(nextSession);
       setSession(nextSession);
     },
-    [session]
+    [recordAttempt, session]
   );
 
   const handleDone = useCallback(() => {
@@ -172,7 +185,8 @@ export default function WhereDidItGoActivity() {
 
     return (
       <WhereDidItGoPlayArea
-        settings={sessionBundle.settings}
+        settings={whereDidItGoSettingsForLevel(sessionBundle.settings, level)}
+        level={level}
         trialNumber={trialNumber}
         totalTrials={session.targetTrialCount}
         onTrialComplete={handleTrialComplete}

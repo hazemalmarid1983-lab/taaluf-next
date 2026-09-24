@@ -85,6 +85,11 @@ export function resolveObserverImitationRuntimeSettings(input: {
   };
 }
 
+export function observerModelDurationForLevel(baseMs: number, level: number): number {
+  const step = Math.min(5, Math.max(0, Math.floor(level) - 1));
+  return Math.max(900, Math.round(baseMs * (1 - step * 0.08)));
+}
+
 export function resolveObserverImitationTrialMovement(
   settings: ObserverImitationRuntimeSettings,
   trialNumber: number

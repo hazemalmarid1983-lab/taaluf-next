@@ -177,6 +177,18 @@ export function resolveMatchMeRuntimeSettings(
   };
 }
 
+export function matchMeSettingsForLevel(
+  settings: MatchMeRuntimeSettings,
+  level: number
+): MatchMeRuntimeSettings {
+  const matchLevel = clampMatchLevel(level);
+  return {
+    ...settings,
+    matchLevel,
+    choiceCount: MATCH_LEVEL_CHOICE_COUNT[matchLevel] ?? 2,
+  };
+}
+
 function pickTarget(pool: MatchVisualItem[], trialNumber: number, matchLevel: number): MatchVisualItem {
   const base = pool[seededIndex(trialNumber * 7, pool.length)];
 

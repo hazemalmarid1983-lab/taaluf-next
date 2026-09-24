@@ -91,6 +91,21 @@ export function resolveFollowStarRuntimeSettings(
   };
 }
 
+export function followStarSettingsForLevel(
+  settings: FollowStarRuntimeSettings,
+  level: number
+): FollowStarRuntimeSettings {
+  const step = Math.min(5, Math.max(0, Math.floor(level) - 1));
+  return {
+    ...settings,
+    movementDurationMs: Math.max(
+      800,
+      Math.round(settings.movementDurationMs * (1 - step * 0.1))
+    ),
+    hitRadiusPercent: Math.max(8, settings.hitRadiusPercent - step * 0.8),
+  };
+}
+
 function seededIndex(seed: number, max: number): number {
   if (max <= 0) return 0;
   const x = Math.sin(seed * 12.9898 + 78.233) * 43758.5453;

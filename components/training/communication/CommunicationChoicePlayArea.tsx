@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import PromptRecordingBar from '@/components/classroom/PromptRecordingBar';
 import ActivityFocusShell from '@/components/training/ActivityFocusShell';
+import ActivityLevelBadge from '@/components/training/ActivityLevelBadge';
 import CommPictogramVisual, {
   commPictogramAriaLabel,
 } from '@/components/training/communication/CommPictogramVisual';
@@ -26,6 +27,7 @@ type Props = {
   onTrialComplete: (outcome: CommTrialOutcome) => void;
   /** حجم بطاقات الخيارات (افتراضي: 88 شبكة / 110 مشهد) */
   choiceSizePx?: number;
+  level?: number;
 };
 
 type TrialPhase = 'choosing' | 'feedback';
@@ -37,6 +39,7 @@ export default function CommunicationChoicePlayArea({
   totalTrials,
   onTrialComplete,
   choiceSizePx,
+  level = 1,
 }: Props) {
   const trialStartedAt = useRef(Date.now());
   const completedRef = useRef(false);
@@ -166,6 +169,9 @@ export default function CommunicationChoicePlayArea({
       dir="rtl"
     >
       <div className="mx-auto flex w-full max-w-lg flex-1 flex-col">
+        <div className="mb-2 flex justify-center pt-8">
+          <ActivityLevelBadge level={level} />
+        </div>
         <p className="text-center text-xs text-slate-500">
           {trialNumber} / {totalTrials}
         </p>
