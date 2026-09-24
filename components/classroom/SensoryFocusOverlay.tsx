@@ -53,7 +53,7 @@ export default function SensoryFocusOverlay({
   return (
     <div
       data-sensory-focus
-      className="fixed inset-0 z-[9999] flex flex-col bg-gradient-to-b from-[#e4f2f7] via-[#dcecf4] to-[#d2e6f0]"
+      className="fixed inset-0 z-[9999] flex flex-col overflow-hidden bg-gradient-to-b from-[#e4f2f7] via-[#dcecf4] to-[#d2e6f0]"
       role="dialog"
       aria-modal="true"
       aria-label={
@@ -62,7 +62,7 @@ export default function SensoryFocusOverlay({
     >
       <ParentExitLock onExit={onExit} isAr={isAr} />
 
-      <div className="flex flex-1 flex-col items-center justify-center gap-8 px-6 pb-10 pt-16">
+      <div className="flex min-h-0 flex-1 flex-col items-center justify-center gap-4 overflow-hidden px-3 pb-4 pt-14 sm:px-6">
         <TrialProgressDots completed={trialsDone} isAr={isAr} />
 
         <div className="max-w-lg space-y-2 text-center">
@@ -74,16 +74,21 @@ export default function SensoryFocusOverlay({
           </p>
         </div>
 
-        <div className="flex w-full max-w-md flex-col items-center gap-6">
+        <div className="flex min-h-0 w-full max-w-3xl flex-col items-center gap-3">
           {goal.toolType !== 'receptive_discrimination' && (
             <button
               type="button"
               onClick={onSpeakTarget}
               disabled={!soundOn}
-              className="flex h-[min(300px,40vh)] w-[min(340px,72vw)] items-center justify-center rounded-[2rem] border-2 border-white/80 bg-white/80 shadow-[0_18px_40px_rgba(14,116,144,0.16)] backdrop-blur-md transition active:scale-95 disabled:cursor-default"
+              className="flex h-[min(240px,32vh)] w-[min(300px,68vw)] shrink-0 items-center justify-center rounded-[2rem] border-2 border-white/80 bg-white/80 shadow-[0_18px_40px_rgba(14,116,144,0.16)] backdrop-blur-md transition active:scale-95 disabled:cursor-default"
               aria-label={targetName}
             >
-              <RealisticItemVisual symbol={target.imageUrl} size={200} label={targetName} />
+              <RealisticItemVisual
+                symbol={target.imageUrl}
+                size={180}
+                label={targetName}
+                className="[&_svg]:h-[min(168px,26vh)] [&_svg]:w-auto"
+              />
             </button>
           )}
 
@@ -109,20 +114,21 @@ export default function SensoryFocusOverlay({
               {isAr ? targetName : targetName}
             </p>
           ) : (
-            <div className="flex flex-wrap items-center justify-center gap-4">
+            <div className="grid w-full max-w-xl grid-cols-3 gap-2 sm:gap-3">
               {choices.map((item) => (
                 <button
                   key={item.id}
                   type="button"
                   onClick={() => onChoiceTap(item)}
                   disabled={inputLocked}
-                  className={`flex h-32 w-32 items-center justify-center rounded-3xl border-2 transition active:scale-95 disabled:pointer-events-none sm:h-36 sm:w-36 ${tapTone(item.id)}`}
+                  className={`flex aspect-square w-full min-w-0 items-center justify-center rounded-2xl border-2 p-1.5 transition active:scale-95 disabled:pointer-events-none sm:rounded-3xl sm:p-2 ${tapTone(item.id)}`}
                   aria-label={isAr ? item.nameAr : item.nameEn}
                 >
                   <RealisticItemVisual
                     symbol={item.imageUrl}
-                    size={96}
+                    size={120}
                     label={isAr ? item.nameAr : item.nameEn}
+                    className="h-full w-full [&_svg]:h-[78%] [&_svg]:w-auto [&_svg]:max-w-[88%]"
                   />
                 </button>
               ))}

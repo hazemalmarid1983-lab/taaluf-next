@@ -1196,7 +1196,7 @@ export default function HomeClassroomPage() {
 
             {/* الوسيلة الرقمية + رصد مستوى المساعدة */}
             <div className="space-y-5 lg:col-span-7">
-              <div className="flex min-h-[300px] flex-col items-center justify-center gap-6 rounded-3xl border border-white/90 bg-white/85 p-6 text-center shadow-xl backdrop-blur-xl sm:p-8">
+              <div className="flex flex-col items-center justify-center gap-3 rounded-3xl border border-white/90 bg-white/85 p-4 text-center shadow-xl backdrop-blur-xl sm:p-5">
                 <span className="rounded-full border border-[#2E7D8E]/20 bg-[#2E7D8E]/10 px-4 py-1.5 text-xs font-bold text-[#2E7D8E]">
                   {isAr ? goal.targetSkill : goal.targetSkillEn}
                 </span>
@@ -1210,9 +1210,9 @@ export default function HomeClassroomPage() {
                       title={
                         isAr ? 'اسمعي نطق الكلمة' : 'Hear the word pronounced'
                       }
-                      className="mx-auto flex h-[min(300px,42vh)] w-[min(340px,78vw)] items-center justify-center rounded-[2rem] border-2 border-slate-200 bg-gradient-to-b from-white to-slate-100 shadow-[0_18px_40px_rgba(15,23,42,0.12)] transition hover:border-[#2E7D8E]/40 active:scale-95 disabled:cursor-default"
+                      className="mx-auto flex h-[min(240px,32vh)] w-[min(320px,100%)] items-center justify-center rounded-[2rem] border-2 border-slate-200 bg-gradient-to-b from-white to-slate-100 shadow-[0_18px_40px_rgba(15,23,42,0.12)] transition hover:border-[#2E7D8E]/40 active:scale-95 disabled:cursor-default"
                     >
-                      <RealisticItemVisual symbol={target.imageUrl} size={220} label={targetName} />
+                      <RealisticItemVisual symbol={target.imageUrl} size={180} label={targetName} className="[&_svg]:h-[min(180px,26vh)] [&_svg]:w-auto" />
                     </button>
                     <h3 className="pt-2 text-2xl font-black text-[#0b1f14]">
                       {targetName}
@@ -1268,20 +1268,21 @@ export default function HomeClassroomPage() {
                           ? 'اجعلي الطفل يلمس العنصر الذي سمّيتِه'
                           : 'Let the child tap the item you named'}
                     </p>
-                    <div className="flex flex-wrap items-center justify-center gap-3">
+                    <div className="grid w-full grid-cols-3 gap-2 sm:gap-3">
                       {choices.map((item) => (
                         <button
                           key={item.id}
                           type="button"
                           onClick={() => handleChoiceTap(item)}
                           disabled={awaitingPrompt}
-                          className={`flex h-36 w-36 items-center justify-center rounded-3xl border-2 transition hover:scale-105 active:scale-95 disabled:pointer-events-none sm:h-40 sm:w-40 ${tapTone(item.id)}`}
+                          className={`flex aspect-square w-full min-w-0 items-center justify-center rounded-2xl border-2 p-1.5 transition hover:scale-[1.03] active:scale-95 disabled:pointer-events-none sm:rounded-3xl sm:p-2 ${tapTone(item.id)}`}
                           aria-label={isAr ? item.nameAr : item.nameEn}
                         >
                           <RealisticItemVisual
                             symbol={item.imageUrl}
-                            size={112}
+                            size={120}
                             label={isAr ? item.nameAr : item.nameEn}
+                            className="h-full w-full [&_svg]:h-[78%] [&_svg]:w-auto [&_svg]:max-w-[88%]"
                           />
                         </button>
                       ))}

@@ -22,13 +22,31 @@ const OBJECTS: Record<string, (size: number, uid: string) => ReactElement> = {
   ),
   '🍌': (s, uid) => (
     <svg width={s} height={s} viewBox="0 0 120 120" aria-hidden>
-      <ellipse cx="62" cy="100" rx="26" ry="7" fill="#0f172a" opacity="0.16" />
-      <path d="M28 78c8-28 28-48 58-46 6 18-8 40-28 52-16 10-28 8-30-6z" fill={`url(#${uid}-banana)`} />
+      <ellipse cx="68" cy="108" rx="32" ry="6" fill="#0f172a" opacity="0.16" />
+      <path
+        d="M86 22C116 46 102 84 44 102"
+        fill="none"
+        stroke={`url(#${uid}-banana)`}
+        strokeWidth="34"
+        strokeLinecap="round"
+      />
+      <path
+        d="M80 28C104 46 94 76 52 92"
+        fill="none"
+        stroke="#fffbeb"
+        strokeWidth="7"
+        strokeLinecap="round"
+        opacity="0.4"
+      />
+      <path d="M76 28c1-16 16-22 24-12-8 2-16 8-18 18-2-2-4-4-6-6z" fill="#3f6212" />
+      <path d="M96 14c5-1 9 4 6 8-5 1-9-3-6-8z" fill="#854d0e" />
+      <ellipse cx="42" cy="102" rx="9" ry="6" fill="#7c2d12" transform="rotate(-28 42 102)" />
       <defs>
-        <linearGradient id={`${uid}-banana`} x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#fef08a" />
-          <stop offset="55%" stopColor="#facc15" />
-          <stop offset="100%" stopColor="#ca8a04" />
+        <linearGradient id={`${uid}-banana`} x1="86" y1="22" x2="44" y2="102" gradientUnits="userSpaceOnUse">
+          <stop offset="0%" stopColor="#bef264" />
+          <stop offset="14%" stopColor="#fef08a" />
+          <stop offset="48%" stopColor="#facc15" />
+          <stop offset="100%" stopColor="#d97706" />
         </linearGradient>
       </defs>
     </svg>
@@ -172,10 +190,12 @@ export default function RealisticItemVisual({
   symbol,
   size = 160,
   label,
+  className = '',
 }: {
   symbol: string;
   size?: number;
   label?: string;
+  className?: string;
 }) {
   const uid = useId().replace(/:/g, '');
   const draw = OBJECTS[symbol];
@@ -187,7 +207,7 @@ export default function RealisticItemVisual({
     );
   }
   return (
-    <span className="inline-flex items-center justify-center" role="img" aria-label={label ?? symbol}>
+    <span className={`inline-flex items-center justify-center ${className}`} role="img" aria-label={label ?? symbol}>
       {draw(size, uid)}
     </span>
   );
