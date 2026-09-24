@@ -68,7 +68,7 @@ function CallbackInner() {
         <p className="mt-3 text-sm leading-7 text-slate-600">{msg}</p>
         {status === 'fail' && (
           <div className="mt-6 flex flex-col gap-2">
-            <Link href="/parent/pay-assessment">
+            <Link href="/pricing">
               <Button className="w-full">إعادة المحاولة</Button>
             </Link>
             <Link href="/parent">

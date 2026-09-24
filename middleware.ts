@@ -102,7 +102,7 @@ export default withAuth(
           path.startsWith('/parent/assess')) &&
         !canAccessAssessment(entitlements)
       ) {
-        return NextResponse.redirect(new URL('/parent/pay-assessment', req.url));
+        return NextResponse.redirect(new URL('/pricing', req.url));
       }
     }
 
@@ -148,7 +148,7 @@ export default withAuth(
         paidParentPath &&
         !canAccessAssessment(entitlements)
       ) {
-        return NextResponse.redirect(new URL('/parent/pay-assessment', req.url));
+        return NextResponse.redirect(new URL('/pricing', req.url));
       }
       if (role === 'admin') {
         // الإدارة تصل للوحة المختص للاطلاع

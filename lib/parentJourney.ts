@@ -18,7 +18,7 @@ export const PARENT_ROUTES = {
   academicAssessment: '/dashboard/academic-assessment',
   academicCard: '/dashboard/academic-card',
   results: '/dashboard/results',
-  pay: '/parent/pay-assessment',
+  pay: '/pricing',
   followUp: '/parent/follow-up',
   questionnaire: '/dashboard/parent-assessment',
   games: '/dashboard/games',

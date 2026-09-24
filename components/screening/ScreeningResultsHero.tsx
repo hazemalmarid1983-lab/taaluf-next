@@ -8,7 +8,7 @@ import {
   canonicalScreeningDomainLabel,
   getImmediateScreeningTip,
 } from '@/lib/screeningEngine';
-import { PARENT_ROUTES } from '@/lib/parentJourney';
+import { PRICING_PATH } from '@/lib/subscriptionTiers';
 import PdfExportButton from '@/components/reports/PdfExportButton';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -141,10 +141,10 @@ export default function ScreeningResultsHero({
       <div className="rounded-2xl border border-gray-100 bg-white p-6 text-center print:hidden">
         <h2 className="text-lg font-bold text-[#1F2A37]">النتيجة الأولية فقط</h2>
         <p className="mt-2 text-sm leading-6 text-slate-600">
-          هذه نتيجة الفرز المجاني. الخطوة التالية هي تسجيل الطفل رسمياً لفتح غرفته.
+          هذه نتيجة الفرز المجاني. الخطوة التالية هي اختيار الباقة ثم تسجيل الطفل.
         </p>
-        <Link href={PARENT_ROUTES.register} className="mt-4 block">
-          <Button className="h-12 w-full font-bold">تسجيل الطفل رسمياً</Button>
+        <Link href={`${PRICING_PATH}?from=screening`} className="mt-4 block">
+          <Button className="h-12 w-full font-bold">متابعة اختيار الباقة</Button>
         </Link>
         <div className="mt-4 flex flex-wrap justify-center gap-4 text-xs text-slate-400">
           {onRetake ? (

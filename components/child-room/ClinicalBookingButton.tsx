@@ -1,8 +1,14 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import Link from 'next/link';
 import { getAvailableSlots, type BookingSlot } from '@/lib/booking';
 import type { ClinicalBookingRequest } from '@/lib/childRoom/clinicalBookings';
+import {
+  PRICING_PATH,
+  readSelectedTier,
+  tierAllowsClinicalBooking,
+} from '@/lib/subscriptionTiers';
 
 export default function ClinicalBookingButton({
   childId,
@@ -17,9 +23,13 @@ export default function ClinicalBookingButton({
   const [bookings, setBookings] = useState<ClinicalBookingRequest[]>([]);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
+  const [clinical, setClinical] = useState(false);
+  const [ready, setReady] = useState(false);
 
   useEffect(() => {
     setSlots(getAvailableSlots());
+    setClinical(tierAllowsClinicalBooking(readSelectedTier()));
+    setReady(true);
   }, []);
 
   useEffect(() => {
@@ -61,6 +71,22 @@ export default function ClinicalBookingButton({
     setBookings((current) => [data.booking as ClinicalBookingRequest, ...current]);
     setSelected('');
   };
+
+  if (!ready) return null;
+
+  if (!clinical) {
+    return (
+      <div className="mx-auto mt-4 max-w-lg rounded-2xl border border-slate-200 bg-white p-4 text-right">
+        <p className="text-sm font-bold text-slate-900">حجز المختص السريري</p>
+        <p className="mt-1 text-xs leading-5 text-slate-500">
+          حجز الموعد والمتابعة المباشرة ضمن باقة الإشراف السريري.
+        </p>
+        <Link href={PRICING_PATH} className="mt-3 inline-block text-sm font-bold text-[#2E7D8E] underline">
+          عرض الباقة المتقدمة
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto mt-4 max-w-lg">

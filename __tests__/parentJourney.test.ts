@@ -59,7 +59,7 @@ describe('resolveParentNextStep', () => {
         hasGames: false,
         hasReport: false,
       }).href
-    ).toBe('/parent/pay-assessment');
+    ).toBe('/pricing');
 
     expect(
       resolveParentNextStep({
