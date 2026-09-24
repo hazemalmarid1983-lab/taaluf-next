@@ -128,6 +128,7 @@ export default withAuth(
         path.startsWith('/dashboard/home-classroom') ||
         path.startsWith('/dashboard/tools-bank') ||
         path.startsWith('/dashboard/messages') ||
+        path.startsWith('/dashboard/community') ||
         path.startsWith('/dashboard/goals') ||
         path.startsWith('/dashboard/parent');
 

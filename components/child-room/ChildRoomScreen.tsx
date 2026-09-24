@@ -1,6 +1,8 @@
 'use client';
 
 import { useEffect } from 'react';
+import ClinicalBookingButton from '@/components/child-room/ClinicalBookingButton';
+import RoomConversation from '@/components/child-room/RoomConversation';
 import TeacherCorner from '@/components/child-room/TeacherCorner';
 import TrainingActiveChildHeader from '@/components/training/TrainingActiveChildHeader';
 import TrainingPlanEntry from '@/components/training/TrainingPlanEntry';
@@ -38,7 +40,11 @@ export default function ChildRoomScreen() {
         التمرين التالي. إكمال الجلسة الرقمية لا يعني إتقان المعيار.
       </p>
       <TrainingPlanEntry />
+      {profile?.id ? (
+        <ClinicalBookingButton childId={profile.id} childName={profile.name} />
+      ) : null}
       <TrainingSessionResultsList />
+      {profile?.id ? <RoomConversation childId={profile.id} /> : null}
       {profile?.id ? <TeacherCorner childId={profile.id} /> : null}
     </div>
   );

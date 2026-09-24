@@ -80,6 +80,12 @@ export default function SpecialistShellNav({
           {t('toolsBank')}
         </Link>
         <Link
+          href="/dashboard/community"
+          className="rounded-xl px-3 py-2 text-slate-600 transition hover:bg-white hover:text-[#2E7D8E]"
+        >
+          {t('community')}
+        </Link>
+        <Link
           href="/dashboard/messages"
           className="rounded-xl px-3 py-2 text-slate-600 transition hover:bg-white hover:text-[#2E7D8E]"
         >

@@ -29,7 +29,7 @@ export const PARENT_ROUTES = {
   booking: '/parent/booking',
   messages: '/dashboard/messages',
   goals: '/dashboard/goals',
-  community: '/parent/community',
+  community: '/dashboard/community',
 } as const;
 
 /** مسارات مسار صعوبات التعلم (وزارة التربية) */
