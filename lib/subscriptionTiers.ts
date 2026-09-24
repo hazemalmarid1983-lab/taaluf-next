@@ -8,7 +8,7 @@ import { TAALUF_PRICING } from '@/lib/pricingConfig';
 
 export const SUBSCRIPTION_STORAGE_KEY = 'taaluf.subscription.v1';
 export const PRICING_PATH = '/pricing';
-export const CHILD_ROOM_CTA = 'تسجيل الطفل وتفعيل المسار المفتوح';
+export const CHILD_ROOM_CTA = 'تفعيل المسار التجريبي المفتوح';
 
 export type SubscriptionTierId = 'free_screening' | 'child_room' | 'clinical';
 

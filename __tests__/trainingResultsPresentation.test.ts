@@ -93,8 +93,8 @@ describe('trainingResultsPresentation', () => {
     const session = completedSession();
     const entries = promptBreakdownEntries(resolveSessionMetrics(session));
     expect(entries.some((e) => e.level === 'no_response')).toBe(true);
-    expect(promptLevelLabelAr('no_response')).toBe('لم يستجب');
-    expect(promptLevelLabelAr('gestural')).toBe('إيمائي');
+    expect(promptLevelLabelAr('no_response')).toBe('عدم استجابة');
+    expect(promptLevelLabelAr('gestural')).toBe('مساعدة بالإيماءة');
   });
 
   it('parses training goal session notes', () => {

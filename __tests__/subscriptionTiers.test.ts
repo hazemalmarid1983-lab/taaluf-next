@@ -16,7 +16,7 @@ describe('parent subscription tiers', () => {
   });
 
   it('uses the open-path label on both paid plans', () => {
-    expect(CHILD_ROOM_CTA).toBe('تسجيل الطفل وتفعيل المسار المفتوح');
+    expect(CHILD_ROOM_CTA).toBe('تفعيل المسار التجريبي المفتوح');
     expect(subscriptionTierById('child_room')?.cta).toBe(CHILD_ROOM_CTA);
     expect(subscriptionTierById('clinical')?.cta).toBe(CHILD_ROOM_CTA);
     expect(subscriptionTierById('child_room')?.features.join(' ')).toMatch(/التقييمات الأربعة/);
