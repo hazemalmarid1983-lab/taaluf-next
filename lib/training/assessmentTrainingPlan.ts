@@ -16,6 +16,8 @@ import {
 } from '@/lib/childRoom/gate';
 import {
   buildActiveTargetedGoals,
+  GOAL_CHAIN_MAX,
+  GOAL_CHAIN_MIN,
   type TrackedGoal,
 } from '@/lib/goalsEngine';
 import { loadGoalsLocal, saveGoalsLocal } from '@/lib/goalsStore';
@@ -23,8 +25,10 @@ import { createTrainingPlan } from '@/lib/training/createPlan';
 import { filterObserverImitationTargetSkillIds } from '@/lib/training/c15SkillClassification';
 import {
   ATTENTION_FOCUS_CHAPTER_ID,
+  COMMUNICATION_LANGUAGE_CHAPTER_ID,
   listTrainingChapterIds,
   loadChapterById,
+  MOTOR_SOCIAL_IMITATION_CHAPTER_ID,
 } from '@/lib/training/loadChapter';
 import { OBSERVER_IMITATION_MEDIA_ID } from '@/lib/training/observerImitationEngine';
 import {
@@ -39,7 +43,13 @@ import type { TrainingPlan } from '@/lib/training/types';
 export const ASSESSMENT_TRAINING_PLAN_PREFIX = 'training_plan_assessment_';
 
 const PARENT_ASSESSMENT_KEY = 'taaluf.parentAssessment.v1';
-const MAX_PREPARED_ACTIVITIES = 5;
+const MAX_PREPARED_ACTIVITIES = GOAL_CHAIN_MAX;
+
+const CHAIN_CHAPTERS = [
+  ATTENTION_FOCUS_CHAPTER_ID,
+  COMMUNICATION_LANGUAGE_CHAPTER_ID,
+  MOTOR_SOCIAL_IMITATION_CHAPTER_ID,
+] as const;
 
 const STARTER_MEDIA = [
   'follow-star',
@@ -103,7 +113,7 @@ export function hasCompletedAssessmentForTraining(childId: string): boolean {
 
 function ensureGoals(childId: string): TrackedGoal[] {
   const existing = loadGoalsLocal(childId);
-  if (existing.length > 0) return existing;
+  if (existing.length >= GOAL_CHAIN_MIN) return existing.slice(0, GOAL_CHAIN_MAX);
   const created = buildActiveTargetedGoals({
     childId,
     parentScores: collectMergedAssessmentScores(childId),
@@ -111,9 +121,15 @@ function ensureGoals(childId: string): TrackedGoal[] {
     screeningDomains: screeningDomainNeeds(childId),
     childResponseNeed: childResponseNeed(childId),
   });
-  if (created.length === 0) return [];
-  saveGoalsLocal([...created, ...loadGoalsLocal()]);
-  return created;
+  const have = new Set(existing.map((goal) => goal.criterionId));
+  const chain = [...existing, ...created.filter((goal) => !have.has(goal.criterionId))].slice(
+    0,
+    GOAL_CHAIN_MAX
+  );
+  if (chain.length === 0) return [];
+  const others = loadGoalsLocal().filter((goal) => goal.childId !== childId);
+  saveGoalsLocal([...chain, ...others]);
+  return chain;
 }
 
 function pickChapterActivities(goals: TrackedGoal[]): {
@@ -167,9 +183,9 @@ function pickChapterActivities(goals: TrackedGoal[]): {
   const bucket = buckets.get(chosenId);
   if (!bucket) return null;
   const chapter = loadChapterById(chosenId);
-  const mediaIds = chapter.chapter.orderedMedia
-    .filter((mediaId) => bucket.media.has(mediaId))
-    .slice(0, MAX_PREPARED_ACTIVITIES);
+  const matched = chapter.chapter.orderedMedia.filter((mediaId) => bucket.media.has(mediaId));
+  const rest = chapter.chapter.orderedMedia.filter((mediaId) => !bucket.media.has(mediaId));
+  const mediaIds = [...matched, ...rest].slice(0, MAX_PREPARED_ACTIVITIES);
   if (mediaIds.length === 0) return null;
 
   const skillIdsByMedia: Record<string, string[]> = {};
@@ -232,7 +248,7 @@ export function ensureActiveTrainingPlanFromAssessment(
 
   try {
     const active = getActiveTrainingPlan(childId);
-    if (active) return active;
+    if (active) return lengthenShortAssessmentPlan(active);
   } catch (error) {
     if (
       error instanceof Error &&
@@ -258,4 +274,73 @@ export function ensureActiveTrainingPlanFromAssessment(
   }
 
   return saveTrainingPlan(buildPreparedPlan(childId));
+}
+
+function lengthenShortAssessmentPlan(plan: TrainingPlan): TrainingPlan {
+  if (!isAssessmentPreparedPlan(plan) || plan.status !== 'active') return plan;
+  if (plan.assignments.length >= GOAL_CHAIN_MIN) return plan;
+  const ordered = loadChapterById(plan.chapterId).chapter.orderedMedia;
+  const have = new Set(plan.assignments.map((item) => item.mediaId));
+  const extra = ordered.filter((mediaId) => !have.has(mediaId));
+  if (extra.length === 0) return plan;
+  const assignments = [...plan.assignments];
+  let order = Math.max(...assignments.map((item) => item.order));
+  for (const mediaId of extra) {
+    if (assignments.length >= GOAL_CHAIN_MAX) break;
+    order += 1;
+    assignments.push({
+      mediaId,
+      difficulty: 1,
+      order,
+      goalIds: plan.goalIds,
+    });
+  }
+  return saveTrainingPlan({ ...plan, assignments });
+}
+
+function nextUnusedChainSlice(childId: string): { chapterId: string; mediaIds: string[] } | null {
+  const used = new Set(
+    listTrainingPlans(childId).flatMap((plan) => plan.assignments.map((item) => item.mediaId))
+  );
+  for (const chapterId of CHAIN_CHAPTERS) {
+    const mediaIds = loadChapterById(chapterId)
+      .chapter.orderedMedia.filter((mediaId) => !used.has(mediaId))
+      .slice(0, GOAL_CHAIN_MAX);
+    if (mediaIds.length > 0) return { chapterId, mediaIds };
+  }
+  return null;
+}
+
+export function hasRemainingPreparedMedia(childId: string): boolean {
+  return Boolean(childId && nextUnusedChainSlice(childId));
+}
+
+/** يفتح الشريحة التالية من السلسلة بعد جلسة يومية، دون كتابة هدف يدوي. */
+export function continuePreparedGoalChain(childId: string): TrainingPlan | null {
+  if (!childId) return null;
+  try {
+    const active = getActiveTrainingPlan(childId);
+    if (active) return active;
+  } catch {
+    return null;
+  }
+  const slice = nextUnusedChainSlice(childId);
+  if (!slice) return null;
+  const goals = ensureGoals(childId);
+  const goalIds = goals.map((goal) => goal.id);
+  return saveTrainingPlan(
+    createTrainingPlan({
+      id: `${ASSESSMENT_TRAINING_PLAN_PREFIX}${childId}_${Date.now().toString(36)}`,
+      childId,
+      chapterId: slice.chapterId,
+      goalIds,
+      status: 'active',
+      assignments: slice.mediaIds.map((mediaId, index) => ({
+        mediaId,
+        difficulty: 1 as const,
+        order: index + 1,
+        goalIds,
+      })),
+    })
+  );
 }

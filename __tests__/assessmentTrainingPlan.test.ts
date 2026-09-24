@@ -1,7 +1,9 @@
 import { persistLocalAssessment } from '../lib/assessmentHelpers';
 import {
+  continuePreparedGoalChain,
   ensureActiveTrainingPlanFromAssessment,
   hasCompletedAssessmentForTraining,
+  hasRemainingPreparedMedia,
 } from '../lib/training/assessmentTrainingPlan';
 import {
   clearAllTrainingStorage,
@@ -106,6 +108,7 @@ describe('ensureActiveTrainingPlanFromAssessment', () => {
     const plan = ensureActiveTrainingPlanFromAssessment('child_1');
     expect(plan?.status).toBe('active');
     expect(plan?.chapterId).toBe('attention-focus');
+    expect(plan?.assignments.length).toBeGreaterThanOrEqual(5);
     expect(plan?.assignments[0]?.mediaId).toBe('follow-star');
 
     const again = ensureActiveTrainingPlanFromAssessment('child_1');
@@ -137,5 +140,54 @@ describe('ensureActiveTrainingPlanFromAssessment', () => {
     saveTrainingPlan({ ...active, status: 'completed', cursor: { nextOrder: 2 } });
     expect(ensureActiveTrainingPlanFromAssessment('child_1')).toBeNull();
     expect(getActiveTrainingPlan('child_1')).toBeNull();
+  });
+
+  it('opens the next prepared slice after a short plan is marked complete', () => {
+    localStorage.setItem(
+      'taaluf.screening.v1',
+      JSON.stringify({
+        childId: 'child_1',
+        answers: [{ id: 'S1', value: 2 }],
+        result: { domainScores: [{ label_ar: 'النمو المعرفي والحلول الإدراكية', scorePercent: 70 }] },
+      })
+    );
+    localStorage.setItem(
+      'taaluf.parentAssessment.v1',
+      JSON.stringify([
+        {
+          childId: 'child_1',
+          answers: [{ id: 'P1', value: 2 }],
+          mappedScores: [{ criterionId: 'C25', score: 2 }],
+        },
+      ])
+    );
+    localStorage.setItem(
+      'taaluf.childRoom.teacherForms.v1',
+      JSON.stringify([
+        {
+          childId: 'child_1',
+          filler: 'teacher',
+          scores: [{ criterionId: 'C25', score: 2 }],
+          savedAt: new Date().toISOString(),
+        },
+      ])
+    );
+    localStorage.setItem(
+      'taaluf.gameSessions.v1',
+      JSON.stringify([{ childId: 'child_1', score: 1 }])
+    );
+
+    const first = ensureActiveTrainingPlanFromAssessment('child_1');
+    expect(first).not.toBeNull();
+    saveTrainingPlan({
+      ...first!,
+      status: 'completed',
+      cursor: { nextOrder: first!.assignments.length + 1 },
+    });
+    expect(hasRemainingPreparedMedia('child_1')).toBe(true);
+    const next = continuePreparedGoalChain('child_1');
+    expect(next?.status).toBe('active');
+    expect(next?.chapterId).not.toBe(first?.chapterId);
+    expect(next?.assignments.length).toBeGreaterThan(0);
   });
 });

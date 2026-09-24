@@ -7,7 +7,9 @@ import ActiveChildTrainingPrompt from '@/components/training/ActiveChildTraining
 import type { RoomCustomActivity } from '@/lib/childRoom/customActivityStore';
 import { listRoomSources, saveTeacherForm } from '@/lib/childRoom/gate';
 import {
+  continuePreparedGoalChain,
   ensureActiveTrainingPlanFromAssessment,
+  hasRemainingPreparedMedia,
   isAssessmentPreparedPlan,
 } from '@/lib/training/assessmentTrainingPlan';
 import { findMediaInChapter, loadChapterById } from '@/lib/training/loadChapter';
@@ -169,6 +171,15 @@ export default function TrainingPlanEntry() {
     }
   }, [refreshEntry, startExecution]);
 
+  const handleContinueChain = useCallback(() => {
+    if (!childId) return;
+    continuePreparedGoalChain(childId);
+    const next = refreshEntry();
+    if (next.kind === 'ready') {
+      startExecution(next.execution);
+    }
+  }, [childId, refreshEntry, startExecution]);
+
   if (!childId) {
     return (
       <div className="mx-auto max-w-lg">
@@ -275,15 +286,21 @@ export default function TrainingPlanEntry() {
       <div className="mx-auto max-w-lg space-y-4">
         {notice}
         <div className="rounded-2xl bg-emerald-50 p-8 text-center shadow-sm">
-          <p className="text-2xl" aria-hidden>
-            🎉
-          </p>
           <p className="mt-3 text-lg font-semibold text-emerald-900">
-            أحسنت! أنهيت خطة التدريب
+            أحسنت! أتممت الجلسة اليومية
           </p>
           <p className="mt-2 text-sm text-emerald-800">
-            يمكنك العودة لاحقاً عندما تكون هناك خطة جديدة.
+            إكمال الجلسة الرقمية لا يعني إتقان المعيار. الهدف التالي جاهز في السلسلة.
           </p>
+          {hasRemainingPreparedMedia(childId) ? (
+            <button
+              type="button"
+              onClick={handleContinueChain}
+              className="mt-6 w-full rounded-xl bg-[#2E7D8E] px-6 py-3 text-base font-semibold text-white"
+            >
+              متابعة الأهداف التالية في الخطة ➔
+            </button>
+          ) : null}
         </div>
       </div>
     );

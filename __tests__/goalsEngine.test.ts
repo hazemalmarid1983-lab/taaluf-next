@@ -1,10 +1,14 @@
 import {
   DEFAULT_GOAL_WHY,
+  GOAL_CHAIN_MAX,
+  GOAL_CHAIN_MIN,
   ageBandForRoutineGoals,
   analysisFocusSentence,
+  buildActiveTargetedGoals,
   buildProposedGoals,
   buildRoutineEnhancementGoals,
   goalWhyFromCriterion,
+  selectGradedSupportScores,
 } from '../lib/goalsEngine';
 import { shortRadarDomainLabel } from '../lib/radarLabels';
 
@@ -38,6 +42,34 @@ describe('goal why text', () => {
     for (const g of goals) {
       expect(g.why.trim().length).toBeGreaterThan(10);
     }
+  });
+});
+
+describe('graded four-source goal chain', () => {
+  it('builds at least five goals across domains when only two scores are high', () => {
+    const selected = selectGradedSupportScores([
+      { criterionId: 'C1', score: 3 },
+      { criterionId: 'C25', score: 3 },
+    ]);
+    expect(selected.length).toBeGreaterThanOrEqual(GOAL_CHAIN_MIN);
+    expect(selected.length).toBeLessThanOrEqual(GOAL_CHAIN_MAX);
+    expect(selected.map((row) => row.criterionId)).toEqual(
+      expect.arrayContaining(['C1', 'C25'])
+    );
+
+    const goals = buildActiveTargetedGoals({
+      childId: 'child_chain',
+      parentScores: [
+        { criterionId: 'C1', score: 3 },
+        { criterionId: 'C25', score: 3 },
+      ],
+      teacherScores: [],
+      screeningDomains: [],
+      childResponseNeed: null,
+    });
+    expect(goals.length).toBeGreaterThanOrEqual(GOAL_CHAIN_MIN);
+    expect(goals.length).toBeLessThanOrEqual(GOAL_CHAIN_MAX);
+    expect(new Set(goals.map((goal) => goal.domain)).size).toBeGreaterThan(1);
   });
 });
 

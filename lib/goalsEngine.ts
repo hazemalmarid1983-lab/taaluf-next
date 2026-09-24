@@ -275,6 +275,9 @@ export function createTrackedGoalsFromScores(
   });
 }
 
+export const GOAL_CHAIN_MIN = 5;
+export const GOAL_CHAIN_MAX = 8;
+
 export type FourSourceGoalInput = {
   childId: string;
   parentScores: AssessmentScore[];
@@ -282,6 +285,71 @@ export type FourSourceGoalInput = {
   screeningDomains: Array<{ domain: string; score: number }>;
   childResponseNeed: number | null;
 };
+
+/**
+ * سلسلة متدرجة: الأعلى حاجة أولاً، ثم التناوب بين المحاور النمائية الأربعة.
+ * إن قلّت البنود المقاسة عن خمسة، تُكمل السلسلة ببنود متابعة من البنك نفسه.
+ * هذه أهداف تدريب، وليست حكم إتقان.
+ */
+export function selectGradedSupportScores(
+  scores: AssessmentScore[],
+  min = GOAL_CHAIN_MIN,
+  max = GOAL_CHAIN_MAX
+): AssessmentScore[] {
+  const byId = new Map<string, number>();
+  for (const row of scores) {
+    if (!row.criterionId || !Number.isFinite(row.score) || !getCriterionById(row.criterionId)) {
+      continue;
+    }
+    byId.set(row.criterionId, row.score);
+  }
+
+  const byDomain = new Map<string, string[]>();
+  for (const domain of DOMAINS) byDomain.set(domain, []);
+  for (const criterion of CRITERIA_LIST) {
+    const list = byDomain.get(criterion.domain) ?? [];
+    list.push(criterion.id);
+    byDomain.set(criterion.domain, list);
+  }
+  for (const [domain, ids] of byDomain) {
+    ids.sort((a, b) => (byId.get(b) ?? -1) - (byId.get(a) ?? -1));
+    byDomain.set(domain, ids);
+  }
+
+  const picked: AssessmentScore[] = [];
+  const seen = new Set<string>();
+  const take = (minimumScore: number, stopAt: number) => {
+    let progressed = true;
+    while (picked.length < stopAt && progressed) {
+      progressed = false;
+      for (const domain of DOMAINS) {
+        const next = (byDomain.get(domain) ?? []).find(
+          (id) => !seen.has(id) && (byId.get(id) ?? -1) >= minimumScore
+        );
+        if (!next) continue;
+        seen.add(next);
+        picked.push({ criterionId: next, score: byId.get(next) ?? 1 });
+        progressed = true;
+        if (picked.length >= stopAt) break;
+      }
+    }
+  };
+
+  take(1, max);
+  while (picked.length < min) {
+    const before = picked.length;
+    for (const domain of DOMAINS) {
+      const next = (byDomain.get(domain) ?? []).find((id) => !seen.has(id));
+      if (!next) continue;
+      seen.add(next);
+      picked.push({ criterionId: next, score: Math.max(byId.get(next) ?? 0, 1) });
+      if (picked.length >= min) break;
+    }
+    if (picked.length === before) break;
+  }
+
+  return picked.slice(0, max);
+}
 
 /**
  * يقرأ المصادر الأربعة معاً ويستخرج أهداف الدعم النشطة.
@@ -321,7 +389,41 @@ export function buildActiveTargetedGoals(input: FourSourceGoalInput): TrackedGoa
     merged.push({ criterionId, score });
   }
 
-  return createTrackedGoalsFromScores(input.childId, merged);
+  const selected = selectGradedSupportScores(merged);
+  if (selected.length === 0) return [];
+  return createTrackedGoalsFromSelected(input.childId, selected);
+}
+
+function createTrackedGoalsFromSelected(
+  childId: string,
+  scores: AssessmentScore[]
+): TrackedGoal[] {
+  const start = new Date();
+  const target = new Date(start);
+  target.setDate(target.getDate() + 14);
+  return scores.map((row) => {
+    const criterion = getCriterionById(row.criterionId);
+    const rounded = Math.min(3, Math.max(0, row.score));
+    const baseline = Math.min(100, Math.max(0, Math.round((3 - rounded) * 33)));
+    return {
+      id: `tg_${childId}_${row.criterionId}_${start.getTime().toString(36)}`,
+      childId,
+      criterionId: row.criterionId,
+      domain: criterion?.domain || '',
+      title: criterion?.name || row.criterionId,
+      smartText:
+        criterion?.autoGoal ||
+        buildSmartGoalText(criterion?.name || row.criterionId, criterion?.recommendation || ''),
+      baseline,
+      target: Math.min(100, baseline + 30),
+      current: baseline,
+      startDate: start.toISOString(),
+      targetDate: target.toISOString(),
+      status: 'active' as const,
+      sessions: [],
+      lastUpdate: start.toISOString(),
+    };
+  });
 }
 
 export function todayPracticeFromGoal(goal: TrackedGoal | null) {
