@@ -523,7 +523,7 @@ function toToolItems(
     nameAr: item.nameAr,
     nameEn: item.nameEn,
     category,
-    imageUrl: item.emoji,
+    imageUrl: item.id,
   }));
 }
 
@@ -583,7 +583,7 @@ export function buildLocalActivity(
         nameAr: item.nameAr,
         nameEn: item.nameEn,
         category: item.category || primary.category,
-        imageUrl: item.emoji,
+        imageUrl: item.id,
       }))
     );
 

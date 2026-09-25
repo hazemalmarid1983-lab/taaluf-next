@@ -22,7 +22,7 @@ export type ObserverImitationMovementDefinition = {
 };
 
 export const OBSERVER_IMITATION_ASSET_NOTE =
-  'Temporary MVP Asset — not Final Educational Asset';
+  'Clear Color Illustration — cartoon child performing the action';
 
 export const OBSERVER_IMITATION_MOVEMENTS: ObserverImitationMovementDefinition[] =
   [

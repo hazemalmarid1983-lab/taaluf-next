@@ -21,8 +21,8 @@ describe('communicationVisualCatalog — tap-to-request daily_needs', () => {
 
   it('each item has visual asset reference and spokenLabelAr', () => {
     for (const item of COMMUNICATION_DAILY_NEEDS_CATALOG) {
-      expect(item.visual.type).toBe('inline-svg');
-      if (item.visual.type === 'inline-svg') {
+      expect(item.visual.type).toBe('cartoon-illustration');
+      if (item.visual.type === 'cartoon-illustration' || item.visual.type === 'inline-svg') {
         expect(item.visual.assetId.length).toBeGreaterThan(0);
       }
       expect(item.spokenLabelAr.trim().length).toBeGreaterThan(0);

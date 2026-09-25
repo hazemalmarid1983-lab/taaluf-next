@@ -8,6 +8,7 @@ import type { CommPictogramId } from '@/lib/training/communicationChoiceEngine';
 export type CommunicationVisualPool = 'daily_needs' | 'actions' | 'scene_objects' | 'name_call';
 
 export type CommunicationVisualSource =
+  | { type: 'cartoon-illustration'; assetId: string }
   | { type: 'inline-svg'; assetId: string }
   | { type: 'static-image'; path: string };
 
@@ -27,7 +28,7 @@ export const COMMUNICATION_DAILY_NEEDS_CATALOG: CommunicationCatalogItem[] = [
     labelAr: 'ماء',
     spokenLabelAr: 'أريد ماء',
     pool: 'daily_needs',
-    visual: { type: 'inline-svg', assetId: 'comm-ill-water' },
+    visual: { type: 'cartoon-illustration', assetId: 'water' },
     ariaLabelAr: 'ماء — كوب ماء',
   },
   {
@@ -35,7 +36,7 @@ export const COMMUNICATION_DAILY_NEEDS_CATALOG: CommunicationCatalogItem[] = [
     labelAr: 'طعام',
     spokenLabelAr: 'أريد طعام',
     pool: 'daily_needs',
-    visual: { type: 'inline-svg', assetId: 'comm-ill-food' },
+    visual: { type: 'cartoon-illustration', assetId: 'food' },
     ariaLabelAr: 'طعام — وجبة',
   },
   {
@@ -43,7 +44,7 @@ export const COMMUNICATION_DAILY_NEEDS_CATALOG: CommunicationCatalogItem[] = [
     labelAr: 'لعبة',
     spokenLabelAr: 'أريد لعبة',
     pool: 'daily_needs',
-    visual: { type: 'inline-svg', assetId: 'comm-ill-toy' },
+    visual: { type: 'cartoon-illustration', assetId: 'toy' },
     ariaLabelAr: 'لعبة — دمية',
   },
   {
@@ -51,7 +52,7 @@ export const COMMUNICATION_DAILY_NEEDS_CATALOG: CommunicationCatalogItem[] = [
     labelAr: 'كتاب',
     spokenLabelAr: 'أريد كتاب',
     pool: 'daily_needs',
-    visual: { type: 'inline-svg', assetId: 'comm-ill-book' },
+    visual: { type: 'cartoon-illustration', assetId: 'book' },
     ariaLabelAr: 'كتاب',
   },
 ];

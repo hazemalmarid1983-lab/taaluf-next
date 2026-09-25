@@ -30,7 +30,9 @@ export default function CommunicationVisualCard({
   className = '',
 }: Props) {
   const assetId =
-    item.visual.type === 'inline-svg' ? item.visual.assetId : 'comm-ill-water';
+    item.visual.type === 'cartoon-illustration' || item.visual.type === 'inline-svg'
+      ? item.visual.assetId
+      : item.id;
 
   const shell = [
     'flex w-full max-w-[11rem] flex-col items-center gap-3 rounded-3xl bg-white p-4 shadow-[0_8px_28px_rgba(15,23,42,0.06)] transition-all motion-reduce:transition-none sm:max-w-[12rem] sm:p-5',
