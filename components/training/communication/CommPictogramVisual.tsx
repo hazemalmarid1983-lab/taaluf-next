@@ -107,31 +107,40 @@ const ART: Record<CommPictogramArtId, Draw> = {
     frame(
       size,
       <>
-        <circle cx="42" cy="36" r="12" fill="#0ea5e9" />
-        <path d="M34 52h16l6 28H28z" fill="#0284c7" />
-        <path d="M62 58h28" stroke="#0f766e" strokeWidth="8" strokeLinecap="round" />
-        <path d="M78 46l16 12-16 12" fill="none" stroke="#0f766e" strokeWidth="8" strokeLinecap="round" strokeLinejoin="round" />
+        <circle cx="86" cy="28" r="10" fill="#0f766e" />
+        <path d="M78 40h16l4 22h-8l-2 24h-8l-2-24h-8z" fill="#115e59" />
+        <path d="M70 48c-8 2-14 8-16 10" stroke="#115e59" strokeWidth="5" strokeLinecap="round" />
+        <path d="M102 48c8 2 12 8 14 12" stroke="#115e59" strokeWidth="5" strokeLinecap="round" />
+        <circle cx="34" cy="46" r="8" fill="#fb923c" />
+        <path d="M28 56h12l2 14H30z" fill="#ea580c" />
+        <path d="M30 70l-6 18M40 70l8 16" stroke="#ea580c" strokeWidth="4" strokeLinecap="round" />
+        <path d="M42 60c8-2 16 2 22 8" stroke="#ea580c" strokeWidth="4" strokeLinecap="round" />
       </>
     ),
   sit: (size) =>
     frame(
       size,
       <>
-        <circle cx="48" cy="36" r="12" fill="#fb7185" />
-        <path d="M40 50h16v16H36z" fill="#e11d48" />
-        <path d="M36 66h28v8H32z" fill="#e11d48" />
-        <rect x="62" y="58" width="28" height="8" rx="2" fill="#94a3b8" />
-        <rect x="64" y="66" width="8" height="24" fill="#64748b" />
-        <rect x="82" y="66" width="8" height="24" fill="#64748b" />
+        <rect x="68" y="42" width="8" height="36" rx="2" fill="#64748b" />
+        <rect x="40" y="72" width="40" height="8" rx="2" fill="#94a3b8" />
+        <rect x="44" y="80" width="6" height="22" fill="#475569" />
+        <rect x="70" y="80" width="6" height="22" fill="#475569" />
+        <circle cx="52" cy="36" r="10" fill="#fb7185" />
+        <path d="M44 46h16v18H40z" fill="#e11d48" />
+        <path d="M42 64h22v8H38z" fill="#be123c" />
+        <path d="M40 72v16M58 72v16" stroke="#9f1239" strokeWidth="5" strokeLinecap="round" />
       </>
     ),
   give: (size) =>
     frame(
       size,
       <>
-        <path d="M24 70c8-18 22-22 36-12 8 6 16 6 24 0l8 10c-12 12-24 16-40 12-10-2-20 0-28 8z" fill="#fcd34d" />
-        <circle cx="86" cy="46" r="14" fill="#34d399" />
-        <path d="M80 46h12M86 40v12" stroke="#065f46" strokeWidth="3" strokeLinecap="round" />
+        <circle cx="28" cy="34" r="10" fill="#38bdf8" />
+        <path d="M20 46h16v28H18z" fill="#0284c7" />
+        <path d="M34 58c16-6 28-4 40 2" stroke="#fcd34d" strokeWidth="12" strokeLinecap="round" />
+        <path d="M70 52c8 2 16 8 18 14-10 2-18-2-24-8-2 8-8 12-14 10 2-8 8-14 20-16z" fill="#fde68a" />
+        <circle cx="92" cy="58" r="12" fill="#22c55e" />
+        <ellipse cx="88" cy="54" rx="4" ry="3" fill="#fff" opacity="0.45" />
       </>
     ),
   face_child: (size) =>

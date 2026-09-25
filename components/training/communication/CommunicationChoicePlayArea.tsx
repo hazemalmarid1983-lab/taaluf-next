@@ -10,6 +10,7 @@ import CommPictogramVisual, {
 import { useActivityFeedback } from '@/components/training/useActivityFeedback';
 import { shouldAutoFinishTrial } from '@/lib/training/activityResponsePolicy';
 import { speakText, stopSpeaking } from '@/lib/sensoryAudio';
+import { ACTION_PRACTICE_COACH_NOTE_AR } from '@/lib/training/sessionStartLabel';
 import {
   buildCommTrialSpec,
   resolveCommTrialOutcome,
@@ -162,6 +163,11 @@ export default function CommunicationChoicePlayArea({
       dir="rtl"
     >
       <div className="mx-auto flex w-full max-w-lg flex-1 flex-col">
+        {settings.mode === 'receptive_instruction' ? (
+          <p className="mb-3 rounded-2xl border border-[#2E7D8E]/20 bg-white/90 px-3 py-2 text-center text-xs font-semibold leading-6 text-[#1F4E5A]">
+            {ACTION_PRACTICE_COACH_NOTE_AR}
+          </p>
+        ) : null}
         <div className="mb-2 flex justify-center pt-8">
           <ActivityLevelBadge level={level} />
         </div>

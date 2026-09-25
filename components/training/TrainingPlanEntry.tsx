@@ -24,6 +24,7 @@ import {
   consumeTrainingBridgeNotice,
 } from '@/lib/training/trainingBridge';
 import { useActiveTrainingStudent } from '@/lib/training/useActiveTrainingStudent';
+import { startSessionLabel } from '@/lib/training/sessionStartLabel';
 import type { TrainingPlan } from '@/lib/training/types';
 
 function ActivityEmoji({ engineType }: { engineType: string }) {
@@ -262,7 +263,7 @@ export default function TrainingPlanEntry() {
     return (
       <div className="mx-auto max-w-lg space-y-4">
         {notice}
-        <PreparedStartCard onStart={handlePrepareAndStart} titles={[]} />
+        <PreparedStartCard onStart={handlePrepareAndStart} titles={[]} sessionNumber={1} />
       </div>
     );
   }
@@ -321,6 +322,7 @@ export default function TrainingPlanEntry() {
           onStart={handleStart}
           titles={preparedActivityTitles(execution.plan)}
           leadTitle={media.titleAr}
+          sessionNumber={execution.assignment?.order ?? execution.plan.cursor.nextOrder}
         />
       </div>
     );
@@ -359,10 +361,12 @@ function PreparedStartCard({
   onStart,
   titles,
   leadTitle,
+  sessionNumber,
 }: {
   onStart: () => void;
   titles: string[];
   leadTitle?: string;
+  sessionNumber?: number;
 }) {
   const shown = titles.length > 0 ? titles : leadTitle ? [leadTitle] : [];
   return (
@@ -385,7 +389,7 @@ function PreparedStartCard({
         onClick={onStart}
         className="mt-6 w-full rounded-xl bg-indigo-600 px-6 py-3 text-base font-semibold text-white transition hover:bg-indigo-700"
       >
-        ابدأ الجلسة الأولى
+        {startSessionLabel(sessionNumber)}
       </button>
     </div>
   );

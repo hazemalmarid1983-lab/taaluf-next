@@ -8,6 +8,7 @@ type Props = {
   title: string;
   sample: CommPictogram;
   hintAr: string;
+  coachNoteAr?: string;
   onStart: () => void;
 };
 
@@ -15,6 +16,7 @@ export default function CommunicationChoiceWelcome({
   title,
   sample,
   hintAr,
+  coachNoteAr,
   onStart,
 }: Props) {
   return (
@@ -25,6 +27,11 @@ export default function CommunicationChoiceWelcome({
       <div className="relative z-10 flex max-w-md flex-col items-center gap-8">
         <CommPictogramVisual item={sample} sizePx={128} />
         <h1 className="text-3xl font-bold text-[#1F2A37] sm:text-4xl">{title}</h1>
+        {coachNoteAr ? (
+          <p className="rounded-2xl border border-[#2E7D8E]/20 bg-white/80 px-4 py-3 text-sm font-semibold leading-7 text-[#1F4E5A]">
+            {coachNoteAr}
+          </p>
+        ) : null}
         <p className="text-sm text-[#4B5563]">{hintAr}</p>
         <p className="text-xs text-slate-500">
           تدريب رقمي · مؤشر أداء داخل الجلسة · يحتاج مراجعة علمية

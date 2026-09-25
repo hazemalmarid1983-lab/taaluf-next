@@ -36,6 +36,7 @@ import {
 import { loadChapterById } from '@/lib/training/loadChapter';
 
 import { buildCommTrialSpec, commSettingsForLevel, resolveCommRuntimeSettings } from '@/lib/training/communicationChoiceEngine';
+import { ACTION_PRACTICE_COACH_NOTE_AR } from '@/lib/training/sessionStartLabel';
 
 import {
 
@@ -377,6 +378,13 @@ export default function CommunicationChoiceActivity({
         sample={welcomeSample}
 
         hintAr={welcomeHintAr}
+
+        coachNoteAr={
+          resolveCommRuntimeSettings(resolveMediaRuntimeConfig(media)).mode ===
+          'receptive_instruction'
+            ? ACTION_PRACTICE_COACH_NOTE_AR
+            : undefined
+        }
 
         onStart={handleStart}
 
