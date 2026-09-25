@@ -22,6 +22,7 @@ import {
   isCommChoiceSessionComplete,
   startCommChoiceTrial,
 } from '../lib/training/communicationChoiceSessionFlow';
+import { hasCommPictogramArt } from '../lib/training/commPictogramArt';
 import { getTrainingCandidatesForCriterion } from '../lib/training/trainingCandidates';
 import {
   resolveChapterIdForPlanMedia,
@@ -143,6 +144,24 @@ describe('communication choice engine', () => {
       const spec = buildCommTrialSpec(settings, 1);
       expect(spec.choices.some((c) => c.isCorrect)).toBe(true);
       expect(spec.promptLabelAr.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('speaks a where-question and draws each point-to-item object', () => {
+    const media = requireTrainingMedia(doc, 'point-to-item');
+    const settings = resolveCommRuntimeSettings(resolveMediaRuntimeConfig(media));
+    const specs = [1, 2, 3, 4].map((trial) => buildCommTrialSpec(settings, trial));
+    expect(specs.map((spec) => spec.promptLabelAr)).toEqual([
+      'أين كرة؟',
+      'أين كوب؟',
+      'أين سيارة؟',
+      'أين كتاب؟',
+    ]);
+    for (const spec of specs) {
+      expect(hasCommPictogramArt(spec.target.id)).toBe(true);
+      for (const choice of spec.choices) {
+        expect(hasCommPictogramArt(choice.item.id)).toBe(true);
+      }
     }
   });
 

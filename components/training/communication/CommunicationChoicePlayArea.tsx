@@ -9,6 +9,7 @@ import CommPictogramVisual, {
 } from '@/components/training/communication/CommPictogramVisual';
 import { useActivityFeedback } from '@/components/training/useActivityFeedback';
 import { shouldAutoFinishTrial } from '@/lib/training/activityResponsePolicy';
+import { speakText, stopSpeaking } from '@/lib/sensoryAudio';
 import {
   buildCommTrialSpec,
   resolveCommTrialOutcome,
@@ -82,17 +83,9 @@ export default function CommunicationChoicePlayArea({
     setSelectedId(null);
     setPendingOutcome(null);
     setDisplayedChoices(trialSpec.choices);
-
-    if (settings.mode === 'name_orienting' && typeof window !== 'undefined') {
-      try {
-        const u = new SpeechSynthesisUtterance('اسمك');
-        u.lang = 'ar';
-        window.speechSynthesis.speak(u);
-      } catch {
-        /* optional audio */
-      }
-    }
-  }, [trialNumber, settings, trialSpec.choices]);
+    speakText(trialSpec.promptLabelAr, { lang: 'ar', rate: 0.82 });
+    return () => stopSpeaking();
+  }, [trialNumber, settings, trialSpec.choices, trialSpec.promptLabelAr]);
 
   const finishTrial = useCallback(
     (outcome: CommTrialOutcome, kind: FeedbackKind) => {
