@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import WaitThenTouchComplete from '@/components/training/wait-then-touch/WaitThenTouchComplete';
 import WaitThenTouchPlayArea from '@/components/training/wait-then-touch/WaitThenTouchPlayArea';
 import WaitThenTouchWelcome from '@/components/training/wait-then-touch/WaitThenTouchWelcome';
+import { withChosenPostSessionMood } from '@/components/training/PostSessionMoodHost';
 import { useActivityLevelGate } from '@/components/training/useActivityLevelGate';
 import { childFacingStars } from '@/lib/training/followStarEngine';
 import {
@@ -58,7 +59,7 @@ export default function WaitThenTouchActivity() {
   const [sessionSaved, setSessionSaved] = useState(true);
   const [blockReason, setBlockReason] = useState<BlockReason | null>(null);
   const [activeChildId, setActiveChildId] = useState<string | null>(null);
-  const { level, recordAttempt } = useActivityLevelGate({
+  const { level, recordSession } = useActivityLevelGate({
     childId: activeChildId,
     mediaId: media.mediaId,
     chapterId: ATTENTION_FOCUS_CHAPTER_ID,
@@ -78,7 +79,7 @@ export default function WaitThenTouchActivity() {
     [session?.id]
   );
 
-  const handleStart = useCallback(() => {
+  const handleStart = useCallback(async () => {
     const begin = preparePlanActivityBegin({ pageMediaId: media.mediaId });
     if (!begin.ok) {
       setBlockReason(begin.reason);
@@ -103,8 +104,9 @@ export default function WaitThenTouchActivity() {
       const nextSession = finalizeWaitThenTouchSession(opened.session);
       const metrics = calculateSessionMetrics(nextSession.trials);
       setResultStars(childFacingStars(metrics.accuracy));
+      const withMood = await withChosenPostSessionMood(nextSession);
       try {
-        persistSessionAndAdvancePlan(nextSession);
+        persistSessionAndAdvancePlan(withMood);
         setSessionSaved(true);
       } catch (error) {
         console.error(
@@ -113,7 +115,7 @@ export default function WaitThenTouchActivity() {
         );
         setSessionSaved(false);
       }
-      setSession(nextSession);
+      setSession(withMood);
       setPhase('complete');
       return;
     }
@@ -124,22 +126,20 @@ export default function WaitThenTouchActivity() {
   }, [media]);
 
   const handleTrialComplete = useCallback(
-    (outcome: WaitThenTouchTrialOutcome) => {
+    async (outcome: WaitThenTouchTrialOutcome) => {
       if (!session) return;
-      recordAttempt({
-        correct: outcome.correct,
-        promptLevel: outcome.promptLevel,
-      });
 
       let nextSession = commitWaitThenTouchTrial(session, outcome);
 
       if (isWaitThenTouchSessionComplete(nextSession)) {
         nextSession = finalizeWaitThenTouchSession(nextSession);
+        recordSession(nextSession.trials);
         const metrics = calculateSessionMetrics(nextSession.trials);
         setResultStars(childFacingStars(metrics.accuracy));
 
+        const withMood = await withChosenPostSessionMood(nextSession);
         try {
-          persistSessionAndAdvancePlan(nextSession);
+          persistSessionAndAdvancePlan(withMood);
           setSessionSaved(true);
         } catch (error) {
           console.error(
@@ -149,7 +149,7 @@ export default function WaitThenTouchActivity() {
           setSessionSaved(false);
         }
 
-        setSession(nextSession);
+        setSession(withMood);
         setPhase('complete');
         return;
       }
@@ -157,7 +157,7 @@ export default function WaitThenTouchActivity() {
       nextSession = startWaitThenTouchTrial(nextSession);
       setSession(nextSession);
     },
-    [recordAttempt, session]
+    [recordSession, session]
   );
 
   const handleDone = useCallback(() => {

@@ -6,6 +6,7 @@ import AdvisorTestBanner from '@/components/access/AdvisorTestBanner';
 import SubscriberGate from '@/components/access/SubscriberGate';
 import MerhidChat from '@/components/merhid/MerhidChat';
 import JourneyHydrator from '@/components/parent/JourneyHydrator';
+import PostSessionMoodHost from '@/components/training/PostSessionMoodHost';
 import ParentShellNav from '@/components/parent/ParentShellNav';
 import SpecialistShellNav from '@/components/specialist/SpecialistShellNav';
 import { authOptions } from '@/lib/auth';
@@ -40,6 +41,7 @@ export default async function DashboardLayout({
           <JourneyHydrator />
           {children}
         </div>
+        <PostSessionMoodHost />
         <MerhidChat scope="parent" compact />
         {!paymentsOff && <SubscriberGate />}
       </div>
@@ -55,6 +57,7 @@ export default async function DashboardLayout({
         <JourneyHydrator />
         {children}
       </div>
+      <PostSessionMoodHost />
       <MerhidChat
         scope={isAdmin ? 'admin' : isAdvisor ? 'scientific_advisor' : 'specialist'}
         compact

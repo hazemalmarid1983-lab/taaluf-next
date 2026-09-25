@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import WhereDidItGoComplete from '@/components/training/where-did-it-go/WhereDidItGoComplete';
 import WhereDidItGoPlayArea from '@/components/training/where-did-it-go/WhereDidItGoPlayArea';
 import WhereDidItGoWelcome from '@/components/training/where-did-it-go/WhereDidItGoWelcome';
+import { withChosenPostSessionMood } from '@/components/training/PostSessionMoodHost';
 import { useActivityLevelGate } from '@/components/training/useActivityLevelGate';
 import { childFacingStars } from '@/lib/training/followStarEngine';
 import {
@@ -57,7 +58,7 @@ export default function WhereDidItGoActivity() {
   const [sessionSaved, setSessionSaved] = useState(true);
   const [blockReason, setBlockReason] = useState<BlockReason | null>(null);
   const [activeChildId, setActiveChildId] = useState<string | null>(null);
-  const { level, recordAttempt } = useActivityLevelGate({
+  const { level, recordSession } = useActivityLevelGate({
     childId: activeChildId,
     mediaId: media.mediaId,
     chapterId: ATTENTION_FOCUS_CHAPTER_ID,
@@ -69,7 +70,7 @@ export default function WhereDidItGoActivity() {
     return buildWhereDidItGoTrialSpec(settings, 1).target;
   }, [media]);
 
-  const handleStart = useCallback(() => {
+  const handleStart = useCallback(async () => {
     const begin = preparePlanActivityBegin({ pageMediaId: media.mediaId });
     if (!begin.ok) {
       setBlockReason(begin.reason);
@@ -94,8 +95,9 @@ export default function WhereDidItGoActivity() {
       const nextSession = finalizeWhereDidItGoSession(opened.session);
       const metrics = calculateSessionMetrics(nextSession.trials);
       setResultStars(childFacingStars(metrics.accuracy));
+      const withMood = await withChosenPostSessionMood(nextSession);
       try {
-        persistSessionAndAdvancePlan(nextSession);
+        persistSessionAndAdvancePlan(withMood);
         setSessionSaved(true);
       } catch (error) {
         console.error(
@@ -104,7 +106,7 @@ export default function WhereDidItGoActivity() {
         );
         setSessionSaved(false);
       }
-      setSession(nextSession);
+      setSession(withMood);
       setPhase('complete');
       return;
     }
@@ -115,22 +117,20 @@ export default function WhereDidItGoActivity() {
   }, [media]);
 
   const handleTrialComplete = useCallback(
-    (outcome: WhereDidItGoTrialOutcome) => {
+    async (outcome: WhereDidItGoTrialOutcome) => {
       if (!session) return;
-      recordAttempt({
-        correct: outcome.correct,
-        promptLevel: outcome.promptLevel,
-      });
 
       let nextSession = commitWhereDidItGoTrial(session, outcome);
 
       if (isWhereDidItGoSessionComplete(nextSession)) {
         nextSession = finalizeWhereDidItGoSession(nextSession);
+        recordSession(nextSession.trials);
         const metrics = calculateSessionMetrics(nextSession.trials);
         setResultStars(childFacingStars(metrics.accuracy));
 
+        const withMood = await withChosenPostSessionMood(nextSession);
         try {
-          persistSessionAndAdvancePlan(nextSession);
+          persistSessionAndAdvancePlan(withMood);
           setSessionSaved(true);
         } catch (error) {
           console.error(
@@ -140,7 +140,7 @@ export default function WhereDidItGoActivity() {
           setSessionSaved(false);
         }
 
-        setSession(nextSession);
+        setSession(withMood);
         setPhase('complete');
         return;
       }
@@ -148,7 +148,7 @@ export default function WhereDidItGoActivity() {
       nextSession = startWhereDidItGoTrial(nextSession);
       setSession(nextSession);
     },
-    [recordAttempt, session]
+    [recordSession, session]
   );
 
   const handleDone = useCallback(() => {

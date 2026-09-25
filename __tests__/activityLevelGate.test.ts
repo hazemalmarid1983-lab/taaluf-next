@@ -1,99 +1,99 @@
+import { saveActivityLevel, readActivityLevel } from '../lib/training/activityLevelGate';
 import {
-  applyActivityLevelAttempt,
+  checkLevelMastery,
   initialActivityLevelRecord,
-  INDEPENDENT_STREAK_TO_UNLOCK,
-  isIndependentSuccess,
-  loadStoredActivityLevel,
-  readActivityLevel,
-} from '../lib/training/activityLevelGate';
-import { saveTrainingProgress } from '../lib/training/storage/progressStore';
+  INDEPENDENT_SESSIONS_TO_UNLOCK,
+  isFullyIndependentSession,
+} from '../lib/training/masteryEngine';
 import {
   createMemoryTrainingStorageAdapter,
   resetTrainingStorageAdapter,
   setTrainingStorageAdapter,
 } from '../lib/training/storage/adapter';
 
-describe('activity level gate', () => {
+function trials(count: number, promptLevel = 'independent') {
+  return Array.from({ length: count }, () => ({ promptLevel }));
+}
+
+function sessionWithOne(promptLevel: string, count = 8) {
+  const rows = trials(count);
+  rows[3] = { promptLevel };
+  return rows;
+}
+
+describe('global mastery engine', () => {
   afterEach(() => {
     resetTrainingStorageAdapter();
   });
 
-  it('keeps level 1 until three consecutive independent successes', () => {
-    let state = initialActivityLevelRecord();
-    const independent = { correct: true, promptLevel: 'independent' };
-
-    const first = applyActivityLevelAttempt(state, independent);
-    const second = applyActivityLevelAttempt(first.record, independent);
-    expect(first.advanced).toBe(false);
-    expect(second.record.level).toBe(1);
-    expect(second.record.independentStreak).toBe(2);
-    expect(INDEPENDENT_STREAK_TO_UNLOCK).toBe(3);
-
-    const third = applyActivityLevelAttempt(second.record, independent);
-    expect(third.advanced).toBe(true);
-    expect(third.record.level).toBe(2);
-    expect(third.record.independentStreak).toBe(0);
-    state = third.record;
-    expect(state.level).toBe(2);
+  it('counts a full session only when every trial is fully independent', () => {
+    expect(isFullyIndependentSession(trials(5))).toBe(true);
+    expect(isFullyIndependentSession(trials(8))).toBe(true);
+    expect(isFullyIndependentSession(trials(10))).toBe(true);
+    expect(isFullyIndependentSession([])).toBe(false);
+    expect(isFullyIndependentSession(sessionWithOne('verbal', 5))).toBe(false);
+    expect(isFullyIndependentSession(sessionWithOne('verbal_partial', 8))).toBe(false);
+    expect(isFullyIndependentSession(sessionWithOne('full_physical', 10))).toBe(false);
+    expect(isFullyIndependentSession(sessionWithOne('partial_physical', 8))).toBe(false);
+    expect(isFullyIndependentSession(sessionWithOne('no_response', 5))).toBe(false);
+    expect(isFullyIndependentSession(sessionWithOne('gestural', 8))).toBe(false);
   });
 
-  it('resets the streak when the response is helped or incorrect', () => {
-    const warmed = applyActivityLevelAttempt(initialActivityLevelRecord(), {
-      correct: true,
-      promptLevel: 'independent',
-    }).record;
-    expect(isIndependentSuccess({ correct: true, promptLevel: 'gestural' })).toBe(false);
+  it('promotes only after three consecutive fully independent sessions', () => {
+    let state = initialActivityLevelRecord();
+    const lengths = [5, 8, 10];
 
-    const helped = applyActivityLevelAttempt(warmed, {
-      correct: true,
-      promptLevel: 'gestural',
+    lengths.forEach((count, index) => {
+      const decision = checkLevelMastery(trials(count), state);
+      state = decision.record;
+      if (index < 2) {
+        expect(decision.advanced).toBe(false);
+        expect(state.level).toBe(1);
+      }
     });
-    expect(helped.record.level).toBe(1);
-    expect(helped.record.independentStreak).toBe(0);
 
-    const missed = applyActivityLevelAttempt(
-      { ...warmed, independentStreak: 2 },
-      { correct: false, promptLevel: 'independent' }
+    expect(INDEPENDENT_SESSIONS_TO_UNLOCK).toBe(3);
+    expect(state.level).toBe(2);
+    expect(state.consecutiveIndependentSessions).toBe(0);
+  });
+
+  it('resets the session counter when any trial in the block is not independent', () => {
+    const warmed = checkLevelMastery(trials(5), initialActivityLevelRecord()).record;
+    const second = checkLevelMastery(trials(8), warmed).record;
+    expect(second.consecutiveIndependentSessions).toBe(2);
+
+    const verbal = checkLevelMastery(sessionWithOne('verbal', 10), second);
+    expect(verbal.sessionIndependent).toBe(false);
+    expect(verbal.record.level).toBe(1);
+    expect(verbal.record.consecutiveIndependentSessions).toBe(0);
+
+    const again = checkLevelMastery(
+      sessionWithOne('no_response', 5),
+      { level: 1, consecutiveIndependentSessions: 2 }
     );
-    expect(missed.record.level).toBe(1);
-    expect(missed.record.independentStreak).toBe(0);
+    expect(again.record.consecutiveIndependentSessions).toBe(0);
+    expect(again.advanced).toBe(false);
   });
 
   it('does not open a level past the ceiling', () => {
-    const top = applyActivityLevelAttempt(
-      { level: 6, independentStreak: 2, criterionUnlockApplied: false },
-      { correct: true, promptLevel: 'independent' },
-      6
-    );
+    const top = checkLevelMastery(trials(8), {
+      level: 6,
+      consecutiveIndependentSessions: 2,
+    });
     expect(top.advanced).toBe(false);
     expect(top.record.level).toBe(6);
   });
 
-  it('applies a recorded mastered progress marker once', () => {
+  it('keeps the session counter across stored visits', () => {
     setTrainingStorageAdapter(createMemoryTrainingStorageAdapter());
-    saveTrainingProgress({
-      childId: 'child_1',
-      chapterId: 'attention-focus',
-      mediaId: 'where-did-it-go',
-      completedSessions: 3,
-      lastDifficulty: 1,
-      masteryLevel: 'mastered',
-    });
+    const afterTwo = checkLevelMastery(trials(5), checkLevelMastery(trials(10)).record);
+    saveActivityLevel('child_1', 'where-did-it-go', afterTwo.record);
 
-    const first = loadStoredActivityLevel({
-      childId: 'child_1',
-      mediaId: 'where-did-it-go',
-      chapterId: 'attention-focus',
-    });
-    expect(first.level).toBe(2);
-    expect(first.criterionUnlockApplied).toBe(true);
+    const stored = readActivityLevel('child_1', 'where-did-it-go');
+    expect(stored.level).toBe(1);
+    expect(stored.consecutiveIndependentSessions).toBe(2);
 
-    const second = loadStoredActivityLevel({
-      childId: 'child_1',
-      mediaId: 'where-did-it-go',
-      chapterId: 'attention-focus',
-    });
-    expect(second.level).toBe(2);
-    expect(readActivityLevel('child_1', 'where-did-it-go').level).toBe(2);
+    const third = checkLevelMastery(trials(8), stored);
+    expect(third.record.level).toBe(2);
   });
 });

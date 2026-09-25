@@ -3,12 +3,12 @@
 import { useCallback, useState } from 'react';
 import {
   ACTIVITY_LEVEL_MAX,
-  applyActivityLevelAttempt,
+  checkLevelMastery,
   initialActivityLevelRecord,
   loadStoredActivityLevel,
   saveActivityLevel,
-  type ActivityLevelAttempt,
   type ActivityLevelRecord,
+  type MasteryTrialResult,
 } from '@/lib/training/activityLevelGate';
 
 export function useActivityLevelGate(input: {
@@ -28,18 +28,16 @@ export function useActivityLevelGate(input: {
       loadStoredActivityLevel({
         childId: input.childId,
         mediaId: input.mediaId,
-        chapterId: input.chapterId,
-        maxLevel,
       })
     );
   }
 
-  const recordAttempt = useCallback(
-    (attempt: ActivityLevelAttempt) => {
+  const recordSession = useCallback(
+    (sessionResults: ReadonlyArray<MasteryTrialResult>) => {
       if (!input.childId) return;
       const childId = input.childId;
       setRecord((current) => {
-        const next = applyActivityLevelAttempt(current, attempt, maxLevel);
+        const next = checkLevelMastery(sessionResults, current, maxLevel);
         saveActivityLevel(childId, input.mediaId, next.record);
         return next.record;
       });
@@ -47,5 +45,5 @@ export function useActivityLevelGate(input: {
     [input.childId, input.mediaId, maxLevel]
   );
 
-  return { level: record.level, recordAttempt };
+  return { level: record.level, recordSession };
 }

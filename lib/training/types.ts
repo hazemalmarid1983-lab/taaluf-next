@@ -225,6 +225,8 @@ export type TrainingSession = {
   protocolRevision?: string;
   /** مهارات مخططة للجلسة — من assignment.skillIds عند الإطلاق من خطة */
   skillIds?: string[];
+  /** تقييم المزاج بعد انتهاء المحاولات وقبل حفظ التقرير */
+  postSessionMood?: 'excited' | 'calm' | 'tired' | 'anxious';
 };
 
 /** تقدم الطفل في وسيلة/فصل — للاستخدام في مراحل لاحقة */

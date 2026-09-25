@@ -196,6 +196,16 @@ export function validateTrainingSession(input: unknown): TrainingValidationResul
     errors.push('endedAt يجب أن يكون طابعاً زمنياً ISO صالحاً');
   }
 
+  if (
+    input.postSessionMood !== undefined &&
+    input.postSessionMood !== 'excited' &&
+    input.postSessionMood !== 'calm' &&
+    input.postSessionMood !== 'tired' &&
+    input.postSessionMood !== 'anxious'
+  ) {
+    errors.push('postSessionMood غير صالح');
+  }
+
   if (!Array.isArray(input.trials)) {
     errors.push('trials يجب أن يكون مصفوفة');
   } else {

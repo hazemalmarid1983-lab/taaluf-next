@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import FollowStarComplete from '@/components/training/follow-star/FollowStarComplete';
 import FollowStarPlayArea from '@/components/training/follow-star/FollowStarPlayArea';
 import FollowStarWelcome from '@/components/training/follow-star/FollowStarWelcome';
+import { withChosenPostSessionMood } from '@/components/training/PostSessionMoodHost';
 import { useActivityLevelGate } from '@/components/training/useActivityLevelGate';
 import { childFacingStars, deriveFollowStarPathOrderSeed, followStarSettingsForLevel } from '@/lib/training/followStarEngine';
 import {
@@ -49,7 +50,7 @@ export default function FollowStarActivity() {
   const [sessionSaved, setSessionSaved] = useState(true);
   const [blockReason, setBlockReason] = useState<BlockReason | null>(null);
   const [activeChildId, setActiveChildId] = useState<string | null>(null);
-  const { level, recordAttempt } = useActivityLevelGate({
+  const { level, recordSession } = useActivityLevelGate({
     childId: activeChildId,
     mediaId: media.mediaId,
     chapterId: ATTENTION_FOCUS_CHAPTER_ID,
@@ -62,7 +63,7 @@ export default function FollowStarActivity() {
     [session?.id]
   );
 
-  const handleStart = useCallback(() => {
+  const handleStart = useCallback(async () => {
     const begin = preparePlanActivityBegin({ pageMediaId: media.mediaId });
     if (!begin.ok) {
       setBlockReason(begin.reason);
@@ -87,8 +88,9 @@ export default function FollowStarActivity() {
       const nextSession = finalizeFollowStarSession(opened.session);
       const metrics = calculateSessionMetrics(nextSession.trials);
       setResultStars(childFacingStars(metrics.accuracy));
+      const withMood = await withChosenPostSessionMood(nextSession);
       try {
-        persistSessionAndAdvancePlan(nextSession);
+        persistSessionAndAdvancePlan(withMood);
         setSessionSaved(true);
       } catch (error) {
         console.error(
@@ -97,7 +99,7 @@ export default function FollowStarActivity() {
         );
         setSessionSaved(false);
       }
-      setSession(nextSession);
+      setSession(withMood);
       setPhase('complete');
       return;
     }
@@ -108,22 +110,20 @@ export default function FollowStarActivity() {
   }, [media]);
 
   const handleTrialComplete = useCallback(
-    (outcome: FollowStarTrialOutcome) => {
+    async (outcome: FollowStarTrialOutcome) => {
       if (!session) return;
-      recordAttempt({
-        correct: outcome.correct,
-        promptLevel: outcome.promptLevel,
-      });
 
       let nextSession = commitFollowStarTrial(session, outcome);
 
       if (isFollowStarSessionComplete(nextSession)) {
         nextSession = finalizeFollowStarSession(nextSession);
+        recordSession(nextSession.trials);
         const metrics = calculateSessionMetrics(nextSession.trials);
         setResultStars(childFacingStars(metrics.accuracy));
 
+        const withMood = await withChosenPostSessionMood(nextSession);
         try {
-          persistSessionAndAdvancePlan(nextSession);
+          persistSessionAndAdvancePlan(withMood);
           setSessionSaved(true);
         } catch (error) {
           console.error(
@@ -133,7 +133,7 @@ export default function FollowStarActivity() {
           setSessionSaved(false);
         }
 
-        setSession(nextSession);
+        setSession(withMood);
         setPhase('complete');
         return;
       }
@@ -141,7 +141,7 @@ export default function FollowStarActivity() {
       nextSession = startFollowStarTrial(nextSession);
       setSession(nextSession);
     },
-    [recordAttempt, session]
+    [recordSession, session]
   );
 
   const handleDone = useCallback(() => {

@@ -73,7 +73,12 @@ import {
   TRAINING_BRIDGE_MISMATCH_MESSAGE_AR,
 } from '@/lib/training/trainingBridge';
 import ActivityLevelBadge from '@/components/training/ActivityLevelBadge';
+import { askPostSessionMood } from '@/components/training/PostSessionMoodHost';
 import { useActivityLevelGate } from '@/components/training/useActivityLevelGate';
+import {
+  postSessionMoodById,
+  postSessionMoodZone,
+} from '@/lib/training/postSessionMood';
 import { ActivityFeedbackAudio } from '@/lib/training/activityFeedbackAudio';
 import {
   speakText,
@@ -243,7 +248,7 @@ export default function HomeClassroomPage() {
     () => generated || findHomeGoal(selection) || HOME_CLASSROOM_GOALS[0],
     [generated, selection]
   );
-  const { level, recordAttempt } = useActivityLevelGate({
+  const { level, recordSession } = useActivityLevelGate({
     childId: child?.id ?? null,
     mediaId: `home-classroom:${goal.id}`,
   });
@@ -471,7 +476,7 @@ export default function HomeClassroomPage() {
     return 'border-[#2E7D8E] bg-[#2E7D8E]/10';
   };
 
-  const recordTrial = (promptLevel: PromptLevel) => {
+  const recordTrial = async (promptLevel: PromptLevel) => {
     const updated: TrialResult[] = [
       ...trials,
       {
@@ -482,10 +487,6 @@ export default function HomeClassroomPage() {
       },
     ];
 
-    recordAttempt({
-      correct: feedback === 'ok',
-      promptLevel,
-    });
     setTrials(updated);
     setPickedId(null);
     setFeedback(null);
@@ -493,6 +494,8 @@ export default function HomeClassroomPage() {
     cancelSpeech();
 
     if (updated.length >= HOME_SESSION_TARGET_TRIALS) {
+      recordSession(updated);
+      const moodId = await askPostSessionMood();
       const result = evaluateHomeSession(
         child?.id || 'child_local',
         goal,
@@ -500,8 +503,13 @@ export default function HomeClassroomPage() {
         child?.name,
         { before: moodBefore }
       );
-      setSummary(result);
-      saveHomeSession(result);
+      const withMood: HomeSessionSummary = {
+        ...result,
+        postSessionMood: moodId,
+        moodAfter: postSessionMoodZone(moodId),
+      };
+      setSummary(withMood);
+      saveHomeSession(withMood);
     }
   };
 
@@ -1059,6 +1067,18 @@ export default function HomeClassroomPage() {
                     {isAr
                       ? zoneById(summary.moodBefore)?.labelAr
                       : zoneById(summary.moodBefore)?.labelEn}
+                  </span>
+                </p>
+              )}
+
+              {summary.postSessionMood && (
+                <p className="text-[11px] font-bold text-slate-600">
+                  {isAr ? 'تقييم المزاج بعد الجلسة:' : 'Post-session mood:'}{' '}
+                  <span className="font-black text-[#1F4E5A]">
+                    {postSessionMoodById(summary.postSessionMood)?.emoji}{' '}
+                    {isAr
+                      ? postSessionMoodById(summary.postSessionMood)?.labelAr
+                      : postSessionMoodById(summary.postSessionMood)?.labelEn}
                   </span>
                 </p>
               )}

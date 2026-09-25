@@ -126,6 +126,8 @@ export interface HomeSessionSummary {
   moodBefore?: RegulationZoneId;
   /** منطقة التنظيم الانفعالي بعد انتهاء المحاولات */
   moodAfter?: RegulationZoneId;
+  /** تقييم المزاج السريع قبل حفظ التقرير: متحمس، هادئ، متعب، قلق */
+  postSessionMood?: 'excited' | 'calm' | 'tired' | 'anxious';
   /** توزيع درجات المساعدة في الجلسة */
   promptBreakdown?: PromptBreakdown;
   /** تسلسل المحاولات الخمس لرسم التطور */

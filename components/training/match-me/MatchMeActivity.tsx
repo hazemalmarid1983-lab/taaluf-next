@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import MatchMeComplete from '@/components/training/match-me/MatchMeComplete';
 import MatchMePlayArea from '@/components/training/match-me/MatchMePlayArea';
 import MatchMeWelcome from '@/components/training/match-me/MatchMeWelcome';
+import { withChosenPostSessionMood } from '@/components/training/PostSessionMoodHost';
 import { useActivityLevelGate } from '@/components/training/useActivityLevelGate';
 import { childFacingStars } from '@/lib/training/followStarEngine';
 import {
@@ -49,7 +50,7 @@ export default function MatchMeActivity() {
   const [sessionSaved, setSessionSaved] = useState(true);
   const [blockReason, setBlockReason] = useState<BlockReason | null>(null);
   const [activeChildId, setActiveChildId] = useState<string | null>(null);
-  const { level, recordAttempt } = useActivityLevelGate({
+  const { level, recordSession } = useActivityLevelGate({
     childId: activeChildId,
     mediaId: media.mediaId,
     chapterId: ATTENTION_FOCUS_CHAPTER_ID,
@@ -61,7 +62,7 @@ export default function MatchMeActivity() {
     return buildMatchMeTrialSpec(settings, 1).target;
   }, [media]);
 
-  const handleStart = useCallback(() => {
+  const handleStart = useCallback(async () => {
     const begin = preparePlanActivityBegin({ pageMediaId: media.mediaId });
     if (!begin.ok) {
       setBlockReason(begin.reason);
@@ -83,14 +84,15 @@ export default function MatchMeActivity() {
       const nextSession = finalizeMatchMeSession(opened.session);
       const metrics = calculateSessionMetrics(nextSession.trials);
       setResultStars(childFacingStars(metrics.accuracy));
+      const withMood = await withChosenPostSessionMood(nextSession);
       try {
-        persistSessionAndAdvancePlan(nextSession);
+        persistSessionAndAdvancePlan(withMood);
         setSessionSaved(true);
       } catch (error) {
         console.error('[taaluf-training] persist session failed', error);
         setSessionSaved(false);
       }
-      setSession(nextSession);
+      setSession(withMood);
       setPhase('complete');
       return;
     }
@@ -101,22 +103,20 @@ export default function MatchMeActivity() {
   }, [media]);
 
   const handleTrialComplete = useCallback(
-    (outcome: MatchMeTrialOutcome) => {
+    async (outcome: MatchMeTrialOutcome) => {
       if (!session) return;
-      recordAttempt({
-        correct: outcome.correct,
-        promptLevel: outcome.promptLevel,
-      });
 
       let nextSession = commitMatchMeTrial(session, outcome);
 
       if (isMatchMeSessionComplete(nextSession)) {
         nextSession = finalizeMatchMeSession(nextSession);
+        recordSession(nextSession.trials);
         const metrics = calculateSessionMetrics(nextSession.trials);
         setResultStars(childFacingStars(metrics.accuracy));
 
+        const withMood = await withChosenPostSessionMood(nextSession);
         try {
-          persistSessionAndAdvancePlan(nextSession);
+          persistSessionAndAdvancePlan(withMood);
           setSessionSaved(true);
         } catch (error) {
           console.error(
@@ -126,7 +126,7 @@ export default function MatchMeActivity() {
           setSessionSaved(false);
         }
 
-        setSession(nextSession);
+        setSession(withMood);
         setPhase('complete');
         return;
       }
@@ -134,7 +134,7 @@ export default function MatchMeActivity() {
       nextSession = startMatchMeTrial(nextSession);
       setSession(nextSession);
     },
-    [recordAttempt, session]
+    [recordSession, session]
   );
 
   const handleDone = useCallback(() => {

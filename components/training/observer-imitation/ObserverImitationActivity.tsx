@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import ObserverImitationComplete from '@/components/training/observer-imitation/ObserverImitationComplete';
 import ObserverImitationPlayArea from '@/components/training/observer-imitation/ObserverImitationPlayArea';
 import ObserverImitationWelcome from '@/components/training/observer-imitation/ObserverImitationWelcome';
+import { withChosenPostSessionMood } from '@/components/training/PostSessionMoodHost';
 import { useActivityLevelGate } from '@/components/training/useActivityLevelGate';
 import PlanActivityGuardMessage from '@/components/training/PlanActivityGuardMessage';
 import { calculateSessionMetrics, requireTrainingMedia } from '@/lib/training/engine';
@@ -53,7 +54,7 @@ export default function ObserverImitationActivity() {
   const [sessionSaved, setSessionSaved] = useState(true);
   const [blockReason, setBlockReason] = useState<BlockReason | null>(null);
   const [activeChildId, setActiveChildId] = useState<string | null>(null);
-  const { level, recordAttempt } = useActivityLevelGate({
+  const { level, recordSession } = useActivityLevelGate({
     childId: activeChildId,
     mediaId: media.mediaId,
     chapterId: MOTOR_SOCIAL_IMITATION_CHAPTER_ID,
@@ -64,7 +65,7 @@ export default function ObserverImitationActivity() {
     totalTrials: 0,
   });
 
-  const handleStart = useCallback(() => {
+  const handleStart = useCallback(async () => {
     const begin = preparePlanActivityBegin({
       pageMediaId: media.mediaId,
     });
@@ -96,14 +97,15 @@ export default function ObserverImitationActivity() {
         independence: metrics.independence,
         totalTrials: metrics.totalTrials,
       });
+      const withMood = await withChosenPostSessionMood(nextSession);
       try {
-        persistSessionAndAdvancePlan(nextSession);
+        persistSessionAndAdvancePlan(withMood);
         setSessionSaved(true);
       } catch (error) {
         console.error('[taaluf-training] observer-imitation persist failed', error);
         setSessionSaved(false);
       }
-      setSession(nextSession);
+      setSession(withMood);
       setPhase('complete');
       return;
     }
@@ -115,17 +117,14 @@ export default function ObserverImitationActivity() {
   }, [media]);
 
   const handleTrialComplete = useCallback(
-    (outcome: ObserverImitationTrialOutcome) => {
+    async (outcome: ObserverImitationTrialOutcome) => {
       if (!session || !settings) return;
-      recordAttempt({
-        correct: outcome.correct,
-        promptLevel: outcome.promptLevel,
-      });
 
       let nextSession = commitObserverImitationTrial(session, outcome);
 
       if (isObserverImitationSessionComplete(nextSession)) {
         nextSession = finalizeObserverImitationSession(nextSession);
+        recordSession(nextSession.trials);
         const metrics = calculateSessionMetrics(nextSession.trials);
         setSummary({
           accuracy: metrics.accuracy,
@@ -133,15 +132,16 @@ export default function ObserverImitationActivity() {
           totalTrials: metrics.totalTrials,
         });
 
+        const withMood = await withChosenPostSessionMood(nextSession);
         try {
-          persistSessionAndAdvancePlan(nextSession);
+          persistSessionAndAdvancePlan(withMood);
           setSessionSaved(true);
         } catch (error) {
           console.error('[taaluf-training] observer-imitation persist failed', error);
           setSessionSaved(false);
         }
 
-        setSession(nextSession);
+        setSession(withMood);
         setPhase('complete');
         return;
       }
@@ -150,7 +150,7 @@ export default function ObserverImitationActivity() {
       setSession(nextSession);
       setActiveTrial(nextSession.activeTrialNumber ?? nextSession.trials.length + 1);
     },
-    [recordAttempt, session, settings]
+    [recordSession, session, settings]
   );
 
   const movement = useMemo(() => {

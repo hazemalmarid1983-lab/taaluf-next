@@ -18,6 +18,7 @@ import CommunicationChoiceWelcome from '@/components/training/communication/Comm
 
 import PlanActivityGuardMessage from '@/components/training/PlanActivityGuardMessage';
 
+import { withChosenPostSessionMood } from '@/components/training/PostSessionMoodHost';
 import { useActivityLevelGate } from '@/components/training/useActivityLevelGate';
 
 import { childFacingStars } from '@/lib/training/followStarEngine';
@@ -148,7 +149,7 @@ export default function CommunicationChoiceActivity({
 
   const [activeChildId, setActiveChildId] = useState<string | null>(null);
 
-  const { level, recordAttempt } = useActivityLevelGate({
+  const { level, recordSession } = useActivityLevelGate({
     childId: activeChildId,
     mediaId: media.mediaId,
     chapterId,
@@ -178,7 +179,7 @@ export default function CommunicationChoiceActivity({
 
 
 
-  const handleStart = useCallback(() => {
+  const handleStart = useCallback(async () => {
 
     const begin = preparePlanActivityBegin({ pageMediaId: media.mediaId });
 
@@ -253,15 +254,16 @@ export default function CommunicationChoiceActivity({
       const metrics = calculateSessionMetrics(nextSession.trials);
       setResultStars(childFacingStars(metrics.accuracy));
 
+      const withMood = await withChosenPostSessionMood(nextSession);
       try {
-        persistSessionAndAdvancePlan(nextSession);
+        persistSessionAndAdvancePlan(withMood);
         setSessionSaved(true);
       } catch (error) {
         console.error('[taaluf-training] persist session failed', error);
         setSessionSaved(false);
       }
 
-      setSession(nextSession);
+      setSession(withMood);
       setPhase('complete');
       return;
     }
@@ -280,16 +282,9 @@ export default function CommunicationChoiceActivity({
 
   const handleTrialComplete = useCallback(
 
-    (outcome: CommTrialOutcome) => {
+    async (outcome: CommTrialOutcome) => {
 
       if (!session) return;
-
-      recordAttempt({
-        correct: outcome.correct,
-        promptLevel: outcome.promptLevel,
-      });
-
-
 
       let nextSession = commitCommChoiceTrial(session, outcome);
 
@@ -299,15 +294,19 @@ export default function CommunicationChoiceActivity({
 
         nextSession = finalizeCommChoiceSession(nextSession);
 
+        recordSession(nextSession.trials);
+
         const metrics = calculateSessionMetrics(nextSession.trials);
 
         setResultStars(childFacingStars(metrics.accuracy));
 
 
 
+        const withMood = await withChosenPostSessionMood(nextSession);
+
         try {
 
-          persistSessionAndAdvancePlan(nextSession);
+          persistSessionAndAdvancePlan(withMood);
 
           setSessionSaved(true);
 
@@ -321,7 +320,7 @@ export default function CommunicationChoiceActivity({
 
 
 
-        setSession(nextSession);
+        setSession(withMood);
 
         setPhase('complete');
 
@@ -337,7 +336,7 @@ export default function CommunicationChoiceActivity({
 
     },
 
-    [recordAttempt, session]
+    [recordSession, session]
 
   );
 
