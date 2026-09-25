@@ -169,12 +169,23 @@ async function airtableFetch(
       cache: 'no-store',
     });
 
+    const text =
+      typeof res.text === 'function' ? await res.text().catch(() => '') : '';
     if (!res.ok) {
-      await res.text().catch(() => '');
+      console.error(
+        `[airtable] ${method} ${table} HTTP ${res.status} ${redact(text).slice(0, 400)}`
+      );
       return null;
     }
-    return (await res.json()) as AirtableList;
-  } catch {
+    if (method !== 'GET') {
+      console.log(`[airtable] ${method} ${table} HTTP ${res.status || 200}`);
+    }
+    if (text) return JSON.parse(text) as AirtableList;
+    if (typeof res.json === 'function') return (await res.json()) as AirtableList;
+    return { records: [] };
+  } catch (error) {
+    const message = error instanceof Error ? error.message : 'NETWORK';
+    console.error(`[airtable] ${method} ${table} failed: ${redact(message)}`);
     return null;
   }
 }
@@ -303,19 +314,19 @@ export async function syncAssessmentResult(
       0,
       10
     ),
-    AssessmentType:
-      assessment.journeyMode === 'independent_parent'
-        ? 'أسري مستقل'
-        : 'مدمج شامل',
     TotalScore: assessment.totalNeedPercentage,
     MaxScore: 100,
     Classification: assessment.overallClassification,
     Status: 'مكتمل',
-    ScoresJSON: assessment.fusedResultsJson,
-    DomainAveragesJSON: JSON.stringify(assessment.domainScores),
-    NextAssessmentDate: nextAssessmentDate(
-      assessment.suggestedReassessmentDays
-    ),
+    ScoresJSON: JSON.stringify({
+      childId: assessment.childId,
+      journeyMode: assessment.journeyMode,
+      domainScores: assessment.domainScores,
+      fused: assessment.fusedResultsJson,
+      nextAssessmentDate: nextAssessmentDate(
+        assessment.suggestedReassessmentDays
+      ),
+    }),
   };
 
   if (assessment.childId && !assessment.childId.startsWith('local_')) {

@@ -210,8 +210,6 @@ export async function createAssessmentCriteriaRows(
         CriterionCode: r.criterionCode,
         CriterionName: r.criterionName,
         Score: r.score,
-        SpecialistNotes: r.specialistNotes || '',
-        AINotes: r.aiNotes || '',
       } as FieldSet,
     }))
   );

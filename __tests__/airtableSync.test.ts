@@ -110,7 +110,8 @@ describe('airtableSync', () => {
     const assessBody = JSON.parse(fetchMock.mock.calls[1][1].body);
     expect(assessBody.records[0].fields.Student).toBeUndefined();
     expect(assessBody.records[0].fields.Classification).toBe('متوسط');
-    expect(assessBody.records[0].fields.AssessmentType).toBe('أسري مستقل');
+    expect(assessBody.records[0].fields.AssessmentType).toBeUndefined();
+    expect(assessBody.records[0].fields.ScoresJSON).toContain('independent_parent');
   });
 
   it('retrieves a child without exposing secrets on empty results', async () => {

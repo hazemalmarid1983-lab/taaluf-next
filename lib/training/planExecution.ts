@@ -8,6 +8,7 @@ import { isPlanExecutionComplete } from '@/lib/training/createPlan';
 import { findMediaInChapter, loadChapterById } from '@/lib/training/loadChapter';
 import { clearLiveTrainingSession } from '@/lib/training/liveSessionDraft';
 import { clearPlanActivityRecoveryAfterPlanSessionComplete } from '@/lib/training/planActivitySafety';
+import { publishGameSession } from '@/lib/airtableRealtimeClient';
 import { persistCompletedTrainingSession } from '@/lib/training/sessionPersistence';
 import {
   getCompletionApplyRecord,
@@ -228,6 +229,23 @@ export function persistSessionAndAdvancePlan(
   session: TrainingSessionRuntime
 ) {
   const result = persistCompletedTrainingSession(session);
+  if (result.applied) {
+    publishGameSession({
+      sessionKey: session.id,
+      childId: session.childId,
+      gameCode: session.mediaId,
+      independence: result.metrics.independence,
+      mood: session.postSessionMood,
+      accuracy: result.metrics.accuracy,
+      levelReached: session.difficulty,
+      totalTrials: result.metrics.totalTrials,
+      startedAt: session.startedAt,
+      endedAt: session.endedAt,
+      summary: `جلسة ${session.mediaId}: استقلال ${result.metrics.independence}%${
+        session.postSessionMood ? ` — مزاج ${session.postSessionMood}` : ''
+      }`,
+    });
+  }
   if (session.planId) {
     if (!planAdvanceAlreadyApplied(session)) {
       advanceTrainingPlan(session.planId, {

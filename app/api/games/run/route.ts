@@ -48,8 +48,9 @@ export async function GET(req: Request) {
         }),
         source: 'airtable',
       });
-    } catch {
-      /* fall through */
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'GAME_LIST_FAILED';
+      console.error(`[airtable] GameSessions list HTTP error: ${message}`);
     }
   }
 
@@ -106,8 +107,9 @@ export async function POST(req: Request) {
         ]);
         id = record.id;
         source = 'airtable';
-      } catch {
-        /* fall back to local id */
+      } catch (error) {
+        const message = error instanceof Error ? error.message : 'GAME_INSERT_FAILED';
+        console.error(`[airtable] GameSessions insert failed: ${message}`);
       }
     }
 

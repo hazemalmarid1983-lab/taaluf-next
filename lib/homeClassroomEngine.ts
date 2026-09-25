@@ -5,6 +5,7 @@
  * أداة تدريب وتعميم منزلي — ليست تشخيصاً طبياً.
  */
 
+import { publishGameSession } from '@/lib/airtableRealtimeClient';
 import type { RegulationZoneId } from './regulationZones';
 import {
   buildPromptFadingCue,
@@ -668,6 +669,24 @@ export function saveHomeSession(summary: HomeSessionSummary) {
     if (existing >= 0) sessions[existing] = summary;
     else sessions.push(summary);
     localStorage.setItem(HOME_SESSIONS_STORAGE_KEY, JSON.stringify(sessions));
+    if (summary.postSessionMood) {
+      const independent =
+        summary.totalTrials > 0
+          ? Math.round((summary.independentCount / summary.totalTrials) * 100)
+          : summary.masteryPercentage;
+      publishGameSession({
+        sessionKey: `${summary.childId}:${summary.sessionDate}`,
+        childId: summary.childId,
+        gameCode: summary.goalId || 'home-classroom',
+        independence: independent,
+        mood: summary.postSessionMood,
+        accuracy: summary.masteryPercentage,
+        totalTrials: summary.totalTrials,
+        startedAt: summary.sessionDate,
+        endedAt: summary.sessionDate,
+        summary: summary.clinicalNoteAr,
+      });
+    }
   } catch {
     /* ignore */
   }

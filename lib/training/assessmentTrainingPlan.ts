@@ -20,6 +20,7 @@ import {
   GOAL_CHAIN_MIN,
   type TrackedGoal,
 } from '@/lib/goalsEngine';
+import { publishFourSourceSnapshot } from '@/lib/airtableRealtimeClient';
 import { loadGoalsLocal, saveGoalsLocal } from '@/lib/goalsStore';
 import { createTrainingPlan } from '@/lib/training/createPlan';
 import { filterObserverImitationTargetSkillIds } from '@/lib/training/c15SkillClassification';
@@ -244,6 +245,16 @@ export function isAssessmentPreparedPlan(plan: { id: string } | null | undefined
 export function ensureActiveTrainingPlanFromAssessment(
   childId: string
 ): TrainingPlan | null {
+  try {
+    return computeActiveTrainingPlanFromAssessment(childId);
+  } finally {
+    if (childId) publishFourSourceSnapshot(childId);
+  }
+}
+
+function computeActiveTrainingPlanFromAssessment(
+  childId: string
+): TrainingPlan | null {
   if (!childId) return null;
 
   try {
@@ -327,6 +338,7 @@ export function continuePreparedGoalChain(childId: string): TrainingPlan | null 
   const slice = nextUnusedChainSlice(childId);
   if (!slice) return null;
   const goals = ensureGoals(childId);
+  publishFourSourceSnapshot(childId);
   const goalIds = goals.map((goal) => goal.id);
   return saveTrainingPlan(
     createTrainingPlan({

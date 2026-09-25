@@ -106,8 +106,9 @@ export async function POST(req: Request) {
           };
         })
       );
-    } catch {
-      /* optional */
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'CRITERIA_INSERT_FAILED';
+      console.error(`[airtable] AssessmentCriteria insert failed: ${message}`);
     }
     await logAction({
       userId: session.user.id || '',
