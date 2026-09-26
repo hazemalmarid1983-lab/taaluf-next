@@ -178,6 +178,7 @@ export default withAuth(
     callbacks: {
       authorized: ({ token, req }) => {
         const path = req.nextUrl.pathname;
+        if (path === '/') return true;
         if (path === '/maintenance') return true;
         if (path.startsWith('/login')) return true;
         if (path.startsWith('/specialist/pay')) return true;
