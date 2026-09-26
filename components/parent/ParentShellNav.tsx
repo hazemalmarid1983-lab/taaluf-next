@@ -1,12 +1,17 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import TaalufLogo from '@/components/branding/TaalufLogo';
 import PermissionGate from '@/components/access/PermissionGate';
 import { LanguageToggleBtn, useLanguage } from '@/components/LanguageProvider';
-import { CHILD_ROOM_PATH } from '@/lib/childRoom/gate';
-import { PARENT_ROUTES } from '@/lib/parentJourney';
-import { PRICING_PATH } from '@/lib/subscriptionTiers';
+import { JOURNEY_HYDRATED_EVENT } from '@/lib/childRoom/journeyClient';
+import {
+  PARENT_ROUTES,
+  readActiveChild,
+  resolveParentNavLinks,
+  type ParentNavLinkId,
+} from '@/lib/parentJourney';
 
 export default function ParentShellNav({
   name,
@@ -16,15 +21,34 @@ export default function ParentShellNav({
   isAdmin?: boolean;
 }) {
   const { t, dir } = useLanguage();
+  const [hasRegisteredChild, setHasRegisteredChild] = useState(false);
 
-  const links = [
-    { href: PARENT_ROUTES.home, label: t('home') },
-    { href: PARENT_ROUTES.screening, label: 'الفرز السريع' },
-    { href: CHILD_ROOM_PATH, label: 'غرفة الطفل' },
-    { href: PRICING_PATH, label: 'الباقات والاشتراكات' },
-    { href: PARENT_ROUTES.community, label: t('community') },
-    { href: `${CHILD_ROOM_PATH}?book=1`, label: t('appointments') },
-  ];
+  useEffect(() => {
+    const refresh = () => setHasRegisteredChild(Boolean(readActiveChild()?.id));
+    refresh();
+    window.addEventListener(JOURNEY_HYDRATED_EVENT, refresh);
+    window.addEventListener('storage', refresh);
+    return () => {
+      window.removeEventListener(JOURNEY_HYDRATED_EVENT, refresh);
+      window.removeEventListener('storage', refresh);
+    };
+  }, []);
+
+  const labels: Record<ParentNavLinkId, string> = {
+    home: t('home'),
+    screening: 'الفرز السريع',
+    childRoom: 'غرفة الطفل',
+    pricing: 'الباقات والاشتراكات',
+    community: t('community'),
+    appointments: t('appointments'),
+    progressReports: 'التقارير والمتابعة',
+    teacherMessaging: 'التواصل مع المعلم',
+  };
+
+  const links = resolveParentNavLinks(hasRegisteredChild).map((link) => ({
+    href: link.href,
+    label: labels[link.id],
+  }));
 
   return (
     <header

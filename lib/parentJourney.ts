@@ -4,6 +4,7 @@
  */
 
 import { ASSESSMENT_DRAFT_KEY, type AssessmentDraft } from '@/lib/assessmentGate';
+import { CHILD_ROOM_PATH } from '@/lib/childRoom/gate';
 import { loadStoredAssessments } from '@/lib/assessmentHelpers';
 import { CONSENT_STORAGE_KEY } from '@/lib/consentConstants';
 import { isLearningDifficultiesEnabled } from '@/lib/featureFlags';
@@ -44,6 +45,42 @@ export const LD_ROUTES = {
   studentsNew: '/dashboard/ld/students/new',
   academicCard: '/dashboard/academic-card',
 } as const;
+
+export type ParentNavLinkId =
+  | 'home'
+  | 'screening'
+  | 'childRoom'
+  | 'pricing'
+  | 'community'
+  | 'appointments'
+  | 'progressReports'
+  | 'teacherMessaging';
+
+export type ParentNavLink = { id: ParentNavLinkId; href: string };
+
+/**
+ * CLINICAL_RULES: بعد تسجيل الطفل تقتصر واجهة ولي الأمر على
+ * التقارير والمتابعة، التواصل مع المعلم، وغرفة الطفل.
+ */
+export function resolveParentNavLinks(
+  hasRegisteredChild: boolean
+): ParentNavLink[] {
+  if (hasRegisteredChild) {
+    return [
+      { id: 'progressReports', href: PARENT_ROUTES.home },
+      { id: 'teacherMessaging', href: PARENT_ROUTES.messages },
+      { id: 'childRoom', href: CHILD_ROOM_PATH },
+    ];
+  }
+  return [
+    { id: 'home', href: PARENT_ROUTES.home },
+    { id: 'screening', href: PARENT_ROUTES.screening },
+    { id: 'childRoom', href: CHILD_ROOM_PATH },
+    { id: 'pricing', href: PARENT_ROUTES.pay },
+    { id: 'community', href: PARENT_ROUTES.community },
+    { id: 'appointments', href: `${CHILD_ROOM_PATH}?book=1` },
+  ];
+}
 
 /** نقطة دخول الفرز — مسار مزدوج أو فرز نمائي فقط */
 export function parentScreeningEntryHref(): string {

@@ -3,6 +3,7 @@ import {
   clearActiveChildSession,
   getReportMetadataByJourney,
   readActiveChild,
+  resolveParentNavLinks,
   resolveParentNextStep,
   saveActiveChild,
 } from '../lib/parentJourney';
@@ -197,5 +198,28 @@ describe('active child session', () => {
     expect(localStorage.getItem('taaluf.activeStudent')).toBeNull();
     expect(localStorage.getItem('taaluf_current_child')).toBeNull();
     expect(localStorage.getItem('taaluf.screening.v1')).toBeNull();
+  });
+});
+
+describe('resolveParentNavLinks', () => {
+  it('restricts a parent with a registered child to reports, messaging and child room', () => {
+    const links = resolveParentNavLinks(true);
+    expect(links.map((l) => l.id)).toEqual([
+      'progressReports',
+      'teacherMessaging',
+      'childRoom',
+    ]);
+    const hrefs = links.map((l) => l.href);
+    expect(hrefs).toEqual(['/parent', '/dashboard/messages', '/dashboard/child-room']);
+    for (const href of hrefs) {
+      expect(href).not.toMatch(/screen|pricing|community/);
+    }
+  });
+
+  it('keeps onboarding links before a child is registered', () => {
+    const ids = resolveParentNavLinks(false).map((l) => l.id);
+    expect(ids).toEqual(
+      expect.arrayContaining(['screening', 'pricing', 'community'])
+    );
   });
 });
