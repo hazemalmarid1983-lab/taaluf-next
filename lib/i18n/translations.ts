@@ -46,8 +46,11 @@ export const translations = {
     parentDashboard: 'لوحة ولي الأمر',
     activeFile: 'الملف النشط حالياً',
     childLabel: 'الطفل: {name}',
-    followOrRegister: 'يمكنك متابعة خطوات التقييم لهذا الملف أو بدء تسجيل طفل آخر.',
-    registerAnotherChild: '+ تسجيل طفل آخر',
+    followActiveFile: 'تابع تقدّم طفلك وتقارير الجلسات ورسائل المعلم من هنا.',
+    childAlreadyRegisteredTitle: 'طفلك مسجّل بالفعل',
+    childAlreadyRegisteredBody:
+      'هذا الحساب مرتبط بملف طفل نشط. يمكنك متابعة التقدّم وتقارير الجلسات من لوحة ولي الأمر.',
+    backToParentDashboard: 'العودة إلى لوحة ولي الأمر',
     guardianFallback: 'ولي الأمر',
     yourChild: 'طفلك',
     pathIndependent:
@@ -535,9 +538,12 @@ export const translations = {
     parentDashboard: 'Parent dashboard',
     activeFile: 'Active profile',
     childLabel: 'Child: {name}',
-    followOrRegister:
-      'Continue this child’s assessment steps or start registering another child.',
-    registerAnotherChild: '+ Register another child',
+    followActiveFile:
+      'Track your child’s progress, session reports, and teacher messages here.',
+    childAlreadyRegisteredTitle: 'Your child is already registered',
+    childAlreadyRegisteredBody:
+      'This account is linked to an active child profile. Track progress and session reports from the parent dashboard.',
+    backToParentDashboard: 'Back to parent dashboard',
     guardianFallback: 'Parent',
     yourChild: 'your child',
     pathIndependent:

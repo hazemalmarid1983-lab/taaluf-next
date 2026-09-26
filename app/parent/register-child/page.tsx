@@ -1,6 +1,7 @@
 'use client';
 
-import { FormEvent, useMemo, useState } from 'react';
+import { FormEvent, useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -8,7 +9,11 @@ import { Label } from '@/components/ui/label';
 import { useLanguage } from '@/components/LanguageProvider';
 import { publishChildJourney } from '@/lib/childRoom/journeyClient';
 import { assignScreeningToChild, TEACHER_CHOICE_PATH } from '@/lib/childRoom/gate';
-import { SCREENING_RESULT_KEY } from '@/lib/parentJourney';
+import {
+  PARENT_ROUTES,
+  SCREENING_RESULT_KEY,
+  readActiveChild,
+} from '@/lib/parentJourney';
 import { readSelectedTier } from '@/lib/subscriptionTiers';
 import { CONSENT_STORAGE_KEY } from '@/lib/consentConstants';
 import { hydrateActiveChildClinicalSlice } from '@/lib/clinical/hydrateActiveChild';
@@ -77,7 +82,14 @@ export default function ParentRegisterChildPage() {
   const [msg, setMsg] = useState('');
   const [error, setError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [registration, setRegistration] = useState<
+    'checking' | 'open' | 'registered'
+  >('checking');
   const age = useMemo(() => computeAge(dob), [dob]);
+
+  useEffect(() => {
+    setRegistration(readActiveChild() ? 'registered' : 'open');
+  }, []);
 
   const onSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -155,6 +167,34 @@ export default function ParentRegisterChildPage() {
       400
     );
   };
+
+  if (registration === 'checking') {
+    return (
+      <p className="py-16 text-center text-sm text-slate-500">{t('loading')}</p>
+    );
+  }
+
+  if (registration === 'registered') {
+    return (
+      <section
+        className="mx-auto max-w-lg rounded-3xl border border-white/90 bg-white/80 p-7 text-center shadow-xl backdrop-blur-2xl"
+        dir={dir}
+      >
+        <h1 className="text-2xl font-bold text-[#0b1f14]">
+          {t('childAlreadyRegisteredTitle')}
+        </h1>
+        <p className="mt-2 text-sm text-slate-500">
+          {t('childAlreadyRegisteredBody')}
+        </p>
+        <Link
+          href={PARENT_ROUTES.home}
+          className="mt-6 block w-full rounded-xl bg-[#2E7D8E] py-3 font-bold text-white shadow transition hover:bg-[#256675]"
+        >
+          {t('backToParentDashboard')}
+        </Link>
+      </section>
+    );
+  }
 
   return (
     <section

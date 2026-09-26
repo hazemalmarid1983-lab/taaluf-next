@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
 import { useLanguage } from '@/components/LanguageProvider';
 import FrictionlessNextAction from '@/components/flow/FrictionlessNextAction';
@@ -12,7 +11,6 @@ import { cn } from '@/lib/utils';
 import {
   PARENT_PATH_STEPS,
   PARENT_ROUTES,
-  clearActiveChildSession,
   parentScreeningEntryHref,
   readParentJourneyState,
   type ParentJourneyState,
@@ -27,7 +25,6 @@ export default function ParentHomeDashboard({
   studentNameFromEntitlements?: string;
 }) {
   const { data: session } = useSession();
-  const router = useRouter();
   const { t, dir } = useLanguage();
   const [journey, setJourney] = useState<ParentJourneyState | null>(null);
   const nextAction = useParentNextAction(studentNameFromEntitlements);
@@ -35,11 +32,6 @@ export default function ParentHomeDashboard({
   useEffect(() => {
     setJourney(readParentJourneyState(studentNameFromEntitlements));
   }, [studentNameFromEntitlements, unlocked]);
-
-  const handleStartNewChild = () => {
-    clearActiveChildSession();
-    router.push(PARENT_ROUTES.register);
-  };
 
   if (!journey) {
     return (
@@ -104,15 +96,8 @@ export default function ParentHomeDashboard({
           <h2 className="mt-2 text-xl font-bold text-[#1F2A37]">
             {t('childLabel', { name: childName })}
           </h2>
-          <p className="mt-1 text-xs text-gray-500">{t('followOrRegister')}</p>
+          <p className="mt-1 text-xs text-gray-500">{t('followActiveFile')}</p>
         </div>
-        <button
-          type="button"
-          onClick={handleStartNewChild}
-          className="rounded-lg bg-gray-100 px-4 py-2 text-xs font-bold text-gray-600 transition hover:bg-gray-200"
-        >
-          {t('registerAnotherChild')}
-        </button>
       </div>
 
       <header className="rounded-3xl border border-white/90 bg-white/80 px-6 py-7 shadow-xl backdrop-blur-2xl">
@@ -150,8 +135,10 @@ export default function ParentHomeDashboard({
               !done &&
               PARENT_PATH_STEPS.slice(0, idx).every((s) => doneMap[s.id]);
             const href =
-              step.id === 'child' && (done || current)
-                ? PARENT_ROUTES.register
+              step.id === 'child'
+                ? current
+                  ? PARENT_ROUTES.register
+                  : null
                 : (step.id === 'screening' || step.id === 'results') &&
                     (done || current)
                   ? parentScreeningEntryHref()
