@@ -414,6 +414,8 @@ export default function CommunicationChoiceActivity({
 
           metrics={metrics}
 
+          trials={session.trials}
+
           onDone={handleDone}
 
         />
@@ -431,6 +433,8 @@ export default function CommunicationChoiceActivity({
         stars={resultStars}
 
         sessionSaved={sessionSaved}
+
+        trials={session.trials}
 
         onDone={handleDone}
 

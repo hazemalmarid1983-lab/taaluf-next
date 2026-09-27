@@ -2,7 +2,9 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import DigitalPromptMappingPanel from '@/components/training/DigitalPromptMappingPanel';
 import type { TrainingSessionMetrics } from '@/lib/training/engine/types';
+import type { TrainingPromptLevel } from '@/lib/training/types';
 import { resolveTapToRequestSessionDetailHref } from '@/lib/training/tapToRequestCompletion';
 import {
   formatResponseTimeMs,
@@ -14,6 +16,7 @@ type Props = {
   stars: number;
   sessionSaved: boolean;
   metrics: TrainingSessionMetrics;
+  trials?: ReadonlyArray<{ promptLevel: TrainingPromptLevel }>;
   onDone: () => void;
 };
 
@@ -22,6 +25,7 @@ export default function TapToRequestComplete({
   stars,
   sessionSaved,
   metrics,
+  trials,
   onDone,
 }: Props) {
   const breakdownEntries = promptBreakdownEntries(metrics);
@@ -100,6 +104,7 @@ export default function TapToRequestComplete({
             </ul>
           </div>
         ) : null}
+        {trials ? <DigitalPromptMappingPanel trials={trials} compact /> : null}
       </section>
 
       <div className="mx-auto mb-3 w-full max-w-lg">

@@ -16,8 +16,8 @@ import {
   type MaintenanceProbeInput,
 } from '@/lib/maintenanceSchedule';
 import type { Permission } from '@/lib/permissions';
-import { SESSION_SETTING_LABELS_AR, toClinicalPromptLevel } from '@/lib/skillMastery';
-import type { MaintenanceProbe, MasteryWithdrawal } from '@/types/clinical';
+import { SESSION_SETTING_LABELS_AR, isDigitalAssistanceCue, toClinicalPromptLevel } from '@/lib/skillMastery';
+import { DIGITAL_PROMPT_MAPPING, type MaintenanceProbe, type MasteryWithdrawal } from '@/types/clinical';
 
 export type GoalAction =
   | { type: 'session'; input: GoalSessionFormInput }
@@ -72,6 +72,15 @@ export function sanitizeGoalSession(raw: unknown): GoalSession | null {
   const s = raw as Record<string, unknown> | null;
   if (!s || !isIso(s.at)) return null;
   const setting = typeof s.setting === 'string' && SETTINGS.has(s.setting) ? s.setting : undefined;
+  const digitalPromptCue = isDigitalAssistanceCue(s.digitalPromptCue) ? s.digitalPromptCue : undefined;
+  const promptLevel = digitalPromptCue
+    ? DIGITAL_PROMPT_MAPPING[digitalPromptCue].clinical_level
+    : toClinicalPromptLevel(typeof s.promptLevel === 'string' ? s.promptLevel : undefined);
+  const promptSource: GoalSession['promptSource'] = digitalPromptCue
+    ? 'digital_assistance'
+    : s.promptSource === 'human' && promptLevel
+      ? 'human'
+      : undefined;
   return compact({
     at: new Date(s.at).toISOString(),
     mood: optStr(s.mood, 8),
@@ -82,7 +91,9 @@ export function sanitizeGoalSession(raw: unknown): GoalSession | null {
     independencePct: pct(s.independencePct),
     firstTrialIndependent: optBool(s.firstTrialIndependent),
     naturalCueOnly: optBool(s.naturalCueOnly),
-    promptLevel: toClinicalPromptLevel(typeof s.promptLevel === 'string' ? s.promptLevel : undefined),
+    promptLevel,
+    promptSource,
+    digitalPromptCue,
     trainerId: optStr(s.trainerId, 120),
     setting: setting as GoalSession['setting'],
     metFrequencyCriterion: optBool(s.metFrequencyCriterion),

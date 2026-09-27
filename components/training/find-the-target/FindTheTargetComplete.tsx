@@ -1,17 +1,21 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
+import ObserverPromptMappingDisclosure from '@/components/training/ObserverPromptMappingDisclosure';
+import type { TrainingPromptLevel } from '@/lib/training/types';
 
 type Props = {
   stars: number;
   sessionSaved: boolean;
   onDone: () => void;
+  trials?: ReadonlyArray<{ promptLevel: TrainingPromptLevel }>;
 };
 
 export default function FindTheTargetComplete({
   stars,
   sessionSaved,
   onDone,
+  trials,
 }: Props) {
   const displayStars = Math.min(3, Math.max(1, stars));
 
@@ -53,6 +57,7 @@ export default function FindTheTargetComplete({
         >
           تم
         </Button>
+        <ObserverPromptMappingDisclosure trials={trials} />
       </div>
     </div>
   );

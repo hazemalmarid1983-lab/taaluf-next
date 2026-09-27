@@ -5,11 +5,15 @@
 
 import type { FrequencyTarget, GoalSession, TrackedGoal } from '@/lib/goalsEngine';
 import {
+  isDigitalAssistanceCue,
   skillConfigForGoal,
+  toClinicalPromptLevel,
   type ClinicalPromptLevel,
+  type DigitalAssistanceCue,
   type SessionSetting,
   type SkillTypeConfig,
 } from '@/lib/skillMastery';
+import { DIGITAL_PROMPT_MAPPING } from '@/types/clinical';
 
 export type GoalSessionFormInput = {
   mood?: string;
@@ -20,6 +24,8 @@ export type GoalSessionFormInput = {
   firstTrialIndependent?: boolean;
   naturalCueOnly?: boolean;
   promptLevel?: ClinicalPromptLevel | '';
+  /** أعلى مساعدة جاءت من أداة/لعبة رقمية — يُشتق منها promptLevel */
+  digitalPromptCue?: DigitalAssistanceCue | '';
   trainerName?: string;
   setting?: SessionSetting | '';
   behaviorValue?: number | string;
@@ -32,7 +38,8 @@ export type GoalSessionFormError =
   | 'SETTING_REQUIRED'
   | 'FREQUENCY_TARGET_REQUIRED'
   | 'BEHAVIOR_VALUE_REQUIRED'
-  | 'PROMPT_LEVEL_CONFLICT';
+  | 'PROMPT_LEVEL_CONFLICT'
+  | 'DIGITAL_PROMPT_MAPPING_CONFLICT';
 
 export const GOAL_SESSION_FORM_ERRORS_AR: Record<GoalSessionFormError, string> = {
   INDEPENDENCE_REQUIRED: 'أدخل نسبة الاستقلالية بين 0 و100',
@@ -41,6 +48,8 @@ export const GOAL_SESSION_FORM_ERRORS_AR: Record<GoalSessionFormError, string> =
   FREQUENCY_TARGET_REQUIRED: 'حدّد معيار الهدف (المقياس والاتجاه والقيمة) مرة واحدة',
   BEHAVIOR_VALUE_REQUIRED: 'أدخل عدد مرات السلوك أو مدته في هذه الجلسة',
   PROMPT_LEVEL_CONFLICT: 'مستوى المساعدة لا يطابق النسبة: «مستقل» يعني 100% والعكس',
+  DIGITAL_PROMPT_MAPPING_CONFLICT:
+    'المساعدة الرقمية تحدد المستوى تلقائياً: التلميح البصري وتقليل الخيارات = إشارة، والمساعدة البصرية المباشرة = نموذج',
 };
 
 export type GoalSessionFormFields = {
@@ -140,16 +149,29 @@ export function buildGoalSessionFromForm(
   } else {
     const pct = toNumber(input.independencePct);
     if (pct === undefined || pct < 0 || pct > 100) errors.push('INDEPENDENCE_REQUIRED');
-    const promptLevel = input.promptLevel || (pct === 100 ? 'Independent' : undefined);
+    const digitalPromptCue = isDigitalAssistanceCue(input.digitalPromptCue) ? input.digitalPromptCue : undefined;
+    const enteredLevel = toClinicalPromptLevel(input.promptLevel || undefined);
+    const mappedLevel = digitalPromptCue ? DIGITAL_PROMPT_MAPPING[digitalPromptCue].clinical_level : undefined;
+    if (mappedLevel && enteredLevel && enteredLevel !== mappedLevel) {
+      errors.push('DIGITAL_PROMPT_MAPPING_CONFLICT');
+    }
+    const promptLevel = mappedLevel ?? enteredLevel ?? (pct === 100 ? 'Independent' : undefined);
     if (pct !== undefined && promptLevel && (promptLevel === 'Independent') !== (pct === 100)) {
       errors.push('PROMPT_LEVEL_CONFLICT');
     }
     if (errors.length) return { ok: false, errors };
+    const promptSource: GoalSession['promptSource'] = digitalPromptCue
+      ? 'digital_assistance'
+      : enteredLevel && enteredLevel !== 'Independent' && enteredLevel !== 'No Response'
+        ? 'human'
+        : undefined;
     session = {
       ...base,
       independencePct: Math.round(pct!),
       fullyIndependent: pct === 100,
       promptLevel,
+      promptSource,
+      digitalPromptCue,
       firstTrialIndependent: fields.askFirstTrial ? input.firstTrialIndependent === true : undefined,
       naturalCueOnly: fields.askNaturalCue ? input.naturalCueOnly === true : undefined,
     };

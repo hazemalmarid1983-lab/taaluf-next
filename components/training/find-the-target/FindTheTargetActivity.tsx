@@ -183,6 +183,7 @@ export default function FindTheTargetActivity() {
       <FindTheTargetComplete
         stars={resultStars}
         sessionSaved={sessionSaved}
+        trials={session.trials}
         onDone={handleDone}
       />
     );

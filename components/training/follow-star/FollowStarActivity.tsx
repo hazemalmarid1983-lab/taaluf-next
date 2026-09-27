@@ -163,6 +163,7 @@ export default function FollowStarActivity() {
       <FollowStarComplete
         stars={resultStars}
         sessionSaved={sessionSaved}
+        trials={session.trials}
         onDone={handleDone}
       />
     );

@@ -29,7 +29,11 @@ import {
 import { loadGoalsLocal, saveGoalsLocal, upsertGoalLocal } from '@/lib/goalsStore';
 import { loadStoredAssessments } from '@/lib/assessmentHelpers';
 import { toGoalTrackingItem } from '@/lib/progressTracker';
-import { SKILL_MASTERY_BLOCKER_LABELS_AR, SKILL_TYPE_CONFIGS } from '@/lib/skillMastery';
+import {
+  SKILL_MASTERY_BLOCKER_LABELS_AR,
+  SKILL_TYPE_CONFIGS,
+  sessionPromptLabelAr,
+} from '@/lib/skillMastery';
 import { useLanguage } from '@/components/LanguageProvider';
 import SensoryHubRecommendationsCard from '@/components/sensory-hub/SensoryHubRecommendationsCard';
 
@@ -279,6 +283,8 @@ export default function GoalsPage() {
               Math.max(0, ((g.current - g.baseline) / range) * 100)
             );
             const tracking = toGoalTrackingItem(g, probes);
+            const lastSession = g.sessions[g.sessions.length - 1];
+            const lastPromptLabel = lastSession ? sessionPromptLabelAr(lastSession) : undefined;
             return (
               <article
                 key={g.id}
@@ -360,6 +366,11 @@ export default function GoalsPage() {
                       ? ` · ${tracking.nextMaintenanceKind === 'confirmation' ? 'مجس تأكيدي' : 'المجس التالي'} ${new Date(tracking.nextMaintenanceDueAt).toLocaleDateString('ar-EG')}${tracking.maintenanceDueNow ? ' (مستحق الآن)' : ''}`
                       : ''}
                   </p>
+                  {lastPromptLabel ? (
+                    <p>
+                      <span className="font-semibold">مساعدة آخر جلسة:</span> {lastPromptLabel}
+                    </p>
+                  ) : null}
                   {tracking.generalization ? (
                     <p>
                       <span className="font-semibold">مؤشر التعميم:</span>{' '}

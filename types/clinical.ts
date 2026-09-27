@@ -22,6 +22,81 @@ export type ClinicalPromptLevel =
   | 'Full Physical'
   | 'No Response';
 
+/**
+ * مساعدات المحرك الرقمي كما تظهر على الشاشة، من الأقل إلى الأكثر تدخلاً.
+ * تُسجَّل في TrainingTrial.promptLevel وتُطابَق مع ClinicalPromptLevel عبر DIGITAL_PROMPT_MAPPING.
+ */
+export type DigitalAssistanceCue = 'visual_hint' | 'reduced_choices' | 'direct_visual_assistance';
+
+/** مصدر أعلى مساعدة في الجلسة: مدرّب بشري أو أداة/لعبة رقمية */
+export type PromptSource = 'human' | 'digital_assistance';
+
+export type DigitalPromptMappingStatus = 'pending_scientific_signoff' | 'approved';
+
+/** المستويات السريرية المسموح أن تطابقها مساعدة رقمية — لا مساعدة رقمية جسدية أو لفظية */
+export type DigitalMappedClinicalLevel = Extract<ClinicalPromptLevel, 'Gestural' | 'Model'>;
+
+export interface DigitalPromptMappingRule {
+  cue: DigitalAssistanceCue;
+  clinical_level: DigitalMappedClinicalLevel;
+  cue_label_ar: string;
+  cue_label_en: string;
+  /** ما يراه الطفل على الشاشة */
+  on_screen_ar: string;
+  /** سبب المطابقة مع المستوى السريري */
+  rationale_ar: string;
+}
+
+/**
+ * قاعدة مطابقة المساعدات الرقمية مع مقياس المساعدة الموحّد (8 مستويات):
+ *
+ * 1. كل محاولة تُطابَق منفردة: التلميح البصري وتقليل الخيارات = Gestural،
+ *    والمساعدة البصرية المباشرة (عرض الهدف وتوجيهه) = Model.
+ * 2. أي مساعدة رقمية تجعل المحاولة غير مستقلة؛ لا تُطابَق مساعدة رقمية مع Independent أبداً،
+ *    ولا تتجاوز Model (لا توجد مساعدة رقمية لفظية أو جسدية).
+ * 3. مستوى الجلسة = أكثر مستوى تدخلاً بين محاولاتها (بشرية أو رقمية).
+ *    إذا بلغته مساعدة رقمية فقط يُسجَّل promptSource = 'digital_assistance' مع digitalPromptCue
+ *    (عند التعادل تُختار المساعدة الرقمية الأعلى رتبة). إذا بلغه تلقين بشري يُسجَّل 'human'.
+ * 4. الخادم يعيد اشتقاق promptLevel من digitalPromptCue ولا يقبل مستوى يخالف المطابقة.
+ * 5. الزمن وحده لا يحدد المستوى — يُسجَّل أقوى مساعدة ظهرت فعلاً قبل الاستجابة.
+ *
+ * الحالة: اجتهاد برمجي بانتظار اعتماد الاستشاري السريري.
+ */
+export const DIGITAL_PROMPT_MAPPING_STATUS: DigitalPromptMappingStatus = 'pending_scientific_signoff';
+
+export const DIGITAL_ASSISTANCE_CUES: readonly DigitalAssistanceCue[] = [
+  'visual_hint',
+  'reduced_choices',
+  'direct_visual_assistance',
+];
+
+export const DIGITAL_PROMPT_MAPPING: Readonly<Record<DigitalAssistanceCue, DigitalPromptMappingRule>> = {
+  visual_hint: {
+    cue: 'visual_hint',
+    clinical_level: 'Gestural',
+    cue_label_ar: 'تلميح بصري',
+    cue_label_en: 'Visual hint',
+    on_screen_ar: 'إبراز منطقة الهدف مع بقاء كل الخيارات',
+    rationale_ar: 'يوجّه الانتباه نحو الهدف دون أداء الاستجابة عن الطفل — يعادل الإشارة أو النظرة',
+  },
+  reduced_choices: {
+    cue: 'reduced_choices',
+    clinical_level: 'Gestural',
+    cue_label_ar: 'تقليل الخيارات',
+    cue_label_en: 'Reduced choices',
+    on_screen_ar: 'حذف المشتت الأبعد شبهاً مع بقاء الهدف والمشتتات الأقرب',
+    rationale_ar: 'يضيّق مجال الاختيار دون عرض الاستجابة الصحيحة — يعادل الإشارة نحو مجموعة الخيارات',
+  },
+  direct_visual_assistance: {
+    cue: 'direct_visual_assistance',
+    clinical_level: 'Model',
+    cue_label_ar: 'مساعدة بصرية مباشرة',
+    cue_label_en: 'Direct visual guidance',
+    on_screen_ar: 'الهدف مع مشتت واحد فقط، والهدف مُبرز ومُوجَّه إليه',
+    rationale_ar: 'تعرض الاستجابة الصحيحة نفسها أمام الطفل قبل أدائها — يعادل النمذجة (Demonstration)',
+  },
+};
+
 export interface SkillTypeConfig {
   skill_type_id: SkillCategoryId;
   label_ar: string;

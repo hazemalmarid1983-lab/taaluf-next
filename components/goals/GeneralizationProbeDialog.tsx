@@ -12,7 +12,11 @@ import {
   type GeneralizationProbeError,
   type GeneralizationProbeInput,
 } from '@/lib/generalizationProbeStore';
-import { SESSION_SETTING_LABELS_AR, type SessionSetting } from '@/lib/skillMastery';
+import {
+  DIGITAL_PROMPT_MAPPING_SUMMARY_AR,
+  SESSION_SETTING_LABELS_AR,
+  type SessionSetting,
+} from '@/lib/skillMastery';
 
 const inputClass = 'w-full rounded-xl border px-3 py-2 text-sm';
 const DIMENSIONS = Object.keys(PROBE_DIMENSION_LABELS_AR) as GeneralizationDimension[];
@@ -167,6 +171,10 @@ export default function GeneralizationProbeDialog({
             </select>
           </label>
         </div>
+        <p className="rounded-xl bg-blue-50/70 px-3 py-2 text-xs leading-5 text-slate-700">
+          إذا قدّمت أداة أو لعبة رقمية المساعدة، اختر المستوى المطابق: {DIGITAL_PROMPT_MAPPING_SUMMARY_AR}{' '}
+          (بانتظار الاعتماد العلمي)
+        </p>
         <label className="flex items-center gap-2 text-sm">
           <input
             type="checkbox"

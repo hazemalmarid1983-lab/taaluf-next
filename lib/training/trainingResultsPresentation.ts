@@ -17,6 +17,21 @@ import {
   type PromptHierarchyLevel,
 } from '@/lib/promptHierarchy';
 import type { TrainingPromptLevel } from '@/lib/training/types';
+import {
+  CLINICAL_PROMPT_LABELS_AR,
+  digitalPromptMappingLabelAr,
+  isDigitalAssistanceCue,
+  resolveSessionPromptEvidence,
+  sessionPromptLabelAr,
+} from '@/lib/skillMastery';
+import {
+  DIGITAL_ASSISTANCE_CUES,
+  DIGITAL_PROMPT_MAPPING,
+  DIGITAL_PROMPT_MAPPING_STATUS,
+  type ClinicalPromptLevel,
+  type DigitalAssistanceCue,
+  type PromptSource,
+} from '@/types/clinical';
 
 export const TRAINING_SESSION_ID_IN_NOTES = 'trainingSessionId=';
 
@@ -108,12 +123,49 @@ export function formatResponseTimeMs(ms: number | undefined | null): string {
 }
 
 export function promptLevelLabelAr(level: TrainingPromptLevel): string {
+  if (isDigitalAssistanceCue(level)) return digitalPromptMappingLabelAr(level);
   const human = promptOptionByLevel(level as PromptHierarchyLevel);
-  if (human) return human.labelAr;
-  if (level === 'visual_hint') return 'تلميح بصري (رقمي)';
-  if (level === 'reduced_choices') return 'خيارات مخفّضة (رقمي)';
-  if (level === 'direct_visual_assistance') return 'مساعدة بصرية مباشرة (رقمي)';
-  return level;
+  return human?.labelAr ?? level;
+}
+
+export type DigitalPromptMappingRow = {
+  cue: DigitalAssistanceCue;
+  cueLabelAr: string;
+  onScreenAr: string;
+  clinicalLevel: ClinicalPromptLevel;
+  clinicalLabelAr: string;
+  count: number;
+};
+
+export type DigitalPromptMappingSummary = {
+  rows: DigitalPromptMappingRow[];
+  sessionPromptLabelAr?: string;
+  promptSource?: PromptSource;
+  pendingSignoff: boolean;
+};
+
+/** ما سجّلته اللعبة من مساعدات رقمية وما يقابلها على المقياس السريري */
+export function summarizeDigitalPromptMapping(
+  trials: ReadonlyArray<{ promptLevel: TrainingPromptLevel }>
+): DigitalPromptMappingSummary {
+  const rows = DIGITAL_ASSISTANCE_CUES.map((cue) => {
+    const rule = DIGITAL_PROMPT_MAPPING[cue];
+    return {
+      cue,
+      cueLabelAr: rule.cue_label_ar,
+      onScreenAr: rule.on_screen_ar,
+      clinicalLevel: rule.clinical_level,
+      clinicalLabelAr: CLINICAL_PROMPT_LABELS_AR[rule.clinical_level],
+      count: trials.filter((t) => t.promptLevel === cue).length,
+    };
+  }).filter((row) => row.count > 0);
+  const evidence = resolveSessionPromptEvidence(trials.map((t) => t.promptLevel));
+  return {
+    rows,
+    sessionPromptLabelAr: sessionPromptLabelAr(evidence),
+    promptSource: evidence.promptSource,
+    pendingSignoff: DIGITAL_PROMPT_MAPPING_STATUS !== 'approved',
+  };
 }
 
 export function promptBreakdownEntries(

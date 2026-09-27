@@ -28,6 +28,8 @@ import {
 
   resolveSessionMetrics,
 
+  summarizeDigitalPromptMapping,
+
 } from '@/lib/training/trainingResultsPresentation';
 
 
@@ -136,6 +138,8 @@ export default function TrainingSessionResultsList() {
 
             const goalTitles = resolveGoalTitles(session.goalIds, goals);
 
+            const promptLabel = summarizeDigitalPromptMapping(session.trials).sessionPromptLabelAr;
+
 
 
             return (
@@ -177,6 +181,16 @@ export default function TrainingSessionResultsList() {
                     <p className="mt-2 text-xs text-slate-600">
 
                       الأهداف: {goalTitles.join(' · ')}
+
+                    </p>
+
+                  ) : null}
+
+                  {promptLabel ? (
+
+                    <p className="mt-1 text-xs text-slate-600">
+
+                      أعلى مساعدة: {promptLabel}
 
                     </p>
 

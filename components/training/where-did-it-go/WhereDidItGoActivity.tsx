@@ -174,6 +174,7 @@ export default function WhereDidItGoActivity() {
       <WhereDidItGoComplete
         stars={resultStars}
         sessionSaved={sessionSaved}
+        trials={session.trials}
         onDone={handleDone}
       />
     );

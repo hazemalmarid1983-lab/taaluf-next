@@ -1,17 +1,21 @@
 'use client';
 
 import { Button } from '@/components/ui/button';
+import ObserverPromptMappingDisclosure from '@/components/training/ObserverPromptMappingDisclosure';
+import type { TrainingPromptLevel } from '@/lib/training/types';
 
 type Props = {
   stars: number;
   sessionSaved: boolean;
   onDone: () => void;
+  trials?: ReadonlyArray<{ promptLevel: TrainingPromptLevel }>;
 };
 
 export default function CommunicationChoiceComplete({
   stars,
   sessionSaved,
   onDone,
+  trials,
 }: Props) {
   return (
     <div
@@ -38,6 +42,7 @@ export default function CommunicationChoiceComplete({
       <Button type="button" className="mt-10" size="lg" onClick={onDone}>
         تم
       </Button>
+      <ObserverPromptMappingDisclosure trials={trials} />
     </div>
   );
 }

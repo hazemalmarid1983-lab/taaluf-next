@@ -160,6 +160,7 @@ export default function MatchMeActivity() {
       <MatchMeComplete
         stars={resultStars}
         sessionSaved={sessionSaved}
+        trials={session.trials}
         onDone={handleDone}
       />
     );

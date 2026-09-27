@@ -35,8 +35,10 @@ import {
 import {
   CLINICAL_PROMPT_LABELS_AR,
   CLINICAL_PROMPT_LEVELS,
+  isDigitalAssistanceCue,
   toClinicalPromptLevel,
 } from '@/lib/skillMastery';
+import { DIGITAL_PROMPT_MAPPING, DIGITAL_PROMPT_MAPPING_STATUS } from '@/types/clinical';
 import {
   TRAINING_DIGITAL_PROMPT_LEVELS,
   TRAINING_PROMPT_LEVELS,
@@ -413,23 +415,29 @@ table(
 w('### 7.2 مطابقة كل مستوى يسجله محرك التدريب');
 w();
 const digital = new Set<string>(TRAINING_DIGITAL_PROMPT_LEVELS);
-const digitalDesc: Record<string, string> = {
-  visual_hint: 'إبراز منطقة الهدف مع بقاء كل الخيارات',
-  reduced_choices: 'حذف المشتت الأبعد شبهاً مع بقاء الهدف والمشتتات الأقرب',
-  direct_visual_assistance: 'الهدف مع مشتت واحد فقط، والهدف مُبرز',
-};
 table(
-  ['قيمة المحرك', 'رقمي؟', 'ما يحدث على الشاشة', 'المستوى السريري المطابق'],
+  ['قيمة المحرك', 'رقمي؟', 'ما يحدث على الشاشة', 'المستوى السريري المطابق', 'سبب المطابقة'],
   TRAINING_PROMPT_LEVELS.map((l) => {
     const c = toClinicalPromptLevel(l);
-    return [l, digital.has(l) ? 'نعم' : 'لا', digitalDesc[l] ?? '—', c ? `${c} — ${CLINICAL_PROMPT_LABELS_AR[c]}` : 'غير مطابق'];
+    const rule = isDigitalAssistanceCue(l) ? DIGITAL_PROMPT_MAPPING[l] : undefined;
+    return [
+      l,
+      digital.has(l) ? 'نعم' : 'لا',
+      rule?.on_screen_ar ?? '—',
+      c ? `${c} — ${CLINICAL_PROMPT_LABELS_AR[c]}` : 'غير مطابق',
+      rule?.rationale_ar ?? '—',
+    ];
   })
 );
+w(`حالة المطابقة: **${DIGITAL_PROMPT_MAPPING_STATUS === 'approved' ? 'معتمدة' : 'بانتظار اعتماد الاستشاري السريري'}** (\`DIGITAL_PROMPT_MAPPING\` في types/clinical.ts).`);
+w();
 w('### 7.3 القواعد المطبّقة');
 w();
 w('- الجلسة تسجّل **أكثر مستوى تدخلاً** بين محاولاتها.');
 w('- المحاولة المستقلة فقط تُحتسب في نسبة الاستقلالية؛ أي مساعدة رقمية = محاولة غير مستقلة.');
 w('- «مستقل» مقبول في نموذج الجلسة فقط عند استقلالية 100%.');
+w('- لا تُطابَق مساعدة رقمية مع «مستقل» ولا تتجاوز «نموذج».');
+w('- إذا بلغت مساعدة رقمية فقط أعلى مستوى في الجلسة تُسجَّل الجلسة بمصدر «مساعدة رقمية» مع نوعها (promptSource / digitalPromptCue)، ويعيد الخادم اشتقاق المستوى منها.');
 w('- وصف ما يحدث على الشاشة مأخوذ من محرك «ابحث عن الهدف» (lib/training/findTheTargetEngine.ts)، وقد يختلف شكل الإبراز بين الألعاب.');
 w();
 w('> **مطلوب اعتماد علمي صريح:** هل التلميح البصري وتقليل الخيارات يكافئان «تلقين بالإشارة»، والمساعدة البصرية المباشرة تكافئ «نموذج»؟ أم أن تقليل الخيارات تعديل للمثير (stimulus prompt) يجب أن يُصنف منفصلاً؟');

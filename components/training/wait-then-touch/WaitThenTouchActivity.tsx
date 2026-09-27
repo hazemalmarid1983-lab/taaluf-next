@@ -183,6 +183,7 @@ export default function WaitThenTouchActivity() {
       <WaitThenTouchComplete
         stars={resultStars}
         sessionSaved={sessionSaved}
+        trials={session.trials}
         onDone={handleDone}
       />
     );

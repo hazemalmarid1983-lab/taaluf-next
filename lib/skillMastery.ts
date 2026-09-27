@@ -6,10 +6,18 @@
 
 import type { GoalSession, TrackedGoal } from '@/lib/goalsEngine';
 import type { PromptHierarchyLevel } from '@/lib/promptHierarchy';
-import type { ClinicalPromptLevel, SkillCategoryId, SkillTypeConfig } from '@/types/clinical';
+import {
+  DIGITAL_ASSISTANCE_CUES,
+  DIGITAL_PROMPT_MAPPING,
+  type ClinicalPromptLevel,
+  type DigitalAssistanceCue,
+  type PromptSource,
+  type SkillCategoryId,
+  type SkillTypeConfig,
+} from '@/types/clinical';
 import { getCriterionById, type DevelopmentalDomainId } from '@/types/taalof';
 
-export type { ClinicalPromptLevel, SkillCategoryId, SkillTypeConfig };
+export type { ClinicalPromptLevel, DigitalAssistanceCue, PromptSource, SkillCategoryId, SkillTypeConfig };
 
 export type SessionPromptLevel = ClinicalPromptLevel;
 
@@ -47,26 +55,71 @@ export const CLINICAL_PROMPT_LABELS_AR: Record<ClinicalPromptLevel, string> = {
   'No Response': 'لا استجابة',
 };
 
-/**
- * مساعدات المحرك الرقمي ومستويات الجلسات القديمة.
- * التلميح البصري وتقليل الخيارات ≈ إشارة، والمساعدة البصرية المباشرة ≈ نموذج — تحتاج اعتماداً علمياً.
- */
-const EXTRA_PROMPT_ALIASES: Record<string, ClinicalPromptLevel> = {
-  visual_hint: 'Gestural',
-  reduced_choices: 'Gestural',
-  direct_visual_assistance: 'Model',
+/** مستويات الجلسات القديمة */
+const LEGACY_PROMPT_ALIASES: Record<string, ClinicalPromptLevel> = {
   verbal_gestural: 'Gestural',
   physical_prompt: 'Full Physical',
 };
 
+export function isDigitalAssistanceCue(value: unknown): value is DigitalAssistanceCue {
+  return typeof value === 'string' && Object.prototype.hasOwnProperty.call(DIGITAL_PROMPT_MAPPING, value);
+}
+
+/** يطابق مستوى بشري أو رقمي أو قديم مع المقياس الموحّد — المساعدات الرقمية عبر DIGITAL_PROMPT_MAPPING */
 export function toClinicalPromptLevel(level: string | undefined | null): ClinicalPromptLevel | undefined {
   if (!level) return undefined;
   if ((CLINICAL_PROMPT_LEVELS as readonly string[]).includes(level)) {
     return level as ClinicalPromptLevel;
   }
-  return (
-    CLINICAL_PROMPT_BY_HIERARCHY[level as PromptHierarchyLevel] ?? EXTRA_PROMPT_ALIASES[level]
-  );
+  if (isDigitalAssistanceCue(level)) return DIGITAL_PROMPT_MAPPING[level].clinical_level;
+  return CLINICAL_PROMPT_BY_HIERARCHY[level as PromptHierarchyLevel] ?? LEGACY_PROMPT_ALIASES[level];
+}
+
+export type SessionPromptEvidence = {
+  promptLevel?: ClinicalPromptLevel;
+  promptSource?: PromptSource;
+  digitalPromptCue?: DigitalAssistanceCue;
+};
+
+/**
+ * أعلى مساعدة في الجلسة مع مصدرها (قاعدة DIGITAL_PROMPT_MAPPING رقم 3):
+ * رقمية فقط إذا لم يبلغ أي تلقين بشري المستوى نفسه.
+ */
+export function resolveSessionPromptEvidence(levels: ReadonlyArray<string | undefined>): SessionPromptEvidence {
+  const promptLevel = mostIntrusivePromptLevel(levels);
+  if (!promptLevel || promptLevel === 'Independent' || promptLevel === 'No Response') {
+    return { promptLevel };
+  }
+  let digitalPromptCue: DigitalAssistanceCue | undefined;
+  for (const raw of levels) {
+    if (toClinicalPromptLevel(raw) !== promptLevel) continue;
+    if (!isDigitalAssistanceCue(raw)) return { promptLevel, promptSource: 'human' };
+    if (!digitalPromptCue || DIGITAL_ASSISTANCE_CUES.indexOf(raw) > DIGITAL_ASSISTANCE_CUES.indexOf(digitalPromptCue)) {
+      digitalPromptCue = raw;
+    }
+  }
+  return digitalPromptCue
+    ? { promptLevel, promptSource: 'digital_assistance', digitalPromptCue }
+    : { promptLevel, promptSource: 'human' };
+}
+
+/** «تلميح بصري (رقمي) ← تلقين بالإشارة» */
+export function digitalPromptMappingLabelAr(cue: DigitalAssistanceCue): string {
+  const rule = DIGITAL_PROMPT_MAPPING[cue];
+  return `${rule.cue_label_ar} (رقمي) ← ${CLINICAL_PROMPT_LABELS_AR[rule.clinical_level]}`;
+}
+
+/** «تلميح بصري (رقمي) ← تلقين بالإشارة · …» لكل المساعدات الرقمية */
+export const DIGITAL_PROMPT_MAPPING_SUMMARY_AR = DIGITAL_ASSISTANCE_CUES.map(digitalPromptMappingLabelAr).join(' · ');
+
+/** مستوى المساعدة المسجّل في الجلسة مع مصدره الرقمي إن وُجد */
+export function sessionPromptLabelAr(evidence: SessionPromptEvidence): string | undefined {
+  if (!evidence.promptLevel) return undefined;
+  const label = CLINICAL_PROMPT_LABELS_AR[evidence.promptLevel];
+  if (evidence.promptSource === 'digital_assistance' && evidence.digitalPromptCue) {
+    return `${label} — مطابَق من مساعدة رقمية: ${DIGITAL_PROMPT_MAPPING[evidence.digitalPromptCue].cue_label_ar}`;
+  }
+  return label;
 }
 
 /** أعلى مستوى مساعدة في مجموعة محاولات (الأكثر تدخلاً) */
