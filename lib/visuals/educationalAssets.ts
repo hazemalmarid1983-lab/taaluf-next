@@ -86,6 +86,20 @@ export const EDUCATIONAL_ASSET_IDS = [
   'square',
   'triangle',
   'star',
+  // أهداف معايير التقييم الأربعين
+  'talk',
+  'point',
+  'picture_card',
+  'tidy_toys',
+  'feelings',
+  'blocks',
+  'spatial_under',
+  'daily_schedule',
+  'calm_breath',
+  'headphones',
+  'toilet',
+  'hold_hand',
+  'bed',
 ] as const;
 
 export type EducationalAssetId = (typeof EDUCATIONAL_ASSET_IDS)[number];
@@ -233,6 +247,11 @@ const LABEL_TO_ASSET: Record<string, EducationalAssetId> = {
   'المس أنفك': 'touch_nose',
   'المس رأسك': 'touch_head',
   ابتسم: 'smile',
+  أشر: 'point',
+  مكعبات: 'blocks',
+  حمام: 'toilet',
+  سرير: 'bed',
+  مشاعر: 'feelings',
 };
 
 const ASSET_SET = new Set<string>(EDUCATIONAL_ASSET_IDS);

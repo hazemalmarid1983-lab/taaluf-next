@@ -10,13 +10,33 @@ export interface CriterionLevel {
   description: string;
 }
 
+export type DevelopmentalDomainId =
+  | 'receptive_language'
+  | 'expressive_language'
+  | 'self_help'
+  | 'social_skills'
+  | 'gross_motor'
+  | 'fine_motor'
+  | 'cognitive_pre_academic'
+  | 'adaptive_behavior'
+  | 'sensory_integration';
+
+export interface DevelopmentalDomain {
+  id: DevelopmentalDomainId;
+  ar: string;
+  en: string;
+}
+
 export interface Criterion {
   id: string;
   name: string;
   /** عنوان معياري مرادف لـ name في Canon 4.0 */
   title?: string;
+  /** أحد المحاور الأربعة — أساس الحساب والتقارير */
   domain: string;
   domain_en: string;
+  /** المجال النمائي الرسمي ضمن التسعة؛ بنود البنك كلها تحمله، والبنود المؤقتة خارجه لا */
+  developmentalDomain?: DevelopmentalDomainId;
   /** نص السؤال الموحّد المعروض للمقيّم */
   question?: string;
   description: string;
@@ -49,6 +69,7 @@ export interface TaalofCriteriaData {
   platform: string;
   total_criteria: number;
   domains: string[];
+  developmentalDomains: DevelopmentalDomain[];
   classifications: Classification[];
   criteria: Criterion[];
   ageBandLabels?: Record<string, AgeBandLabel>;
@@ -120,6 +141,19 @@ export const TAALOF_CRITERIA: TaalofCriteriaData =
   criteriaData as TaalofCriteriaData;
 export const CRITERIA_LIST: Criterion[] = TAALOF_CRITERIA.criteria;
 export const DOMAINS: string[] = TAALOF_CRITERIA.domains;
+export const DEVELOPMENTAL_DOMAINS: DevelopmentalDomain[] =
+  TAALOF_CRITERIA.developmentalDomains;
+
+/** مجالات نمائية بلا بنود تقييم بعد — فجوة سريرية معلنة تحتاج بنوداً جديدة */
+export const DEVELOPMENTAL_DOMAIN_GAPS: readonly DevelopmentalDomainId[] = [
+  'fine_motor',
+];
+
+export function criteriaByDevelopmentalDomain(
+  domainId: DevelopmentalDomainId
+): Criterion[] {
+  return CRITERIA_LIST.filter((c) => c.developmentalDomain === domainId);
+}
 export const CLASSIFICATIONS: Classification[] = TAALOF_CRITERIA.classifications;
 export const AGE_BAND_LABELS: Record<string, AgeBandLabel> =
   TAALOF_CRITERIA.ageBandLabels || {

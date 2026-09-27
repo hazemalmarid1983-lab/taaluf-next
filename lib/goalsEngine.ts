@@ -9,12 +9,14 @@ import {
   getCriterionById,
   type AssessmentResult,
   type AssessmentScore,
+  type DevelopmentalDomainId,
 } from '@/types/taalof';
 
 export type ProposedGoal = {
   id: string;
   criterionId: string;
   domain: string;
+  developmentalDomain: DevelopmentalDomainId | undefined;
   title: string;
   priority: 'عالية' | 'متوسطة' | 'متابعة';
   score: number;
@@ -35,6 +37,7 @@ export type TrackedGoal = {
   childId: string;
   criterionId: string;
   domain: string;
+  developmentalDomain?: DevelopmentalDomainId;
   title: string;
   smartText: string;
   baseline: number;
@@ -228,6 +231,7 @@ export function buildProposedGoals(
         id: `goal-${c.id}`,
         criterionId: c.id,
         domain: c.domain,
+        developmentalDomain: c.developmentalDomain,
         title: c.name,
         priority,
         score: s.score,
@@ -259,6 +263,7 @@ export function createTrackedGoalsFromScores(
       childId,
       criterionId: g.criterionId,
       domain: g.domain,
+      developmentalDomain: g.developmentalDomain,
       title: g.title,
       smartText:
         c?.autoGoal ||
@@ -410,6 +415,7 @@ function createTrackedGoalsFromSelected(
       childId,
       criterionId: row.criterionId,
       domain: criterion?.domain || '',
+      developmentalDomain: criterion?.developmentalDomain,
       title: criterion?.name || row.criterionId,
       smartText:
         criterion?.autoGoal ||
