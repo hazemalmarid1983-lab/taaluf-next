@@ -19,7 +19,9 @@ export type ClinicalAuditEvent =
   | 'maintenance_probe_recorded'
   | 'mastery_withdrawn'
   | 'generalization_probe_recorded'
-  | 'assessment_recorded';
+  | 'assessment_recorded'
+  | 'fba_plan_updated'
+  | 'ioa_recorded';
 
 export type ClinicalAuditEntry = {
   id: string;
@@ -48,6 +50,8 @@ export const CLINICAL_AUDIT_EVENT_LABELS_AR: Record<ClinicalAuditEvent, string> 
   mastery_withdrawn: 'سحب الإتقان',
   generalization_probe_recorded: 'مجس تعميم',
   assessment_recorded: 'تسجيل تقييم',
+  fba_plan_updated: 'تحديث التقييم الوظيفي للسلوك',
+  ioa_recorded: 'تسجيل اتفاق الملاحظين',
 };
 
 /** أحداث التدقيق الناتجة عن تعديل هدف واحد */
@@ -83,6 +87,19 @@ export function diffGoalAuditEvents(
         promptLevel: last?.promptLevel ?? null,
         firstTrialIndependent: last?.firstTrialIndependent ?? null,
         metFrequencyCriterion: last?.metFrequencyCriterion ?? null,
+        abcIncidents: last?.abcIncidents?.length ?? 0,
+      },
+    });
+  }
+
+  if (next.fbaPlan && next.fbaPlan.updated_at !== prev.fbaPlan?.updated_at) {
+    events.push({
+      goalId,
+      event: 'fba_plan_updated',
+      details: {
+        hypothesizedFunction: next.fbaPlan.hypothesized_function ?? null,
+        replacementBehavior: next.fbaPlan.replacement_behavior,
+        first: !prev.fbaPlan,
       },
     });
   }

@@ -6,7 +6,7 @@ import { isFullyIndependentSession } from '@/lib/clinicalMastery';
 import { pushSessionEntry } from '@/lib/clinicalRecordClient';
 import type { GoalSession, TrackedGoal } from '@/lib/goalsEngine';
 import { loadGoalsLocal, upsertGoalLocal } from '@/lib/goalsStore';
-import { resolveSessionPromptEvidence } from '@/lib/skillMastery';
+import { resolveSessionPromptEvidence, toClinicalPromptLevel } from '@/lib/skillMastery';
 import type { TrainingSessionMetrics } from '@/lib/training/engine/types';
 import type { TrainingSessionRuntime } from '@/lib/training/engine/types';
 
@@ -33,6 +33,9 @@ function buildTrainingGoalSessionEntry(
     independencePct: metrics.independence,
     firstTrialIndependent: session.trials[0]?.promptLevel === 'independent',
     ...resolveSessionPromptEvidence(session.trials.map((t) => t.promptLevel)),
+    trialScores: session.trials
+      .map((t) => toClinicalPromptLevel(t.promptLevel))
+      .filter((l): l is NonNullable<typeof l> => Boolean(l)),
   };
 }
 

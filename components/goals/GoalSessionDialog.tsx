@@ -22,6 +22,8 @@ import {
   type SessionSetting,
 } from '@/lib/skillMastery';
 import { DIGITAL_ASSISTANCE_CUES, DIGITAL_PROMPT_MAPPING } from '@/types/clinical';
+import AbcIncidentLogger, { abcDraftsToInput, type AbcDraft } from '@/components/goals/AbcIncidentLogger';
+import TrialScoreInput from '@/components/goals/TrialScoreInput';
 
 const MOODS = ['😊', '😐', '😟', '😢'] as const;
 const SETTINGS = Object.keys(SESSION_SETTING_LABELS_AR) as SessionSetting[];
@@ -61,7 +63,15 @@ export default function GoalSessionDialog({
   const [target, setTarget] = useState(
     goal.frequencyTarget ? String(goal.frequencyTarget.target) : ''
   );
+  const [abcDrafts, setAbcDrafts] = useState<AbcDraft[]>([]);
+  const [replacementCount, setReplacementCount] = useState('');
+  const [scoreEachTrial, setScoreEachTrial] = useState(false);
+  const [trialScores, setTrialScores] = useState<ClinicalPromptLevel[]>([]);
   const [errors, setErrors] = useState<GoalSessionFormError[]>([]);
+  const usingTrialScores = scoreEachTrial && trialScores.length > 0;
+  const derivedPct = usingTrialScores
+    ? Math.round((trialScores.filter((l) => l === 'Independent').length / trialScores.length) * 100)
+    : undefined;
 
   const save = () => {
     const progress = Math.min(100, goal.current + (mood === '😊' ? 5 : mood === '😐' ? 2 : 0));
@@ -70,15 +80,20 @@ export default function GoalSessionDialog({
       activity,
       notes,
       progress,
-      independencePct,
+      independencePct: usingTrialScores ? '' : independencePct,
       firstTrialIndependent,
       naturalCueOnly,
-      promptLevel: promptSource === 'human' ? promptLevel : '',
+      promptLevel: promptSource === 'human' && !usingTrialScores ? promptLevel : '',
       digitalPromptCue: promptSource === 'digital_assistance' ? digitalPromptCue : '',
       trainerName,
       setting,
       behaviorValue,
       frequencyTarget: { measure, direction, target },
+      ...(fields.frequencyMode
+        ? { abcIncidents: abcDraftsToInput(abcDrafts), replacementBehaviorCount: replacementCount }
+        : usingTrialScores
+          ? { trialScores }
+          : {}),
     };
     const result = buildGoalSessionFromForm(goal, input);
     if (!result.ok) {
@@ -137,19 +152,67 @@ export default function GoalSessionDialog({
                 onChange={(e) => setBehaviorValue(e.target.value)}
               />
             </label>
-          </fieldset>
-        ) : (
-          <fieldset className="space-y-2">
             <label className="block text-sm font-semibold">
-              نسبة المحاولات المستقلة (%)
+              عدد مرات السلوك البديل التكيفي
+              {goal.fbaPlan ? (
+                <span className="font-normal text-slate-500"> ({goal.fbaPlan.replacement_behavior})</span>
+              ) : null}
               <input
                 className={`${inputClass} mt-1`}
                 inputMode="numeric"
-                placeholder="مثلاً 80"
-                value={independencePct}
-                onChange={(e) => setIndependencePct(e.target.value)}
+                placeholder="اختياري"
+                value={replacementCount}
+                onChange={(e) => setReplacementCount(e.target.value)}
               />
             </label>
+            <div className="space-y-1 border-t pt-2">
+              <p className="text-sm font-semibold">تحليل ABC (المثير القبلي ← السلوك ← المثير البعدي)</p>
+              <p className="text-xs text-slate-500">
+                كل حادثة تُحتسب من {measure === 'count' ? 'عدد المرات' : 'المدة'} المسجّل أعلاه ولا يجوز أن تتجاوزه.
+              </p>
+              <AbcIncidentLogger
+                drafts={abcDrafts}
+                onChange={setAbcDrafts}
+                showDuration={measure === 'duration_minutes'}
+                replacementBehavior={goal.fbaPlan?.replacement_behavior}
+              />
+            </div>
+          </fieldset>
+        ) : (
+          <fieldset className="space-y-2">
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={scoreEachTrial}
+                onChange={(e) => {
+                  setScoreEachTrial(e.target.checked);
+                  setTrialScores([]);
+                }}
+              />
+              سجّل مستوى المساعدة لكل محاولة (يتيح اتفاق الملاحظين محاولةً بمحاولة)
+            </label>
+            {scoreEachTrial ? (
+              <div className="rounded-2xl bg-slate-50 p-3">
+                <TrialScoreInput value={trialScores} onChange={setTrialScores} />
+                {derivedPct !== undefined ? (
+                  <p className="mt-1 text-xs text-slate-700">
+                    الاستقلالية المحسوبة: <strong>{derivedPct}%</strong>
+                  </p>
+                ) : null}
+              </div>
+            ) : null}
+            {usingTrialScores ? null : (
+              <label className="block text-sm font-semibold">
+                نسبة المحاولات المستقلة (%)
+                <input
+                  className={`${inputClass} mt-1`}
+                  inputMode="numeric"
+                  placeholder="مثلاً 80"
+                  value={independencePct}
+                  onChange={(e) => setIndependencePct(e.target.value)}
+                />
+              </label>
+            )}
             <label className="block text-sm font-semibold">
               من قدّم أعلى مساعدة؟
               <select
@@ -196,7 +259,7 @@ export default function GoalSessionDialog({
                   (مطابقة بانتظار الاعتماد العلمي)
                 </p>
               </div>
-            ) : (
+            ) : usingTrialScores ? null : (
               <label className="block text-sm font-semibold">
                 أعلى مستوى مساعدة استُخدم
                 <select
@@ -213,7 +276,7 @@ export default function GoalSessionDialog({
                 </select>
               </label>
             )}
-            {fields.askFirstTrial ? (
+            {fields.askFirstTrial && !usingTrialScores ? (
               <label className="flex items-center gap-2 text-sm">
                 <input
                   type="checkbox"

@@ -6,20 +6,34 @@ import { Button } from '@/components/ui/button';
 import GeneralizationProbeDialog from '@/components/goals/GeneralizationProbeDialog';
 import GoalSessionDialog from '@/components/goals/GoalSessionDialog';
 import MaintenanceProbeDialog from '@/components/goals/MaintenanceProbeDialog';
+import FbaPlanDialog from '@/components/goals/FbaPlanDialog';
+import IoaDialog from '@/components/goals/IoaDialog';
+import IoaReviewPanel from '@/components/goals/IoaReviewPanel';
 import { GOAL_PHASE_LABELS_AR } from '@/lib/maintenanceSchedule';
 import {
   cacheServerGoal,
   postGoalAction,
+  postIoa,
   syncChildClinicalRecord,
   type GoalActionResponse,
 } from '@/lib/clinicalRecordClient';
+import {
+  BEHAVIOR_FUNCTION_LABELS_AR,
+  FBA_ANTECEDENT_LABELS_AR,
+  FBA_CONSEQUENCE_LABELS_AR,
+  buildFbaPlan,
+  summarizeFba,
+  type FbaPlanError,
+  type FbaPlanInput,
+} from '@/lib/fba';
+import { IOA_METHOD_LABELS_AR, ioaSessionOptions, type IoaInput } from '@/lib/ioa';
 import type { GeneralizationProbe } from '@/lib/generalizationIndex';
 import {
   loadGeneralizationProbes,
   saveGeneralizationProbe,
   type GeneralizationProbeInput,
 } from '@/lib/generalizationProbeStore';
-import type { GoalSessionFormInput } from '@/lib/goalSessionForm';
+import { goalSessionFormFields, type GoalSessionFormInput } from '@/lib/goalSessionForm';
 import type { MaintenanceProbeInput } from '@/lib/maintenanceSchedule';
 import {
   createTrackedGoalsFromScores,
@@ -74,6 +88,9 @@ export default function GoalsPage() {
   const [noteGoalId, setNoteGoalId] = useState<string | null>(null);
   const [probeGoalId, setProbeGoalId] = useState<string | null>(null);
   const [maintenanceGoalId, setMaintenanceGoalId] = useState<string | null>(null);
+  const [fbaGoalId, setFbaGoalId] = useState<string | null>(null);
+  const [ioaGoalId, setIoaGoalId] = useState<string | null>(null);
+  const [ioaRefresh, setIoaRefresh] = useState(0);
   const [probes, setProbes] = useState<GeneralizationProbe[]>([]);
   const [serverBacked, setServerBacked] = useState(false);
   const [msg, setMsg] = useState('');
@@ -240,7 +257,47 @@ export default function GoalsPage() {
     }
   };
 
+  const saveFbaPlan = async (goal: TrackedGoal, input: FbaPlanInput): Promise<FbaPlanError[] | null> => {
+    if (!serverBacked) {
+      const built = buildFbaPlan(input, authSession?.user?.name ?? undefined);
+      if (!built.ok) return built.errors;
+      saveLocalGoal({ ...goal, fbaPlan: built.plan, lastUpdate: built.plan.updated_at });
+      setFbaGoalId(null);
+      setMsg('تم حفظ خطة التقييم الوظيفي على هذا الجهاز');
+      return null;
+    }
+    const res = await postGoalAction(childId, goal.id, { action: 'fba_plan', input: input as Record<string, unknown> });
+    if (res.ok) {
+      applyServerGoal(res.goal);
+      setFbaGoalId(null);
+      setMsg('تم حفظ خطة التقييم الوظيفي في السجل السريري');
+      return null;
+    }
+    if (res.errors?.length) return res.errors as FbaPlanError[];
+    setFbaGoalId(null);
+    setMsg(serverError(res));
+    return null;
+  };
+
+  const submitIoa = async (input: IoaInput): Promise<string[] | null> => {
+    const res = await postIoa(childId, input);
+    if (!res.ok) {
+      if (res.status === 403) return ['لا تملك صلاحية تسجيل اتفاق الملاحظين'];
+      return res.errors?.length ? res.errors : [`تعذّر الحفظ (${res.error})`];
+    }
+    setIoaGoalId(null);
+    setIoaRefresh((n) => n + 1);
+    const r = res.record;
+    setMsg(
+      `اتفاق الملاحظين (${IOA_METHOD_LABELS_AR[r.method]}): ${r.agreement_pct}%` +
+        (r.meets_standard ? ' — ضمن الحد المقبول' : ' — دون الحد المقبول، راجع التعريف الإجرائي أو أعد التدريب')
+    );
+    return null;
+  };
+
   const noteGoal = goals.find((g) => g.id === noteGoalId) || null;
+  const fbaGoal = goals.find((g) => g.id === fbaGoalId) || null;
+  const ioaGoal = goals.find((g) => g.id === ioaGoalId) || null;
   const maintenanceGoal = goals.find((g) => g.id === maintenanceGoalId) || null;
   const probeGoal = goals.find((g) => g.id === probeGoalId) || null;
 
@@ -285,6 +342,9 @@ export default function GoalsPage() {
             const tracking = toGoalTrackingItem(g, probes);
             const lastSession = g.sessions[g.sessions.length - 1];
             const lastPromptLabel = lastSession ? sessionPromptLabelAr(lastSession) : undefined;
+            const behaviorGoal = goalSessionFormFields(g).frequencyMode;
+            const fba = behaviorGoal ? summarizeFba(g) : null;
+            const canIoa = serverBacked && !isParent && ioaSessionOptions(g).length > 0;
             return (
               <article
                 key={g.id}
@@ -327,6 +387,16 @@ export default function GoalsPage() {
                         onClick={() => setMaintenanceGoalId(g.id)}
                       >
                         مجس صيانة
+                      </Button>
+                    ) : null}
+                    {!isParent && behaviorGoal ? (
+                      <Button variant="ghost" size="sm" onClick={() => setFbaGoalId(g.id)}>
+                        خطة FBA
+                      </Button>
+                    ) : null}
+                    {canIoa ? (
+                      <Button variant="ghost" size="sm" onClick={() => setIoaGoalId(g.id)}>
+                        اتفاق ملاحظين
                       </Button>
                     ) : null}
                   </div>
@@ -378,6 +448,33 @@ export default function GoalsPage() {
                       {tracking.generalization.gen_status}
                     </p>
                   ) : null}
+                  {fba ? (
+                    <div className="space-y-0.5 border-t border-slate-200 pt-1">
+                      {g.fbaPlan ? (
+                        <p>
+                          <span className="font-semibold">السلوك البديل:</span> {g.fbaPlan.replacement_behavior}
+                          {g.fbaPlan.hypothesized_function
+                            ? ` · الوظيفة: ${BEHAVIOR_FUNCTION_LABELS_AR[g.fbaPlan.hypothesized_function]}`
+                            : ''}
+                        </p>
+                      ) : (
+                        <p className="text-amber-800">لا توجد خطة تقييم وظيفي (FBA) — حدّد السلوك البديل قبل التدخل.</p>
+                      )}
+                      {fba.incidents > 0 ? (
+                        <p>
+                          <span className="font-semibold">ABC:</span> {fba.incidents} حادثة
+                          {fba.antecedents[0] ? ` · قبلي: ${FBA_ANTECEDENT_LABELS_AR[fba.antecedents[0].key]}` : ''}
+                          {fba.consequences[0] ? ` · بعدي: ${FBA_CONSEQUENCE_LABELS_AR[fba.consequences[0].key]}` : ''}
+                          {fba.replacementUsePct !== null ? ` · البديل ${fba.replacementUsePct}%` : ''}
+                        </p>
+                      ) : null}
+                      {fba.suggestedFunction && fba.suggestedFunction !== g.fbaPlan?.hypothesized_function ? (
+                        <p className="text-blue-800">
+                          بيانات ABC ترجّح وظيفة «{BEHAVIOR_FUNCTION_LABELS_AR[fba.suggestedFunction]}» (ترجيح وصفي)
+                        </p>
+                      ) : null}
+                    </div>
+                  ) : null}
                 </div>
                 <p className="mt-2 text-xs text-slate-400">
                   جلسات: {g.sessions.length}
@@ -391,6 +488,9 @@ export default function GoalsPage() {
         </div>
       )}
 
+      {serverBacked && !isParent ? (
+        <IoaReviewPanel childId={childId} goals={goals} refreshKey={ioaRefresh} />
+      ) : null}
         </div>
 
         <SensoryHubRecommendationsCard goals={goals} isAr={isAr} />
@@ -433,6 +533,23 @@ export default function GoalsPage() {
             )
           }
           onCancel={() => setMaintenanceGoalId(null)}
+        />
+      )}
+
+      {fbaGoal && (
+        <FbaPlanDialog
+          goal={fbaGoal}
+          onSave={(input) => saveFbaPlan(fbaGoal, input)}
+          onCancel={() => setFbaGoalId(null)}
+        />
+      )}
+
+      {ioaGoal && (
+        <IoaDialog
+          goal={ioaGoal}
+          defaultObserverName={authSession?.user?.name ?? undefined}
+          onSubmit={submitIoa}
+          onCancel={() => setIoaGoalId(null)}
         />
       )}
 

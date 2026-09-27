@@ -16,7 +16,9 @@ import {
 } from '@/lib/generalizationProbeStore';
 import type { GoalSession, TrackedGoal } from '@/lib/goalsEngine';
 import { loadGoalsLocal, saveGoalsLocal } from '@/lib/goalsStore';
+import type { IoaInput, IoaSummary } from '@/lib/ioa';
 import type { ParentStage } from '@/lib/parentRouteGuard';
+import type { IoaRecord } from '@/types/clinical';
 
 const SERVER_CHILD_ID = /^[A-Za-z0-9_-]{1,80}$/;
 
@@ -35,6 +37,7 @@ export type GoalActionBody =
   | { action: 'session_entry'; session: GoalSession }
   | { action: 'maintenance_probe'; input: Record<string, unknown> }
   | { action: 'generalization_probe'; input: Record<string, unknown> }
+  | { action: 'fba_plan'; input: Record<string, unknown> }
   | { action: 'status'; status: TrackedGoal['status'] };
 
 export type GoalActionResponse =
@@ -169,6 +172,44 @@ export async function syncChildClinicalRecord(
     return { source: 'server', parentStage, goals: server.goals, generalizationProbes: server.generalizationProbes };
   } catch {
     return local;
+  }
+}
+
+export type IoaReviewResponse = { ok: true; records: IoaRecord[]; summary: IoaSummary } | { ok: false; status: number; error: string };
+
+export async function fetchIoaReview(childId: string): Promise<IoaReviewResponse> {
+  try {
+    const res = await jsonRequest<{ records?: IoaRecord[]; summary?: IoaSummary; error?: string }>(
+      `/api/children/${encodeURIComponent(childId)}/ioa`
+    );
+    if (res.status === 200 && res.body?.summary) {
+      return { ok: true, records: res.body.records ?? [], summary: res.body.summary };
+    }
+    return { ok: false, status: res.status, error: String(res.body?.error || 'REQUEST_FAILED') };
+  } catch {
+    return { ok: false, status: 0, error: 'NETWORK' };
+  }
+}
+
+export type IoaPostResponse =
+  | { ok: true; record: IoaRecord }
+  | { ok: false; status: number; error: string; errors?: string[] };
+
+export async function postIoa(childId: string, input: IoaInput): Promise<IoaPostResponse> {
+  try {
+    const res = await jsonRequest<{ record?: IoaRecord; error?: string; errors?: string[] }>(
+      `/api/children/${encodeURIComponent(childId)}/ioa`,
+      { method: 'POST', body: JSON.stringify(input) }
+    );
+    if (res.status === 200 && res.body?.record) return { ok: true, record: res.body.record };
+    return {
+      ok: false,
+      status: res.status,
+      error: String(res.body?.error || 'REQUEST_FAILED'),
+      errors: Array.isArray(res.body?.errors) ? res.body.errors : undefined,
+    };
+  } catch {
+    return { ok: false, status: 0, error: 'NETWORK' };
   }
 }
 

@@ -10,12 +10,18 @@ import {
 } from '@/lib/generalizationProbeStore';
 import type { GeneralizationProbe } from '@/lib/generalizationIndex';
 import type { FrequencyTarget, GoalSession, TrackedGoal } from '@/lib/goalsEngine';
-import { buildGoalSessionFromForm, type GoalSessionFormInput } from '@/lib/goalSessionForm';
+import {
+  buildGoalSessionFromForm,
+  goalSessionFormFields,
+  parseTrialScores,
+  type GoalSessionFormInput,
+} from '@/lib/goalSessionForm';
 import {
   recordMaintenanceProbe,
   type MaintenanceProbeInput,
 } from '@/lib/maintenanceSchedule';
 import type { Permission } from '@/lib/permissions';
+import { buildFbaPlan, sanitizeFbaPlan, validateAbcIncidents, type FbaPlanInput } from '@/lib/fba';
 import { SESSION_SETTING_LABELS_AR, isDigitalAssistanceCue, toClinicalPromptLevel } from '@/lib/skillMastery';
 import { DIGITAL_PROMPT_MAPPING, type MaintenanceProbe, type MasteryWithdrawal } from '@/types/clinical';
 
@@ -24,6 +30,7 @@ export type GoalAction =
   | { type: 'session_entry'; session: unknown }
   | { type: 'maintenance_probe'; input: MaintenanceProbeInput }
   | { type: 'generalization_probe'; input: GeneralizationProbeInput }
+  | { type: 'fba_plan'; input: FbaPlanInput }
   | { type: 'status'; status: unknown };
 
 export type GoalActionType = GoalAction['type'];
@@ -33,6 +40,7 @@ export const GOAL_ACTION_PERMISSIONS: Record<GoalActionType, Permission[]> = {
   session_entry: ['record_session_trials', 'run_home_session'],
   maintenance_probe: ['record_session_trials'],
   generalization_probe: ['record_session_trials', 'run_home_session'],
+  fba_plan: ['update_iep_goals'],
   status: ['update_iep_goals'],
 };
 
@@ -42,6 +50,7 @@ export function parseGoalAction(body: unknown): GoalAction | null {
     case 'session':
     case 'maintenance_probe':
     case 'generalization_probe':
+    case 'fba_plan':
       return { type: b.action, input: (b.input ?? {}) as never };
     case 'session_entry':
       return { type: 'session_entry', session: b.session };
@@ -99,7 +108,22 @@ export function sanitizeGoalSession(raw: unknown): GoalSession | null {
     metFrequencyCriterion: optBool(s.metFrequencyCriterion),
     behaviorCount: optNum(s.behaviorCount),
     behaviorDurationMinutes: optNum(s.behaviorDurationMinutes),
+    ...sessionFbaFields(s),
+    trialScores: parseTrialScores(s.trialScores) || undefined,
   });
+}
+
+/** حوادث ABC تُقبل فقط إذا اتسقت مع عدد/مدة السلوك في الجلسة نفسها */
+function sessionFbaFields(s: Record<string, unknown>): Pick<GoalSession, 'abcIncidents' | 'replacementBehaviorCount'> {
+  const abc = validateAbcIncidents(s.abcIncidents, {
+    behaviorCount: optNum(s.behaviorCount),
+    behaviorDurationMinutes: optNum(s.behaviorDurationMinutes),
+  });
+  const replacement = optNum(s.replacementBehaviorCount);
+  return {
+    abcIncidents: abc.ok && abc.incidents.length ? abc.incidents : undefined,
+    replacementBehaviorCount: replacement !== undefined && replacement >= 0 ? Math.round(replacement) : undefined,
+  };
 }
 
 function sanitizeMaintenanceProbe(raw: unknown, goalId: string): MaintenanceProbe | null {
@@ -179,6 +203,8 @@ export function sanitizeImportedGoal(raw: unknown, childId: string): TrackedGoal
     .map(sanitizeWithdrawal)
     .filter((w): w is MasteryWithdrawal => Boolean(w));
   if (withdrawals.length) goal.masteryWithdrawals = withdrawals;
+  const fbaPlan = sanitizeFbaPlan(g.fbaPlan);
+  if (fbaPlan) goal.fbaPlan = fbaPlan;
   return goal;
 }
 
@@ -187,6 +213,7 @@ export function withoutGoalHistory(goal: TrackedGoal): TrackedGoal {
   const fresh: TrackedGoal = { ...goal, status: 'active', current: goal.baseline, sessions: [] };
   delete fresh.maintenanceProbes;
   delete fresh.masteryWithdrawals;
+  delete fresh.fbaPlan;
   delete fresh.lastUpdate;
   return fresh;
 }
@@ -278,6 +305,14 @@ export function applyGoalAction(
       });
       if (!result.ok) return { ok: false, status: 400, error: 'INVALID_GENERALIZATION_PROBE', errors: result.errors };
       return { ok: true, goal, probe: result.probe, countsTowardIndex: result.countsTowardIndex };
+    }
+    case 'fba_plan': {
+      if (!goalSessionFormFields(goal).frequencyMode) {
+        return { ok: false, status: 400, error: 'INVALID_FBA_PLAN', errors: ['NOT_BEHAVIOR_GOAL'] };
+      }
+      const built = buildFbaPlan(action.input, actor.name || actor.userId, now);
+      if (!built.ok) return { ok: false, status: 400, error: 'INVALID_FBA_PLAN', errors: built.errors };
+      return { ok: true, goal: { ...goal, fbaPlan: built.plan, lastUpdate: now.toISOString() } };
     }
     case 'status': {
       if (!STATUSES.has(action.status as TrackedGoal['status'])) {

@@ -172,6 +172,127 @@ export interface MasteryWithdrawal {
   probe_ids: string[];
 }
 
+/* ------------------------------------------------------------------ FBA */
+
+/** المثير القبلي — ما حدث مباشرة قبل السلوك */
+export type FbaAntecedent =
+  | 'demand_placed'
+  | 'denied_access'
+  | 'transition'
+  | 'attention_diverted'
+  | 'waiting'
+  | 'alone_unstructured'
+  | 'sensory_environment'
+  | 'other';
+
+/** المثير البعدي — ما حدث مباشرة بعد السلوك */
+export type FbaConsequence =
+  | 'attention_given'
+  | 'demand_removed'
+  | 'item_given'
+  | 'no_social_response'
+  | 'planned_ignoring'
+  | 'redirected_to_replacement'
+  | 'blocked'
+  | 'other';
+
+/** الوظائف الأربع للسلوك في تحليل السلوك التطبيقي */
+export type BehaviorFunction = 'escape' | 'attention' | 'tangible' | 'automatic';
+
+/** حادثة سلوك واحدة بصيغة ABC — تُسجَّل داخل جلسة تكرار/مدة */
+export interface AbcIncident {
+  antecedent: FbaAntecedent;
+  antecedent_note?: string;
+  behavior_note?: string;
+  consequence: FbaConsequence;
+  consequence_note?: string;
+  duration_minutes?: number;
+  /** استخدم الطفل السلوك البديل بدل السلوك المستهدف أو بعده مباشرة */
+  replacement_behavior_used: boolean;
+}
+
+/** خطة التقييم الوظيفي للهدف السلوكي */
+export interface FbaPlan {
+  /** التعريف الإجرائي القابل للملاحظة للسلوك المستهدف */
+  target_behavior: string;
+  /** السلوك البديل التكيفي الذي يؤدي الوظيفة نفسها */
+  replacement_behavior: string;
+  hypothesized_function?: BehaviorFunction;
+  updated_at: string;
+  updated_by?: string;
+}
+
+/**
+ * ترجيح الوظيفة من المثيرات (تقييم وصفي ABC وليس تحليلاً وظيفياً تجريبياً):
+ * المثير البعدي بوزن 2، والقبلي بوزن 1. null = لا يرجّح وظيفة.
+ */
+export const FBA_CONSEQUENCE_FUNCTION: Readonly<Record<FbaConsequence, BehaviorFunction | null>> = {
+  attention_given: 'attention',
+  demand_removed: 'escape',
+  item_given: 'tangible',
+  no_social_response: 'automatic',
+  planned_ignoring: null,
+  redirected_to_replacement: null,
+  blocked: null,
+  other: null,
+};
+
+export const FBA_ANTECEDENT_FUNCTION: Readonly<Record<FbaAntecedent, BehaviorFunction | null>> = {
+  demand_placed: 'escape',
+  denied_access: 'tangible',
+  transition: 'escape',
+  attention_diverted: 'attention',
+  waiting: 'tangible',
+  alone_unstructured: 'automatic',
+  sensory_environment: 'automatic',
+  other: null,
+};
+
+/** أقل عدد حوادث لترجيح وظيفة، وأقل حصة من الأصوات للوظيفة الراجحة */
+export const FBA_MIN_INCIDENTS_FOR_HYPOTHESIS = 5;
+export const FBA_MIN_FUNCTION_SHARE = 0.5;
+
+/* ------------------------------------------------------------------ IOA */
+
+/**
+ * طرق اتفاق الملاحظين:
+ * - trial_by_trial: عدد المحاولات المتطابقة (نفس مستوى المساعدة) ÷ عدد المحاولات × 100
+ * - total_count: العدد الأصغر ÷ الأكبر × 100
+ * - total_duration: المدة الأقصر ÷ الأطول × 100
+ */
+export type IoaMethod = 'trial_by_trial' | 'total_count' | 'total_duration';
+
+/** الحد الأدنى المقبول للاتفاق، والنسبة المستهدفة من الجلسات الخاضعة للاتفاق — بانتظار الاعتماد */
+export const IOA_ACCEPTABLE_PCT = 80;
+export const IOA_COVERAGE_TARGET_PCT = 20;
+
+export interface IoaObserverData {
+  observer_id: string;
+  observer_name?: string;
+  observer_role?: string;
+  trial_scores?: ClinicalPromptLevel[];
+  total_count?: number;
+  total_duration_minutes?: number;
+}
+
+/** سجل اتفاق: بيانات الملاحظ الأساسي (من الجلسة) مقابل ملاحظ ثانٍ مستقل */
+export interface IoaRecord {
+  ioa_id: string;
+  goal_id: string;
+  /** يطابق GoalSession.at للجلسة الأساسية */
+  session_at: string;
+  method: IoaMethod;
+  primary: IoaObserverData;
+  secondary: IoaObserverData;
+  agreement_pct: number;
+  /** trial_by_trial فقط: الاتفاق على «مستقل / غير مستقل» */
+  independence_agreement_pct?: number;
+  meets_standard: boolean;
+  recorded_at: string;
+  recorded_by: string;
+  notes?: string;
+}
+
 export type GoalLifecyclePhase =
   | 'acquisition'
   | 'maintenance'

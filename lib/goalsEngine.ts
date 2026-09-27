@@ -4,8 +4,10 @@
 
 import type { AiAnalysisPayload } from '@/lib/openai';
 import type {
+  AbcIncident,
   ClinicalPromptLevel,
   DigitalAssistanceCue,
+  FbaPlan,
   MaintenanceProbe,
   MasteryWithdrawal,
   PromptSource,
@@ -57,6 +59,12 @@ export type GoalSession = {
   metFrequencyCriterion?: boolean;
   behaviorCount?: number;
   behaviorDurationMinutes?: number;
+  /** حوادث ABC للسلوك المستهدف في هذه الجلسة — لا تتجاوز behaviorCount */
+  abcIncidents?: AbcIncident[];
+  /** مرات استخدام السلوك البديل في الجلسة */
+  replacementBehaviorCount?: number;
+  /** مستوى المساعدة لكل محاولة بالترتيب — أساس اتفاق الملاحظين محاولةً بمحاولة */
+  trialScores?: ClinicalPromptLevel[];
 };
 
 /** معيار أهداف التكرار/المدة: مثلاً «نوبات غضب ≤ 2 في الجلسة» */
@@ -85,6 +93,8 @@ export type TrackedGoal = {
   frequencyTarget?: FrequencyTarget;
   maintenanceProbes?: MaintenanceProbe[];
   masteryWithdrawals?: MasteryWithdrawal[];
+  /** التقييم الوظيفي للأهداف السلوكية (تكرار/مدة) */
+  fbaPlan?: FbaPlan;
 };
 
 export const DEFAULT_GOAL_WHY =

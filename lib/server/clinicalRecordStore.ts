@@ -8,9 +8,11 @@
 import type { GeneralizationProbe } from '@/lib/generalizationIndex';
 import type { TrackedGoal } from '@/lib/goalsEngine';
 import { readHubJsonFile, writeHubJsonFile } from '@/lib/hubPersistence';
+import type { IoaRecord } from '@/types/clinical';
 
 export const CLINICAL_RECORDS_DIR = 'clinical-records';
 export const MAX_GOALS_PER_CHILD = 200;
+export const MAX_IOA_RECORDS_PER_CHILD = 2000;
 
 const SAFE_ID = /^[A-Za-z0-9_-]{1,80}$/;
 const RESERVED_CHILD_IDS = new Set(['local', 'child_local']);
@@ -49,6 +51,8 @@ export type ClinicalChildRecord = {
   goals: TrackedGoal[];
   generalizationProbes: GeneralizationProbe[];
   assessments: ClinicalAssessmentSummary[];
+  /** سجلات اتفاق الملاحظين */
+  ioaRecords: IoaRecord[];
   /** أهداف حُذفت على الخادم — لا تُعاد من نسخة متصفح قديمة */
   deletedGoalIds: string[];
   createdAt: string;
@@ -96,6 +100,7 @@ export function emptyChildRecord(childId: string, now: string): ClinicalChildRec
     goals: [],
     generalizationProbes: [],
     assessments: [],
+    ioaRecords: [],
     deletedGoalIds: [],
     createdAt: now,
     updatedAt: now,
@@ -115,6 +120,7 @@ export function parseChildRecord(raw: string | null, childId: string): ClinicalC
       goals: array<TrackedGoal>(p.goals),
       generalizationProbes: array<GeneralizationProbe>(p.generalizationProbes),
       assessments: array<ClinicalAssessmentSummary>(p.assessments),
+      ioaRecords: array<IoaRecord>(p.ioaRecords),
       deletedGoalIds: strings(p.deletedGoalIds),
       createdAt: typeof p.createdAt === 'string' ? p.createdAt : new Date(0).toISOString(),
       updatedAt: typeof p.updatedAt === 'string' ? p.updatedAt : new Date(0).toISOString(),

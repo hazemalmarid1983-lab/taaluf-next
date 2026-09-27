@@ -20,8 +20,9 @@ import {
 import { journeysForParent, loadChildJourneys } from '@/lib/childRoom/journeyStore';
 import type { GeneralizationProbe } from '@/lib/generalizationIndex';
 import type { TrackedGoal } from '@/lib/goalsEngine';
+import { buildIoaRecord, summarizeIoa, type IoaInput, type IoaSummary } from '@/lib/ioa';
 import type { ParentStage } from '@/lib/parentRouteGuard';
-import { hasAnyPermission, hasPermission } from '@/lib/permissions';
+import { hasAnyPermission, hasPermission, type Permission } from '@/lib/permissions';
 import { appendClinicalAudit } from '@/lib/server/clinicalAuditStore';
 import {
   emptyChildRecord,
@@ -30,10 +31,12 @@ import {
   listChildIdsForUser,
   loadChildRecord,
   MAX_GOALS_PER_CHILD,
+  MAX_IOA_RECORDS_PER_CHILD,
   updateChildRecord,
   type ClinicalAssessmentSummary,
   type ClinicalChildRecord,
 } from '@/lib/server/clinicalRecordStore';
+import type { IoaRecord } from '@/types/clinical';
 
 export type ServiceFailure = {
   ok: false;
@@ -266,6 +269,7 @@ export async function deleteGoal(
         ...current,
         goals: current.goals.filter((g) => g.id !== goalId),
         generalizationProbes: current.generalizationProbes.filter((p) => p.goal_id !== goalId),
+        ioaRecords: current.ioaRecords.filter((r) => r.goal_id !== goalId),
         deletedGoalIds: [...current.deletedGoalIds, goalId].slice(-500),
         updatedAt: now.toISOString(),
       },
@@ -300,6 +304,73 @@ export async function recordAssessmentSummary(
     },
   ], now);
   return { ok: true };
+}
+
+/** تسجيل الملاحظ الثاني: الأخصائي المسند أو المشرف العام — لا ولي الأمر ولا المستشار (قراءة فقط) */
+export const IOA_RECORD_PERMISSIONS: Permission[] = ['record_session_trials'];
+/** مراجعة الاتفاق: الفريق المهني بما فيه المستشار العلمي */
+export const IOA_REVIEW_PERMISSIONS: Permission[] = ['manage_all_cases', 'manage_assigned_cases', 'review_clinical_content'];
+
+export async function recordIoa(
+  actor: ClinicalActor,
+  childId: string,
+  input: IoaInput,
+  now: Date = new Date()
+): Promise<{ ok: true; record: IoaRecord } | ServiceFailure> {
+  if (!hasAnyPermission(actor.role, IOA_RECORD_PERMISSIONS)) return fail(403, 'FORBIDDEN');
+  const result = await updateChildRecord(childId, (current) => {
+    if (!current) return { record: null, result: fail(404, 'CHILD_NOT_FOUND') };
+    if (!canAccessChild(actor, current, 'write')) return { record: null, result: fail(403, 'FORBIDDEN') };
+    const goal = current.goals.find((g) => g.id === input.goalId);
+    if (!goal) return { record: null, result: fail(404, 'GOAL_NOT_FOUND') };
+    const built = buildIoaRecord(
+      goal,
+      input,
+      { userId: actor.userId, name: actor.name, role: actor.role },
+      current.ioaRecords,
+      now
+    );
+    if (!built.ok) {
+      const status = built.errors.includes('IOA_EXISTS') ? 409 : built.errors.includes('SESSION_NOT_FOUND') ? 404 : 400;
+      return { record: null, result: fail(status, 'INVALID_IOA', built.errors) };
+    }
+    return {
+      record: {
+        ...current,
+        ioaRecords: [...current.ioaRecords, built.record].slice(-MAX_IOA_RECORDS_PER_CHILD),
+        updatedAt: now.toISOString(),
+      },
+      result: { ok: true as const, record: built.record },
+    };
+  });
+  if (!result.ok) return result;
+  const r = result.record;
+  await appendClinicalAudit(childId, actor, [
+    {
+      goalId: r.goal_id,
+      event: 'ioa_recorded',
+      details: {
+        ioaId: r.ioa_id,
+        sessionAt: r.session_at,
+        method: r.method,
+        agreementPct: r.agreement_pct,
+        meetsStandard: r.meets_standard,
+        secondaryObserver: r.secondary.observer_id,
+      },
+    },
+  ], now);
+  return result;
+}
+
+export async function getIoaReview(
+  actor: ClinicalActor,
+  childId: string
+): Promise<{ ok: true; records: IoaRecord[]; summary: IoaSummary } | ServiceFailure> {
+  if (!hasAnyPermission(actor.role, IOA_REVIEW_PERMISSIONS)) return fail(403, 'FORBIDDEN');
+  const found = await getChildRecordForActor(actor, childId, 'read');
+  if (!found.ok) return found;
+  const { goals, ioaRecords } = found.record;
+  return { ok: true, records: ioaRecords, summary: summarizeIoa(goals, ioaRecords) };
 }
 
 /**
