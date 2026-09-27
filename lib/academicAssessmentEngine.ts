@@ -120,26 +120,29 @@ function clampScore(value: unknown): number {
   return Math.max(0, Math.min(3, Math.round(n)));
 }
 
-function classifySeverity(score: number): {
+/** حدود الشدة على مجموع درجات المحور الخام (9 بنود × 0–3 = 0–27) */
+export const ACADEMIC_SEVERITY_THRESHOLDS = { mild: 6, moderate: 11, severe: 18 } as const;
+
+export function classifySeverity(score: number): {
   severity: ComprehensiveSeverity;
   severityLabelAr: string;
   severityLabelEn: string;
 } {
-  if (score >= 18) {
+  if (score >= ACADEMIC_SEVERITY_THRESHOLDS.severe) {
     return {
       severity: 'severe',
       severityLabelAr: 'احتياج تدخلي مكثف',
       severityLabelEn: 'Intensive Support Need',
     };
   }
-  if (score >= 11) {
+  if (score >= ACADEMIC_SEVERITY_THRESHOLDS.moderate) {
     return {
       severity: 'moderate',
       severityLabelAr: 'احتياج تدخلي متوسط',
       severityLabelEn: 'Moderate Support Need',
     };
   }
-  if (score >= 6) {
+  if (score >= ACADEMIC_SEVERITY_THRESHOLDS.mild) {
     return {
       severity: 'mild',
       severityLabelAr: 'احتياج مساندة خفيفة ومتابعة',
