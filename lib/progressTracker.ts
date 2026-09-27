@@ -4,8 +4,17 @@
  */
 
 import { listStudentAssessmentsChronological } from '@/lib/assessmentHelpers';
-import { hasClinicalMastery } from '@/lib/clinicalMastery';
+import {
+  calculateGeneralizationIndex,
+  type GeneralizationIndexResult,
+  type GeneralizationProbe,
+} from '@/lib/generalizationIndex';
 import type { TrackedGoal } from '@/lib/goalsEngine';
+import {
+  evaluateGoalMastery,
+  type SkillCategoryId,
+  type SkillMasteryBlocker,
+} from '@/lib/skillMastery';
 import { getCriterionById } from '@/types/taalof';
 
 export const CANON_DOMAIN = {
@@ -36,6 +45,9 @@ export interface GoalTrackingItem {
   status: 'not_started' | 'in_progress' | 'mastered';
   lastUpdated: string;
   notes?: string;
+  skillType: SkillCategoryId;
+  masteryBlockers: SkillMasteryBlocker[];
+  generalization?: GeneralizationIndexResult;
 }
 
 export interface DomainComparisonRow {
@@ -163,9 +175,14 @@ export function goalProgressPercent(goal: TrackedGoal): number {
   return Math.min(100, Math.max(0, Math.round(pct)));
 }
 
-export function toGoalTrackingItem(goal: TrackedGoal): GoalTrackingItem {
+export function toGoalTrackingItem(
+  goal: TrackedGoal,
+  probes?: ReadonlyArray<GeneralizationProbe>
+): GoalTrackingItem {
   const currentProgress = goalProgressPercent(goal);
-  const status: GoalTrackingItem['status'] = hasClinicalMastery(goal.sessions || [])
+  const mastery = evaluateGoalMastery(goal);
+  const goalProbes = probes?.filter((p) => p.goal_id === goal.id) ?? [];
+  const status: GoalTrackingItem['status'] = mastery.mastered
     ? 'mastered'
     : goal.status === 'paused' || currentProgress <= 0
         ? 'not_started'
@@ -179,11 +196,19 @@ export function toGoalTrackingItem(goal: TrackedGoal): GoalTrackingItem {
     status,
     lastUpdated: goal.lastUpdate || goal.startDate,
     notes: goal.smartText,
+    skillType: mastery.skill_type_id,
+    masteryBlockers: mastery.blockers,
+    ...(goalProbes.length > 0
+      ? { generalization: calculateGeneralizationIndex(goalProbes, goal.id) }
+      : {}),
   };
 }
 
-export function summarizeGoalTracking(goals: TrackedGoal[]) {
-  const items = goals.map(toGoalTrackingItem);
+export function summarizeGoalTracking(
+  goals: TrackedGoal[],
+  probes?: ReadonlyArray<GeneralizationProbe>
+) {
+  const items = goals.map((goal) => toGoalTrackingItem(goal, probes));
   return {
     items,
     masteredGoalsCount: items.filter((g) => g.status === 'mastered').length,

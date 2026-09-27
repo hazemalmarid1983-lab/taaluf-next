@@ -28,6 +28,8 @@ function buildTrainingGoalSessionEntry(
     notes: `${TRAINING_SESSION_NOTE_PREFIX}${session.id}; independence=${metrics.independence}%; accuracy=${metrics.accuracy}%`,
     progress: newCurrent,
     fullyIndependent: isFullyIndependentSession(session.trials),
+    independencePct: metrics.independence,
+    firstTrialIndependent: session.trials[0]?.promptLevel === 'independent',
   };
 }
 

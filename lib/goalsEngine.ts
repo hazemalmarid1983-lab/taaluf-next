@@ -32,6 +32,16 @@ export type GoalSession = {
   progress?: number;
   /** كل محاولات الجلسة باستقلال تام — شرط احتسابها في عداد الإتقان */
   fullyIndependent?: boolean;
+  /** نسبة المحاولات المستقلة 0–100 */
+  independencePct?: number;
+  /** المحاولة الأولى (Cold probe) أُدّيت باستقلال */
+  firstTrialIndependent?: boolean;
+  /** استجابة على المثير الطبيعي دون تلقين */
+  naturalCueOnly?: boolean;
+  trainerId?: string;
+  setting?: 'clinic' | 'home' | 'school' | 'public_place';
+  /** أهداف التكرار/المدة: تحقق معيار الهدف في الجلسة */
+  metFrequencyCriterion?: boolean;
 };
 
 export type TrackedGoal = {
