@@ -6,6 +6,7 @@
 import type { FrequencyTarget, GoalSession, TrackedGoal } from '@/lib/goalsEngine';
 import {
   skillConfigForGoal,
+  type ClinicalPromptLevel,
   type SessionSetting,
   type SkillTypeConfig,
 } from '@/lib/skillMastery';
@@ -18,6 +19,7 @@ export type GoalSessionFormInput = {
   independencePct?: number | string;
   firstTrialIndependent?: boolean;
   naturalCueOnly?: boolean;
+  promptLevel?: ClinicalPromptLevel | '';
   trainerName?: string;
   setting?: SessionSetting | '';
   behaviorValue?: number | string;
@@ -29,7 +31,8 @@ export type GoalSessionFormError =
   | 'TRAINER_REQUIRED'
   | 'SETTING_REQUIRED'
   | 'FREQUENCY_TARGET_REQUIRED'
-  | 'BEHAVIOR_VALUE_REQUIRED';
+  | 'BEHAVIOR_VALUE_REQUIRED'
+  | 'PROMPT_LEVEL_CONFLICT';
 
 export const GOAL_SESSION_FORM_ERRORS_AR: Record<GoalSessionFormError, string> = {
   INDEPENDENCE_REQUIRED: 'أدخل نسبة الاستقلالية بين 0 و100',
@@ -37,6 +40,7 @@ export const GOAL_SESSION_FORM_ERRORS_AR: Record<GoalSessionFormError, string> =
   SETTING_REQUIRED: 'اختر بيئة الجلسة — يلزم تنوّع البيئات لإتقان هذا الهدف',
   FREQUENCY_TARGET_REQUIRED: 'حدّد معيار الهدف (المقياس والاتجاه والقيمة) مرة واحدة',
   BEHAVIOR_VALUE_REQUIRED: 'أدخل عدد مرات السلوك أو مدته في هذه الجلسة',
+  PROMPT_LEVEL_CONFLICT: 'مستوى المساعدة لا يطابق النسبة: «مستقل» يعني 100% والعكس',
 };
 
 export type GoalSessionFormFields = {
@@ -136,11 +140,16 @@ export function buildGoalSessionFromForm(
   } else {
     const pct = toNumber(input.independencePct);
     if (pct === undefined || pct < 0 || pct > 100) errors.push('INDEPENDENCE_REQUIRED');
+    const promptLevel = input.promptLevel || (pct === 100 ? 'Independent' : undefined);
+    if (pct !== undefined && promptLevel && (promptLevel === 'Independent') !== (pct === 100)) {
+      errors.push('PROMPT_LEVEL_CONFLICT');
+    }
     if (errors.length) return { ok: false, errors };
     session = {
       ...base,
       independencePct: Math.round(pct!),
       fullyIndependent: pct === 100,
+      promptLevel,
       firstTrialIndependent: fields.askFirstTrial ? input.firstTrialIndependent === true : undefined,
       naturalCueOnly: fields.askNaturalCue ? input.naturalCueOnly === true : undefined,
     };

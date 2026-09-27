@@ -8,6 +8,20 @@ export type SkillCategoryId =
   | 'adaptive_self_help'
   | 'self_regulation';
 
+/**
+ * تسلسل المساعدة الموحّد (8 مستويات) من الأقل إلى الأكثر تدخلاً —
+ * يطابق PromptHierarchyLevel في نماذج الجلسات.
+ */
+export type ClinicalPromptLevel =
+  | 'Independent'
+  | 'Partial Verbal'
+  | 'Verbal'
+  | 'Gestural'
+  | 'Model'
+  | 'Partial Physical'
+  | 'Full Physical'
+  | 'No Response';
+
 export interface SkillTypeConfig {
   skill_type_id: SkillCategoryId;
   label_ar: string;
@@ -38,7 +52,7 @@ export interface GeneralizationProbe {
     is_novel_material?: boolean;
   };
   independence_pct: number;
-  prompt_level: 'Independent' | 'Verbal' | 'Gestural' | 'Partial Physical' | 'Full Physical';
+  prompt_level: ClinicalPromptLevel;
   is_first_trial_cold_probe: boolean;
   mood_state?: string;
   reported_by: 'professional' | 'parent_report';
@@ -62,3 +76,29 @@ export interface GeneralizationIndexResult {
   };
   weak_dimension: GeneralizationDimension;
 }
+
+/** مجس صيانة بعد الإتقان */
+export interface MaintenanceProbe {
+  probe_id: string;
+  goal_id: string;
+  date: string;
+  independence_pct: number;
+  trainer_id?: string;
+  setting?: 'clinic' | 'home' | 'school' | 'public_place';
+  notes?: string;
+}
+
+export type MasteryWithdrawalReason = 'consecutive_maintenance_probes_below_threshold';
+
+/** سحب الإتقان — يعيد الهدف إلى إعادة الاكتساب */
+export interface MasteryWithdrawal {
+  at: string;
+  reason: MasteryWithdrawalReason;
+  probe_ids: string[];
+}
+
+export type GoalLifecyclePhase =
+  | 'acquisition'
+  | 'maintenance'
+  | 'maintained'
+  | 're_acquisition';

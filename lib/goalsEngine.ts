@@ -3,6 +3,7 @@
  */
 
 import type { AiAnalysisPayload } from '@/lib/openai';
+import type { ClinicalPromptLevel, MaintenanceProbe, MasteryWithdrawal } from '@/types/clinical';
 import {
   CRITERIA_LIST,
   DOMAINS,
@@ -38,6 +39,8 @@ export type GoalSession = {
   firstTrialIndependent?: boolean;
   /** استجابة على المثير الطبيعي دون تلقين */
   naturalCueOnly?: boolean;
+  /** أعلى مستوى مساعدة استُخدم في الجلسة */
+  promptLevel?: ClinicalPromptLevel;
   trainerId?: string;
   setting?: 'clinic' | 'home' | 'school' | 'public_place';
   /** أهداف التكرار/المدة: تحقق معيار الهدف في الجلسة */
@@ -70,6 +73,8 @@ export type TrackedGoal = {
   sessions: GoalSession[];
   lastUpdate?: string;
   frequencyTarget?: FrequencyTarget;
+  maintenanceProbes?: MaintenanceProbe[];
+  masteryWithdrawals?: MasteryWithdrawal[];
 };
 
 export const DEFAULT_GOAL_WHY =

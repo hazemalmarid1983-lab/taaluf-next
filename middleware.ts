@@ -20,6 +20,7 @@ import {
   parentStageRedirect,
   parseParentStage,
 } from '@/lib/parentRouteGuard';
+import { isKnownSessionRole } from '@/lib/permissions';
 import {
   isProductionPlatform,
   maintenanceModeEnabled,
@@ -35,6 +36,16 @@ export default withAuth(
 
     if (path.startsWith('/_next') || path.startsWith('/api/auth')) {
       return NextResponse.next();
+    }
+
+    if (
+      role !== undefined &&
+      !isKnownSessionRole(role) &&
+      path !== '/' &&
+      path !== '/maintenance' &&
+      !path.startsWith('/login')
+    ) {
+      return NextResponse.redirect(new URL('/login?error=AccessDenied', req.url));
     }
 
     if (

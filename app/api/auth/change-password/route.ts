@@ -1,14 +1,11 @@
 import { NextResponse } from 'next/server';
-import { hashPasswordSync } from '@/lib/password';
+import { DEV_DEMO_PASSWORD, demoFallbackHash } from '@/lib/demoAccounts';
 import {
   changePrivilegedPassword,
   isPrivilegedLoginEmail,
   privilegedAccountIdForEmail,
 } from '@/lib/privilegedCredentials';
 import { portalFromEmail, type PortalId } from '@/lib/loginPortal';
-
-const DEFAULT_DEMO_HASH = hashPasswordSync('taaluf123');
-
 function portalForAccount(
   account: ReturnType<typeof privilegedAccountIdForEmail>
 ): PortalId | null {
@@ -80,7 +77,7 @@ export async function POST(req: Request) {
       email,
       currentPassword,
       newPassword,
-      fallbackHash: DEFAULT_DEMO_HASH,
+      fallbackHash: demoFallbackHash(DEV_DEMO_PASSWORD),
     });
 
     if (!result.ok) {

@@ -7,7 +7,30 @@ export type ClinicalRole =
   | 'SUPER_ADMIN'
   | 'SCIENTIFIC_ADVISOR'
   | 'SPECIALIST'
-  | 'PARENT';
+  | 'PARENT'
+  | 'GUEST';
+
+/** أدوار الجلسة المعروفة — أي قيمة أخرى تُرفض (Deny by default) */
+export const SESSION_ROLES = [
+  'admin',
+  'scientific_advisor',
+  'advisor',
+  'specialist',
+  'teacher',
+  'parent',
+] as const;
+
+export type SessionRole = (typeof SESSION_ROLES)[number];
+
+export function isKnownSessionRole(role: unknown): role is SessionRole {
+  return typeof role === 'string' && (SESSION_ROLES as readonly string[]).includes(role);
+}
+
+/** دور الجلسة بعد التنقية: مجهول أو فارغ ← null */
+export function normalizeSessionRole(role: unknown): SessionRole | null {
+  const value = typeof role === 'string' ? role.trim().toLowerCase() : '';
+  return isKnownSessionRole(value) ? value : null;
+}
 
 export type Permission =
   | 'manage_system'
@@ -61,6 +84,11 @@ export const ROLE_LABELS: Record<
     en: 'Parent',
     emoji: '👨‍👩‍👧',
   },
+  GUEST: {
+    ar: 'زائر بلا صلاحيات',
+    en: 'Guest (no access)',
+    emoji: '🚫',
+  },
 };
 
 /** صلاحيات كل دور — مصفوفة RBAC */
@@ -110,6 +138,7 @@ export const ROLE_PERMISSIONS: Record<ClinicalRole, readonly Permission[]> = {
     'run_home_session',
     'use_sensory_rooms',
   ],
+  GUEST: [],
 };
 
 export const RBAC_MOCK_STORAGE_KEY = 'taaluf.rbac.mockRole.v1';
@@ -128,7 +157,7 @@ export function mapSessionRoleToClinical(sessionRole?: string | null): ClinicalR
     case 'parent':
       return 'PARENT';
     default:
-      return 'SPECIALIST';
+      return 'GUEST';
   }
 }
 

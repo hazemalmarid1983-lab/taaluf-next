@@ -209,7 +209,12 @@ SMOKE_BASE=https://your-domain.com node scripts/smoke-paths.mjs
 | specialist@taaluf.local | taaluf123 | أخصائي |
 | admin@taaluf.local | taaluf123 | إدارة |
 
-> **تعطّل في الإنتاج** ما لم يكن `ALLOW_DEMO_USERS=true`.
+> كلمة المرور `taaluf123` تعمل **خارج الإنتاج فقط**. في الإنتاج الحسابات التجريبية معطّلة
+> (حتى مع الوضع التجريبي أو غياب Tap) إلا بتعيين `ALLOW_DEMO_USERS=true` **و**
+> `DEMO_USERS_PASSWORD` بطول 12 حرفاً على الأقل — وتصبح هذه كلمة المرور لكل حسابات `@taaluf.local`.
+> حسابا الإدارة والمستشار بعد تعيين كلمة مرور خاصة يعملان دون هذه المتغيرات.
+> `NEXTAUTH_SECRET` إلزامي في الإنتاج — لا توجد قيمة احتياطية.
+> أي دور غير معروف (Airtable أو JWT) يُرفض ولا يحصل على صلاحيات.
 
 ---
 

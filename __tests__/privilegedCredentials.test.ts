@@ -43,6 +43,19 @@ describe('privileged credentials', () => {
     ).resolves.toBe(false);
   });
 
+  it('rejects login when there is neither a custom password nor an allowed fallback', async () => {
+    await expect(
+      verifyPrivilegedLogin('admin@taaluf.local', 'taaluf123', null)
+    ).resolves.toBe(false);
+    const result = await changePrivilegedPassword({
+      email: 'admin@taaluf.local',
+      currentPassword: 'taaluf123',
+      newPassword: 'AdminSecure9',
+      fallbackHash: null,
+    });
+    expect(result).toEqual({ ok: false, code: 'CURRENT_INVALID' });
+  });
+
   it('stores advisor password separately from admin', async () => {
     const advisorResult = await changePrivilegedPassword({
       email: 'samer@taaluf.local',

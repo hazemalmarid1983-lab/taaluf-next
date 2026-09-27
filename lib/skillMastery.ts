@@ -5,17 +5,81 @@
  */
 
 import type { GoalSession, TrackedGoal } from '@/lib/goalsEngine';
-import type { SkillCategoryId, SkillTypeConfig } from '@/types/clinical';
+import type { PromptHierarchyLevel } from '@/lib/promptHierarchy';
+import type { ClinicalPromptLevel, SkillCategoryId, SkillTypeConfig } from '@/types/clinical';
 import { getCriterionById, type DevelopmentalDomainId } from '@/types/taalof';
 
-export type { SkillCategoryId, SkillTypeConfig };
+export type { ClinicalPromptLevel, SkillCategoryId, SkillTypeConfig };
 
-export type SessionPromptLevel =
-  | 'Independent'
-  | 'Verbal'
-  | 'Gestural'
-  | 'Partial Physical'
-  | 'Full Physical';
+export type SessionPromptLevel = ClinicalPromptLevel;
+
+/** من الأقل إلى الأكثر تدخلاً — نفس ترتيب PROMPT_HIERARCHY_ORDER */
+export const CLINICAL_PROMPT_LEVELS: readonly ClinicalPromptLevel[] = [
+  'Independent',
+  'Partial Verbal',
+  'Verbal',
+  'Gestural',
+  'Model',
+  'Partial Physical',
+  'Full Physical',
+  'No Response',
+];
+
+export const CLINICAL_PROMPT_BY_HIERARCHY: Record<PromptHierarchyLevel, ClinicalPromptLevel> = {
+  independent: 'Independent',
+  verbal_partial: 'Partial Verbal',
+  verbal: 'Verbal',
+  gestural: 'Gestural',
+  model: 'Model',
+  partial_physical: 'Partial Physical',
+  full_physical: 'Full Physical',
+  no_response: 'No Response',
+};
+
+export const CLINICAL_PROMPT_LABELS_AR: Record<ClinicalPromptLevel, string> = {
+  Independent: 'مستقل',
+  'Partial Verbal': 'تلقين لفظي جزئي',
+  Verbal: 'تلقين لفظي',
+  Gestural: 'تلقين بالإشارة',
+  Model: 'نموذج',
+  'Partial Physical': 'مساعدة جسدية جزئية',
+  'Full Physical': 'مساعدة جسدية كاملة',
+  'No Response': 'لا استجابة',
+};
+
+/**
+ * مساعدات المحرك الرقمي ومستويات الجلسات القديمة.
+ * التلميح البصري وتقليل الخيارات ≈ إشارة، والمساعدة البصرية المباشرة ≈ نموذج — تحتاج اعتماداً علمياً.
+ */
+const EXTRA_PROMPT_ALIASES: Record<string, ClinicalPromptLevel> = {
+  visual_hint: 'Gestural',
+  reduced_choices: 'Gestural',
+  direct_visual_assistance: 'Model',
+  verbal_gestural: 'Gestural',
+  physical_prompt: 'Full Physical',
+};
+
+export function toClinicalPromptLevel(level: string | undefined | null): ClinicalPromptLevel | undefined {
+  if (!level) return undefined;
+  if ((CLINICAL_PROMPT_LEVELS as readonly string[]).includes(level)) {
+    return level as ClinicalPromptLevel;
+  }
+  return (
+    CLINICAL_PROMPT_BY_HIERARCHY[level as PromptHierarchyLevel] ?? EXTRA_PROMPT_ALIASES[level]
+  );
+}
+
+/** أعلى مستوى مساعدة في مجموعة محاولات (الأكثر تدخلاً) */
+export function mostIntrusivePromptLevel(
+  levels: ReadonlyArray<string | undefined>
+): ClinicalPromptLevel | undefined {
+  let worst = -1;
+  for (const raw of levels) {
+    const level = toClinicalPromptLevel(raw);
+    if (level) worst = Math.max(worst, CLINICAL_PROMPT_LEVELS.indexOf(level));
+  }
+  return worst >= 0 ? CLINICAL_PROMPT_LEVELS[worst] : undefined;
+}
 
 export type SessionSetting = 'clinic' | 'home' | 'school' | 'public_place';
 
@@ -126,12 +190,14 @@ export function skillConfigForDomain(
 export type SkillMasteryBlocker =
   | 'insufficient_consecutive_sessions'
   | 'insufficient_distinct_trainers'
-  | 'insufficient_distinct_settings';
+  | 'insufficient_distinct_settings'
+  | 'mastery_withdrawn_maintenance';
 
 export const SKILL_MASTERY_BLOCKER_LABELS_AR: Record<SkillMasteryBlocker, string> = {
   insufficient_consecutive_sessions: 'جلسات مؤهلة متتالية غير كافية',
   insufficient_distinct_trainers: 'يلزم تنفيذ الجلسات مع مدرّبين مختلفين',
   insufficient_distinct_settings: 'يلزم تنفيذ الجلسات في بيئات مختلفة',
+  mastery_withdrawn_maintenance: 'سُحب الإتقان: مجسّا صيانة متتاليان دون 80% — إعادة اكتساب',
 };
 
 export const SESSION_SETTING_LABELS_AR: Record<SessionSetting, string> = {
@@ -149,6 +215,8 @@ export interface SkillMasteryResult {
   distinct_trainers: number;
   distinct_settings: number;
   blockers: SkillMasteryBlocker[];
+  /** تاريخ الجلسة التي اكتمل بها الإتقان (للأهداف فقط) */
+  mastered_at?: string;
 }
 
 function effectivelyIndependent(
@@ -216,7 +284,7 @@ export function goalSessionToMasteryRecord(
     goal_id: goalId,
     date: session.at,
     independence_pct: session.independencePct ?? (fully ? 100 : 0),
-    prompt_level: fully ? 'Independent' : 'Verbal',
+    prompt_level: session.promptLevel ?? (fully ? 'Independent' : 'Verbal'),
     first_trial_independent: session.firstTrialIndependent ?? fully,
     natural_cue_only: session.naturalCueOnly,
     trainer_id: session.trainerId,
@@ -233,13 +301,37 @@ export function skillConfigForGoal(
   );
 }
 
-export function evaluateGoalMastery(
-  goal: Pick<TrackedGoal, 'id' | 'criterionId' | 'developmentalDomain' | 'sessions'>
-): SkillMasteryResult {
-  const records = (goal.sessions || []).map((s, i) =>
-    goalSessionToMasteryRecord(goal.id, s, i)
-  );
-  return evaluateSkillMastery(skillConfigForGoal(goal), records);
+export type MasteryGoalInput = Pick<
+  TrackedGoal,
+  'id' | 'criterionId' | 'developmentalDomain' | 'sessions' | 'masteryWithdrawals'
+>;
+
+/** آخر سحب للإتقان — الجلسات قبله لا تُحتسب في إعادة الاكتساب */
+export function lastMasteryWithdrawalAt(goal: Pick<TrackedGoal, 'masteryWithdrawals'>): string | undefined {
+  const dates = (goal.masteryWithdrawals || []).map((w) => w.at).sort();
+  return dates[dates.length - 1];
+}
+
+/**
+ * الإتقان ثابت بعد تحققه: يُسجَّل تاريخ أول لحظة اكتمل فيها، ولا يُلغى
+ * إلا بسحب الإتقان من مجسات الصيانة (lib/maintenanceSchedule.ts).
+ */
+export function evaluateGoalMastery(goal: MasteryGoalInput): SkillMasteryResult {
+  const config = skillConfigForGoal(goal);
+  const since = lastMasteryWithdrawalAt(goal);
+  const records = (goal.sessions || [])
+    .map((s, i) => goalSessionToMasteryRecord(goal.id, s, i))
+    .filter((r) => !since || r.date > since)
+    .sort((a, b) => a.date.localeCompare(b.date));
+
+  for (let i = 0; i < records.length; i++) {
+    const result = evaluateSkillMastery(config, records.slice(0, i + 1));
+    if (result.mastered) return { ...result, mastered_at: records[i].date };
+  }
+  const result = evaluateSkillMastery(config, records);
+  return since
+    ? { ...result, blockers: ['mastery_withdrawn_maintenance', ...result.blockers] }
+    : result;
 }
 
 export function evaluateSkillMastery(

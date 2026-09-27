@@ -9,7 +9,13 @@ import {
   goalSessionFormFields,
   type GoalSessionFormError,
 } from '@/lib/goalSessionForm';
-import { SESSION_SETTING_LABELS_AR, type SessionSetting } from '@/lib/skillMastery';
+import {
+  CLINICAL_PROMPT_LABELS_AR,
+  CLINICAL_PROMPT_LEVELS,
+  SESSION_SETTING_LABELS_AR,
+  type ClinicalPromptLevel,
+  type SessionSetting,
+} from '@/lib/skillMastery';
 
 const MOODS = ['😊', '😐', '😟', '😢'] as const;
 const SETTINGS = Object.keys(SESSION_SETTING_LABELS_AR) as SessionSetting[];
@@ -34,6 +40,7 @@ export default function GoalSessionDialog({
   const [independencePct, setIndependencePct] = useState('');
   const [firstTrialIndependent, setFirstTrialIndependent] = useState(false);
   const [naturalCueOnly, setNaturalCueOnly] = useState(false);
+  const [promptLevel, setPromptLevel] = useState<ClinicalPromptLevel | ''>('');
   const [trainerName, setTrainerName] = useState(defaultTrainerName ?? '');
   const [setting, setSetting] = useState<SessionSetting | ''>('');
   const [behaviorValue, setBehaviorValue] = useState('');
@@ -58,6 +65,7 @@ export default function GoalSessionDialog({
       independencePct,
       firstTrialIndependent,
       naturalCueOnly,
+      promptLevel,
       trainerName,
       setting,
       behaviorValue,
@@ -131,6 +139,21 @@ export default function GoalSessionDialog({
                 value={independencePct}
                 onChange={(e) => setIndependencePct(e.target.value)}
               />
+            </label>
+            <label className="block text-sm font-semibold">
+              أعلى مستوى مساعدة استُخدم
+              <select
+                className={`${inputClass} mt-1`}
+                value={promptLevel}
+                onChange={(e) => setPromptLevel(e.target.value as ClinicalPromptLevel | '')}
+              >
+                <option value="">—</option>
+                {CLINICAL_PROMPT_LEVELS.map((p) => (
+                  <option key={p} value={p}>
+                    {CLINICAL_PROMPT_LABELS_AR[p]}
+                  </option>
+                ))}
+              </select>
             </label>
             {fields.askFirstTrial ? (
               <label className="flex items-center gap-2 text-sm">

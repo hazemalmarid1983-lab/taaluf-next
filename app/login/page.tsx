@@ -64,8 +64,9 @@ function LoginForm() {
   const paymentsOff =
     process.env.NEXT_PUBLIC_PAYMENTS_DISABLED === 'true' ||
     process.env.NEXT_PUBLIC_TAALUF_PILOT_MODE === 'true';
+  const showDevDemoPassword = paymentsOff && process.env.NODE_ENV !== 'production';
   const [password, setPassword] = useState(
-    paymentsOff && !isPrivilegedPasswordPortal(initial) ? 'taaluf123' : ''
+    showDevDemoPassword && !isPrivilegedPasswordPortal(initial) ? 'taaluf123' : ''
   );
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -88,7 +89,7 @@ function LoginForm() {
     setEmail(demoEmailForPortal(id));
     setError('');
     setPasswordMsg('');
-    if (paymentsOff && !isPrivilegedPasswordPortal(id)) {
+    if (showDevDemoPassword && !isPrivilegedPasswordPortal(id)) {
       setPassword('taaluf123');
     } else if (isPrivilegedPasswordPortal(id)) {
       setPassword('');
@@ -352,7 +353,7 @@ function LoginForm() {
           </p>
         )}
 
-        {paymentsOff && !privilegedPortal && (
+        {showDevDemoPassword && !privilegedPortal && (
           <p className="mt-4 rounded-2xl bg-emerald-50 px-3 py-2 text-xs leading-6 text-emerald-900">
             {t('demoModeHint')}{' '}
             <span className="font-mono font-semibold">taaluf123</span>

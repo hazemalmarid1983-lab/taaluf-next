@@ -7,6 +7,7 @@ import {
   type GeneralizationDimension,
   type GeneralizationProbe,
 } from '@/lib/generalizationIndex';
+import { CLINICAL_PROMPT_LABELS_AR, toClinicalPromptLevel } from '@/lib/skillMastery';
 
 export const GENERALIZATION_PROBES_STORAGE_KEY = 'taaluf.generalizationProbes.v1';
 
@@ -27,13 +28,8 @@ export const PROBE_PERSON_LABELS_AR: Record<PersonType, string> = {
   peer: 'طفل / قرين',
 };
 
-export const PROBE_PROMPT_LABELS_AR: Record<GeneralizationProbe['prompt_level'], string> = {
-  Independent: 'مستقل',
-  Verbal: 'تلقين لفظي',
-  Gestural: 'تلقين بالإشارة',
-  'Partial Physical': 'مساعدة جسدية جزئية',
-  'Full Physical': 'مساعدة جسدية كاملة',
-};
+export const PROBE_PROMPT_LABELS_AR: Record<GeneralizationProbe['prompt_level'], string> =
+  CLINICAL_PROMPT_LABELS_AR;
 
 export type GeneralizationProbeInput = {
   dimension?: GeneralizationDimension | '';
@@ -90,7 +86,8 @@ export function buildGeneralizationProbe(
   const pctRaw = input.independencePct;
   const pct = pctRaw === '' || pctRaw === undefined ? NaN : Number(pctRaw);
   if (!Number.isFinite(pct) || pct < 0 || pct > 100) errors.push('INDEPENDENCE_REQUIRED');
-  if (!input.promptLevel) errors.push('PROMPT_REQUIRED');
+  const promptLevel = toClinicalPromptLevel(input.promptLevel);
+  if (!promptLevel) errors.push('PROMPT_REQUIRED');
   if (errors.length) return { ok: false, errors };
 
   const now = context.now ?? new Date();
@@ -107,7 +104,7 @@ export function buildGeneralizationProbe(
       is_novel_material: dimension === 'material_stimulus' ? input.isNovelMaterial === true : undefined,
     },
     independence_pct: Math.round(pct),
-    prompt_level: input.promptLevel as GeneralizationProbe['prompt_level'],
+    prompt_level: promptLevel!,
     is_first_trial_cold_probe: input.isFirstTrialColdProbe === true,
     mood_state: input.moodState || undefined,
     reported_by: context.reportedBy,

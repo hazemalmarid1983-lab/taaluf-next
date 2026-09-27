@@ -11,10 +11,11 @@ import {
 } from '@/lib/generalizationIndex';
 import type { TrackedGoal } from '@/lib/goalsEngine';
 import {
-  evaluateGoalMastery,
-  type SkillCategoryId,
-  type SkillMasteryBlocker,
-} from '@/lib/skillMastery';
+  evaluateGoalLifecycle,
+  type GoalLifecyclePhase,
+  type NextProbeKind,
+} from '@/lib/maintenanceSchedule';
+import type { SkillCategoryId, SkillMasteryBlocker } from '@/lib/skillMastery';
 import { getCriterionById } from '@/types/taalof';
 
 export const CANON_DOMAIN = {
@@ -48,6 +49,11 @@ export interface GoalTrackingItem {
   skillType: SkillCategoryId;
   masteryBlockers: SkillMasteryBlocker[];
   generalization?: GeneralizationIndexResult;
+  phase: GoalLifecyclePhase;
+  masteredAt?: string;
+  nextMaintenanceDueAt?: string;
+  nextMaintenanceKind?: NextProbeKind;
+  maintenanceDueNow: boolean;
 }
 
 export interface DomainComparisonRow {
@@ -177,10 +183,12 @@ export function goalProgressPercent(goal: TrackedGoal): number {
 
 export function toGoalTrackingItem(
   goal: TrackedGoal,
-  probes?: ReadonlyArray<GeneralizationProbe>
+  probes?: ReadonlyArray<GeneralizationProbe>,
+  now: Date = new Date()
 ): GoalTrackingItem {
   const currentProgress = goalProgressPercent(goal);
-  const mastery = evaluateGoalMastery(goal);
+  const lifecycle = evaluateGoalLifecycle(goal, now);
+  const mastery = lifecycle.mastery;
   const goalProbes = probes?.filter((p) => p.goal_id === goal.id) ?? [];
   const status: GoalTrackingItem['status'] = mastery.mastered
     ? 'mastered'
@@ -198,6 +206,11 @@ export function toGoalTrackingItem(
     notes: goal.smartText,
     skillType: mastery.skill_type_id,
     masteryBlockers: mastery.blockers,
+    phase: lifecycle.phase,
+    masteredAt: lifecycle.mastered_at,
+    nextMaintenanceDueAt: lifecycle.next_probe_due_at,
+    nextMaintenanceKind: lifecycle.next_probe_kind,
+    maintenanceDueNow: lifecycle.probe_due_now,
     ...(goalProbes.length > 0
       ? { generalization: calculateGeneralizationIndex(goalProbes, goal.id) }
       : {}),

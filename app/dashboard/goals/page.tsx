@@ -5,6 +5,8 @@ import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
 import GeneralizationProbeDialog from '@/components/goals/GeneralizationProbeDialog';
 import GoalSessionDialog from '@/components/goals/GoalSessionDialog';
+import MaintenanceProbeDialog from '@/components/goals/MaintenanceProbeDialog';
+import { GOAL_PHASE_LABELS_AR } from '@/lib/maintenanceSchedule';
 import type { GeneralizationProbe } from '@/lib/generalizationIndex';
 import { loadGeneralizationProbes } from '@/lib/generalizationProbeStore';
 import {
@@ -55,6 +57,7 @@ export default function GoalsPage() {
   const { data: authSession } = useSession();
   const [noteGoalId, setNoteGoalId] = useState<string | null>(null);
   const [probeGoalId, setProbeGoalId] = useState<string | null>(null);
+  const [maintenanceGoalId, setMaintenanceGoalId] = useState<string | null>(null);
   const [probes, setProbes] = useState<GeneralizationProbe[]>([]);
   const [msg, setMsg] = useState('');
   const reportedBy: GeneralizationProbe['reported_by'] =
@@ -134,7 +137,20 @@ export default function GoalsPage() {
     }).catch(() => undefined);
   };
 
+  const saveMaintenance = async (updated: TrackedGoal, message: string) => {
+    upsertGoalLocal(updated);
+    setGoals((prev) => prev.map((g) => (g.id === updated.id ? updated : g)));
+    setMaintenanceGoalId(null);
+    setMsg(message);
+    await fetch(`/api/goals/${updated.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ goal: updated }),
+    }).catch(() => undefined);
+  };
+
   const noteGoal = goals.find((g) => g.id === noteGoalId) || null;
+  const maintenanceGoal = goals.find((g) => g.id === maintenanceGoalId) || null;
   const probeGoal = goals.find((g) => g.id === probeGoalId) || null;
 
   return (
@@ -210,6 +226,15 @@ export default function GoalsPage() {
                     >
                       قياس تعميم
                     </Button>
+                    {tracking.phase === 'maintenance' || tracking.phase === 'maintained' ? (
+                      <Button
+                        variant={tracking.maintenanceDueNow ? 'default' : 'ghost'}
+                        size="sm"
+                        onClick={() => setMaintenanceGoalId(g.id)}
+                      >
+                        مجس صيانة
+                      </Button>
+                    ) : null}
                   </div>
                 </div>
                 <p className="mt-3 text-sm leading-7 text-slate-600">
@@ -239,6 +264,13 @@ export default function GoalsPage() {
                       : tracking.masteryBlockers
                           .map((b) => SKILL_MASTERY_BLOCKER_LABELS_AR[b])
                           .join(' · ') || 'قيد التدريب'}
+                  </p>
+                  <p>
+                    <span className="font-semibold">المرحلة:</span>{' '}
+                    {GOAL_PHASE_LABELS_AR[tracking.phase]}
+                    {tracking.nextMaintenanceDueAt
+                      ? ` · ${tracking.nextMaintenanceKind === 'confirmation' ? 'مجس تأكيدي' : 'المجس التالي'} ${new Date(tracking.nextMaintenanceDueAt).toLocaleDateString('ar-EG')}${tracking.maintenanceDueNow ? ' (مستحق الآن)' : ''}`
+                      : ''}
                   </p>
                   {tracking.generalization ? (
                     <p>
@@ -289,6 +321,24 @@ export default function GoalsPage() {
             );
           }}
           onCancel={() => setProbeGoalId(null)}
+        />
+      )}
+
+      {maintenanceGoal && (
+        <MaintenanceProbeDialog
+          goal={maintenanceGoal}
+          defaultTrainerName={authSession?.user?.name ?? undefined}
+          onSaved={(result) =>
+            void saveMaintenance(
+              result.goal,
+              result.withdrawn
+                ? 'سُحب الإتقان: مجسّا صيانة متتاليان دون 80% — عاد الهدف إلى إعادة الاكتساب'
+                : result.passed
+                  ? 'تم حفظ مجس الصيانة — ناجح'
+                  : 'مجس دون 80% — أجرِ مجساً تأكيدياً خلال 48 ساعة'
+            )
+          }
+          onCancel={() => setMaintenanceGoalId(null)}
         />
       )}
 

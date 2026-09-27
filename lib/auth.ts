@@ -6,74 +6,61 @@ import { logAction } from '@/lib/auditLog';
 import { ensureAuthUrl } from '@/lib/ensureAuthUrl';
 import { portalFromEmail, type PortalId } from '@/lib/loginPortal';
 import { authorizeTeacherAccount } from '@/lib/childRoom/teacherAccounts';
-import { hashPasswordSync, verifyPassword } from '@/lib/password';
+import {
+  DEV_DEMO_PASSWORD,
+  DEV_GUEST_SPECIALIST_PASSWORD,
+  demoFallbackHash,
+  nextAuthSecret,
+} from '@/lib/demoAccounts';
+import { verifyPassword } from '@/lib/password';
+import { normalizeSessionRole } from '@/lib/permissions';
 import { verifyPrivilegedLogin } from '@/lib/privilegedCredentials';
 
 ensureAuthUrl();
 
 export { homePathForRole };
 
-function envFlag(name: string) {
-  return (
-    String(process.env[name] || '')
-      .trim()
-      .toLowerCase() === 'true'
-  );
-}
-
-/** حسابات تجريبية — تُفعَّل في الطيّار أو عند غياب Tap */
-function demoUsersAllowed() {
-  return (
-    process.env.NODE_ENV !== 'production' ||
-    envFlag('ALLOW_DEMO_USERS') ||
-    envFlag('TAALUF_PILOT_MODE') ||
-    envFlag('NEXT_PUBLIC_PAYMENTS_DISABLED') ||
-    envFlag('NEXT_PUBLIC_TAALUF_PILOT_MODE') ||
-    envFlag('PAYMENTS_DISABLED') ||
-    !String(process.env.TAP_SECRET_KEY || '').trim()
-  );
-}
-
+/** حسابات @taaluf.local — سياسة كلمات المرور في lib/demoAccounts.ts */
 const DEMO_USERS = [
   {
     id: 'usr_admin',
     email: 'admin@taaluf.local',
-    password_hash: hashPasswordSync('taaluf123'),
+    devPassword: DEV_DEMO_PASSWORD,
     name: 'حازم',
     role: 'admin',
   },
   {
     id: 'usr_advisor',
     email: 'samer@taaluf.local',
-    password_hash: hashPasswordSync('taaluf123'),
+    devPassword: DEV_DEMO_PASSWORD,
     name: 'د. سامر',
     role: 'scientific_advisor',
   },
   {
     id: 'usr_specialist',
     email: 'specialist@taaluf.local',
-    password_hash: hashPasswordSync('taaluf123'),
+    devPassword: DEV_DEMO_PASSWORD,
     name: 'أخصائي تآلف',
     role: 'specialist',
   },
   {
     id: 'usr_teacher',
     email: 'teacher@taaluf.local',
-    password_hash: hashPasswordSync('taaluf123'),
+    devPassword: DEV_DEMO_PASSWORD,
     name: 'معلّم تآلف',
     role: 'teacher',
   },
   {
     id: 'usr_parent',
     email: 'parent@taaluf.local',
-    password_hash: hashPasswordSync('taaluf123'),
+    devPassword: DEV_DEMO_PASSWORD,
     name: 'ولي أمر',
     role: 'parent',
   },
   {
     id: 'usr_specialist_guest',
     email: 'guest-specialist@taaluf.local',
-    password_hash: hashPasswordSync('paid-access'),
+    devPassword: DEV_GUEST_SPECIALIST_PASSWORD,
     name: 'مختص (بعد الدفع)',
     role: 'specialist',
   },
@@ -104,22 +91,20 @@ export const authOptions: NextAuthOptions = {
           return null;
         }
 
-        if (demoUsersAllowed()) {
-          const dev = DEMO_USERS.find((u) => u.email === email);
-          if (dev) {
-            const isValid = await verifyPrivilegedLogin(
-              email,
-              password,
-              dev.password_hash
-            );
-            if (!isValid) return null;
-            return {
-              id: dev.id,
-              email: dev.email,
-              name: dev.name,
-              role: dev.role,
-            };
-          }
+        const dev = DEMO_USERS.find((u) => u.email === email);
+        if (dev) {
+          const isValid = await verifyPrivilegedLogin(
+            email,
+            password,
+            demoFallbackHash(dev.devPassword)
+          );
+          if (!isValid) return null;
+          return {
+            id: dev.id,
+            email: dev.email,
+            name: dev.name,
+            role: dev.role,
+          };
         }
 
         if (isAirtableConfigured()) {
@@ -131,7 +116,8 @@ export const authOptions: NextAuthOptions = {
                 user.password_hash
               );
               if (!isValid) return null;
-              const role = String(user.role || 'specialist');
+              const role = normalizeSessionRole(user.role);
+              if (!role) return null;
               return {
                 id: user.id,
                 email: user.email,
@@ -191,7 +177,7 @@ export const authOptions: NextAuthOptions = {
     },
     async jwt({ token, user }) {
       if (user) {
-        token.role = (user as { role?: string }).role || 'specialist';
+        token.role = normalizeSessionRole((user as { role?: string }).role) ?? 'guest';
         token.id = user.id;
       }
       return token;
@@ -199,10 +185,10 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (session.user) {
         session.user.id = token.id as string;
-        session.user.role = (token.role as string) || 'specialist';
+        session.user.role = normalizeSessionRole(token.role) ?? 'guest';
       }
       return session;
     },
   },
-  secret: process.env.NEXTAUTH_SECRET || 'taaluf-dev-secret-change-me',
+  secret: nextAuthSecret(),
 };

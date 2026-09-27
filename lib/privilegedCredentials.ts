@@ -84,10 +84,11 @@ export async function hasCustomPrivilegedPassword(email: string) {
 export async function verifyPrivilegedLogin(
   email: string,
   password: string,
-  fallbackHash: string
+  fallbackHash: string | null
 ): Promise<boolean> {
   const custom = await getPrivilegedPasswordHash(email);
   const hash = custom ?? fallbackHash;
+  if (!hash) return false;
   return verifyPassword(password, hash);
 }
 
@@ -95,7 +96,7 @@ export async function changePrivilegedPassword(input: {
   email: string;
   currentPassword: string;
   newPassword: string;
-  fallbackHash: string;
+  fallbackHash: string | null;
 }): Promise<{ ok: true } | { ok: false; code: string }> {
   const accountId = privilegedAccountIdForEmail(input.email);
   if (!accountId) return { ok: false, code: 'NOT_PRIVILEGED' };

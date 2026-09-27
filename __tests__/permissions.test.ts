@@ -6,9 +6,11 @@ import {
   canExportClinicalReport,
   hasAnyPermission,
   hasPermission,
+  isKnownSessionRole,
   isParentDashboardPath,
   isRoleSwitcherEnabled,
   mapSessionRoleToClinical,
+  normalizeSessionRole,
   parseMockClinicalRole,
   ROLE_PERMISSIONS,
   type ClinicalRole,
@@ -23,6 +25,22 @@ describe('permissions RBAC', () => {
     expect(mapSessionRoleToClinical('specialist')).toBe('SPECIALIST');
     expect(mapSessionRoleToClinical('teacher')).toBe('SPECIALIST');
     expect(mapSessionRoleToClinical('parent')).toBe('PARENT');
+  });
+
+  it('denies unknown or missing roles by default', () => {
+    for (const raw of [undefined, null, '', 'guest', 'Specialist ', 'superuser']) {
+      const role = mapSessionRoleToClinical(raw);
+      expect(role).toBe('GUEST');
+      expect(ROLE_PERMISSIONS[role]).toEqual([]);
+    }
+  });
+
+  it('normalizes only known session roles', () => {
+    expect(normalizeSessionRole(' Parent ')).toBe('parent');
+    expect(normalizeSessionRole('advisor')).toBe('advisor');
+    expect(normalizeSessionRole('root')).toBeNull();
+    expect(normalizeSessionRole(undefined)).toBeNull();
+    expect(isKnownSessionRole('guest')).toBe(false);
   });
 
   it('grants super admin full sensitive permissions', () => {
