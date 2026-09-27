@@ -1,61 +1,47 @@
-import { getServerSession } from 'next-auth';
 import { NextResponse } from 'next/server';
-import { authOptions } from '@/lib/auth';
-import type { GoalSession, TrackedGoal } from '@/lib/goalsEngine';
+import { parseGoalAction } from '@/lib/clinicalGoalActions';
+import { requireApiPermission, storeErrorResponse } from '@/lib/server/apiAuth';
+import { deleteGoal, performGoalAction } from '@/lib/server/clinicalRecordService';
+import { assertChildId } from '@/lib/server/clinicalRecordStore';
 
-const memoryGoals = new Map<string, TrackedGoal>();
-
-export async function PATCH(
-  req: Request,
-  { params }: { params: { id: string } }
-) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
-  }
-
+/**
+ * تعديل هدف على الخادم: body = { childId, action, input | session | status }.
+ * الإجراءات: session، session_entry، maintenance_probe، generalization_probe، status.
+ */
+export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+  const auth = await requireApiPermission(['record_session_trials', 'run_home_session', 'update_iep_goals']);
+  if (!auth.ok) return auth.response;
   try {
-    const id = params.id;
-    const body = await req.json();
-    const existing = (body.goal as TrackedGoal | undefined) || memoryGoals.get(id);
-    if (!existing) {
-      return NextResponse.json({ error: 'NOT_FOUND' }, { status: 404 });
+    const body = (await req.json()) as Record<string, unknown>;
+    const childId = assertChildId(body.childId);
+    const action = parseGoalAction(body);
+    if (!action) return NextResponse.json({ error: 'INVALID_ACTION' }, { status: 400 });
+    const result = await performGoalAction(auth.actor, childId, params.id, action);
+    if (!result.ok) {
+      return NextResponse.json({ error: result.error, errors: result.errors }, { status: result.status });
     }
-
-    const sessionEntry = body.session as GoalSession | undefined;
-    const sessions = sessionEntry
-      ? [...(existing.sessions || []), sessionEntry]
-      : existing.sessions || [];
-
-    const updated: TrackedGoal = {
-      ...existing,
-      ...((body.patch as Partial<TrackedGoal>) || {}),
-      current:
-        body.current != null
-          ? Number(body.current)
-          : sessionEntry?.progress != null
-            ? Number(sessionEntry.progress)
-            : existing.current,
-      sessions,
-      lastUpdate: new Date().toISOString(),
-      id,
-    };
-    memoryGoals.set(id, updated);
-    return NextResponse.json({ ok: true, goal: updated });
+    return NextResponse.json({
+      ok: true,
+      goal: result.goal,
+      generalizationProbes: result.record.generalizationProbes,
+      withdrawn: result.withdrawn ?? false,
+      passed: result.passed,
+      countsTowardIndex: result.countsTowardIndex,
+    });
   } catch (err) {
-    const message = err instanceof Error ? err.message : 'GOAL_UPDATE_FAILED';
-    return NextResponse.json({ error: message }, { status: 500 });
+    return storeErrorResponse(err);
   }
 }
 
-export async function DELETE(
-  _req: Request,
-  { params }: { params: { id: string } }
-) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
+export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+  const auth = await requireApiPermission(['update_iep_goals']);
+  if (!auth.ok) return auth.response;
+  try {
+    const childId = assertChildId(new URL(req.url).searchParams.get('childId'));
+    const result = await deleteGoal(auth.actor, childId, params.id);
+    if (!result.ok) return NextResponse.json({ error: result.error }, { status: result.status });
+    return NextResponse.json({ ok: true });
+  } catch (err) {
+    return storeErrorResponse(err);
   }
-  memoryGoals.delete(params.id);
-  return NextResponse.json({ ok: true });
 }

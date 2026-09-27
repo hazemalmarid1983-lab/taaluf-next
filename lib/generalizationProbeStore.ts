@@ -136,13 +136,16 @@ export function loadGeneralizationProbes(goalId?: string): GeneralizationProbe[]
   }
 }
 
-export function saveGeneralizationProbe(probe: GeneralizationProbe): GeneralizationProbe[] {
-  const all = loadGeneralizationProbes().filter((p) => p.probe_id !== probe.probe_id);
-  const next = [...all, probe];
+export function saveGeneralizationProbesLocal(probes: GeneralizationProbe[]): GeneralizationProbe[] {
   try {
-    localStorage.setItem(GENERALIZATION_PROBES_STORAGE_KEY, JSON.stringify(next));
+    localStorage.setItem(GENERALIZATION_PROBES_STORAGE_KEY, JSON.stringify(probes));
   } catch {
     /* private mode */
   }
-  return next;
+  return probes;
+}
+
+export function saveGeneralizationProbe(probe: GeneralizationProbe): GeneralizationProbe[] {
+  const all = loadGeneralizationProbes().filter((p) => p.probe_id !== probe.probe_id);
+  return saveGeneralizationProbesLocal([...all, probe]);
 }

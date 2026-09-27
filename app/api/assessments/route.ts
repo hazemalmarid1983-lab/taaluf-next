@@ -1,7 +1,11 @@
-import { getServerSession } from 'next-auth';
 import { NextResponse } from 'next/server';
-import { authOptions } from '@/lib/auth';
 import { logAction } from '@/lib/auditLog';
+import { requireApiPermission } from '@/lib/server/apiAuth';
+import {
+  getChildRecordForActor,
+  recordAssessmentSummary,
+} from '@/lib/server/clinicalRecordService';
+import { isValidStoreId } from '@/lib/server/clinicalRecordStore';
 import {
   createAssessment,
   createAssessmentCriteriaRows,
@@ -15,33 +19,39 @@ import {
   type AssessmentScore,
 } from '@/types/taalof';
 
-/** قائمة تقييمات طالب — من التخزين المحلي عبر الواجهة؛ هنا ملخص Airtable إن وُجد */
+/** ملخصات تقييمات الطفل من السجل السريري على الخادم */
 export async function GET(req: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
-  }
+  const auth = await requireApiPermission(['view_child_progress']);
+  if (!auth.ok) return auth.response;
 
   const studentId = new URL(req.url).searchParams.get('studentId') || '';
   if (!studentId) {
     return NextResponse.json({ error: 'STUDENT_REQUIRED' }, { status: 400 });
   }
+  if (!isValidStoreId(studentId)) {
+    return NextResponse.json({ ok: true, studentId, assessments: [], source: 'local' });
+  }
 
-  // الواجهة تدمج مع localStorage؛ هذا المسار يعيد قائمة فارغة أو Airtable لاحقاً
+  const found = await getChildRecordForActor(auth.actor, studentId, 'read');
+  if (!found.ok) {
+    if (found.status === 404) {
+      return NextResponse.json({ ok: true, studentId, assessments: [], source: 'local' });
+    }
+    return NextResponse.json({ error: found.error }, { status: found.status });
+  }
   return NextResponse.json({
     ok: true,
     studentId,
-    assessments: [],
-    source: 'local',
+    assessments: found.record.assessments,
+    source: 'server',
   });
 }
 
 /** توافق قديم — المفضّل: /api/airtable/assessments */
 export async function POST(req: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
-  }
+  const auth = await requireApiPermission(['manage_assigned_cases', 'manage_all_cases']);
+  if (!auth.ok) return auth.response;
+  const userId = auth.actor.userId;
 
   const body = await req.json();
   const scores = (body.scores || []) as AssessmentScore[];
@@ -60,7 +70,7 @@ export async function POST(req: Request) {
   const ai = body.aiAnalysis || null;
   const fields = {
     student_id: studentId,
-    specialist_id: session.user.id || '',
+    specialist_id: userId,
     scores_json: JSON.stringify(scores),
     total_score: result.totalScore,
     max_score: result.maxScore,
@@ -75,10 +85,22 @@ export async function POST(req: Request) {
     assessment_date: new Date().toISOString(),
   };
 
+  const saveSummary = async (id: string) => {
+    if (!isValidStoreId(studentId)) return;
+    await recordAssessmentSummary(auth.actor, studentId, {
+      id,
+      savedAt: fields.assessment_date,
+      source: 'specialist',
+      percentage: result.percentage,
+      classification: result.classification,
+    }).catch(() => undefined);
+  };
+
   if (!isAirtableConfigured()) {
     const localId = `local_assess_${Date.now().toString(36)}`;
+    await saveSummary(localId);
     await logAction({
-      userId: session.user.id || '',
+      userId,
       action: 'create_assessment',
       entityType: 'assessment',
       entityId: localId,
@@ -110,8 +132,9 @@ export async function POST(req: Request) {
       const message = error instanceof Error ? error.message : 'CRITERIA_INSERT_FAILED';
       console.error(`[airtable] AssessmentCriteria insert failed: ${message}`);
     }
+    await saveSummary(record.id);
     await logAction({
-      userId: session.user.id || '',
+      userId,
       action: 'create_assessment',
       entityType: 'assessment',
       entityId: record.id,

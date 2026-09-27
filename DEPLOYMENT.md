@@ -124,9 +124,12 @@ npm run security:audit      # تدقيق أمني للمصدر
 | **SPECIALIST** | تصدير التقارير، الحالات المسندة، خطط IEP، محاولات الجلسات |
 | **PARENT** | عرض التقدم، الجلسات المنزلية، الغرف الحسية |
 
-الحماية على مستويين:
-1. **Middleware** (`middleware.ts`) — NextAuth + مسارات مسموحة للأهل
-2. **PermissionGate** — إخفاء UI حسب `lib/permissions.ts`
+الحماية على ثلاثة مستويات:
+1. **Middleware** (`middleware.ts`) — NextAuth + مسارات مسموحة للأهل؛ مرحلة ولي الأمر من JWT الموقّع (لا كوكي)
+2. **مسارات API** — `requireApiPermission` في `lib/server/apiAuth.ts` + صلاحية الوصول للطفل (`lib/clinicalAccess.ts`)؛ الدور المجهول/GUEST يُرفض
+3. **PermissionGate** — إخفاء UI حسب `lib/permissions.ts`
+
+**إسناد أخصائي لطفل سجّله ولي الأمر:** `POST /api/children/<childId>/assign` بجسم `{ "specialistUserId": "..." }` (المشرف العام فقط).
 
 ---
 
@@ -172,6 +175,15 @@ npm run build
 
 **Pilot:** يكفي `/tmp` لاختبار MOU وغرفة الاجتماعات بين المشرفين.  
 **إطلاق واسع:** انقل بيانات الـ hub إلى Airtable أو KV/S3 — لا تعتمد على ملفات JSON على serverless.
+
+### ⚠️ السجل السريري على الخادم (`clinical-records/`)
+
+الأهداف والجلسات ومجسات الصيانة والتعميم وملخصات التقييم وسجل التدقيق تُحفظ عبر نفس طبقة الـ hub:
+`clinical-records/children/<childId>.json` و`clinical-records/users/<userId>.json` و`clinical-records/audit/<childId>.json`.
+
+- **الإنتاج على Vercel يتطلب `BLOB_READ_WRITE_TOKEN`** (Vercel Blob)، وإلا تُكتب السجلات في `/tmp` وتضيع.
+- الكتابة متسلسلة داخل العملية الواحدة فقط (ليست معاملات قاعدة بيانات)؛ مع عدة نسخ متزامنة قد تتسابق كتابتان على نفس الطفل. الانتقال إلى Postgres يتم بتبديل `clinicalRecordStore.ts` فقط.
+- بيانات المتصفح القديمة تُرحّل تلقائياً عند أول دخول لولي الأمر أو فتح صفحة الأهداف.
 
 ---
 

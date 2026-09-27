@@ -1,14 +1,14 @@
-import { getServerSession } from 'next-auth';
 import { NextResponse } from 'next/server';
-import { authOptions } from '@/lib/auth';
 import { logAction } from '@/lib/auditLog';
 import { calculateScreening, validateScreeningAnswers } from '@/lib/screeningEngine';
+import { ASSESSMENT_SUBMIT_PERMISSIONS } from '@/lib/clinicalAccess';
+import { requireApiPermission } from '@/lib/server/apiAuth';
+import { recordAssessmentSummary } from '@/lib/server/clinicalRecordService';
+import { isValidStoreId } from '@/lib/server/clinicalRecordStore';
 
 export async function POST(req: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
-  }
+  const auth = await requireApiPermission(ASSESSMENT_SUBMIT_PERMISSIONS);
+  if (!auth.ok) return auth.response;
 
   try {
     const body = await req.json();
@@ -23,21 +23,34 @@ export async function POST(req: Request) {
 
     const result = calculateScreening(validation.answers);
     const id = `screen_${Date.now().toString(36)}`;
+    const savedAt = new Date().toISOString();
 
     await logAction({
-      userId: session.user.id || '',
+      userId: auth.actor.userId,
       action: 'create_assessment',
       entityType: 'assessment',
       entityId: id,
     });
+
+    const stored =
+      isValidStoreId(childId) &&
+      (
+        await recordAssessmentSummary(auth.actor, childId, {
+          id,
+          savedAt,
+          source: 'screening',
+          percentage: result.overall,
+          classification: result.band,
+        }).catch(() => null)
+      )?.ok === true;
 
     return NextResponse.json({
       ok: true,
       id,
       childId,
       result,
-      savedAt: new Date().toISOString(),
-      source: 'local',
+      savedAt,
+      source: stored ? 'server' : 'local',
     });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'SCREENING_FAILED';

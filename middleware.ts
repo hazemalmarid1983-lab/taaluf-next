@@ -15,11 +15,7 @@ import {
   isLearningDifficultiesEnabled,
   isLearningDifficultiesRoute,
 } from '@/lib/featureFlags';
-import {
-  PARENT_STAGE_COOKIE,
-  parentStageRedirect,
-  parseParentStage,
-} from '@/lib/parentRouteGuard';
+import { parentStageRedirect, parseParentStage } from '@/lib/parentRouteGuard';
 import { isKnownSessionRole } from '@/lib/permissions';
 import {
   isProductionPlatform,
@@ -107,7 +103,7 @@ export default withAuth(
 
     if (role === 'parent') {
       const dest = parentStageRedirect(
-        parseParentStage(req.cookies.get(PARENT_STAGE_COOKIE)?.value),
+        parseParentStage(req.nextauth.token?.parentStage),
         path
       );
       if (dest && dest !== path) {

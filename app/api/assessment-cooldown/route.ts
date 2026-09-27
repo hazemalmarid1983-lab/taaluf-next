@@ -1,6 +1,6 @@
-import { getServerSession } from 'next-auth';
 import { NextResponse } from 'next/server';
-import { authOptions } from '@/lib/auth';
+import { ASSESSMENT_SUBMIT_PERMISSIONS } from '@/lib/clinicalAccess';
+import { requireApiPermission } from '@/lib/server/apiAuth';
 import {
   buildCooldownRecord,
   resolveCooldown,
@@ -21,10 +21,8 @@ function asPlan(value: unknown): SubscriptionTierId {
 }
 
 export async function GET(req: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
-  }
+  const auth = await requireApiPermission(['view_child_progress']);
+  if (!auth.ok) return auth.response;
   const childId = new URL(req.url).searchParams.get('childId')?.trim() || '';
   if (!childId) {
     return NextResponse.json({ error: 'CHILD_REQUIRED' }, { status: 400 });
@@ -36,10 +34,8 @@ export async function GET(req: Request) {
 }
 
 export async function POST(req: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
-  }
+  const auth = await requireApiPermission(ASSESSMENT_SUBMIT_PERMISSIONS);
+  if (!auth.ok) return auth.response;
   const body = (await req.json().catch(() => null)) as {
     childId?: string;
     planId?: string;

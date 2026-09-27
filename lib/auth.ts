@@ -15,6 +15,7 @@ import {
 import { verifyPassword } from '@/lib/password';
 import { normalizeSessionRole } from '@/lib/permissions';
 import { verifyPrivilegedLogin } from '@/lib/privilegedCredentials';
+import { parentStageForUser } from '@/lib/server/clinicalRecordService';
 
 ensureAuthUrl();
 
@@ -175,17 +176,24 @@ export const authOptions: NextAuthOptions = {
       if (url.includes('/dashboard')) return `${baseUrl}/dashboard`;
       return baseUrl;
     },
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger }) {
       if (user) {
         token.role = normalizeSessionRole((user as { role?: string }).role) ?? 'guest';
         token.id = user.id;
       }
+      if ((user || trigger === 'update') && token.role === 'parent' && token.id) {
+        token.parentStage = (await parentStageForUser(token.id).catch(() => null)) ?? undefined;
+      }
       return token;
     },
     async session({ session, token }) {
+      const role = normalizeSessionRole(token.role);
+      // دور مجهول/ضيف: جلسة بلا مستخدم → كل مسار API يتحقق من session.user يرفض تلقائياً
+      if (!role) return { expires: session.expires };
       if (session.user) {
         session.user.id = token.id as string;
-        session.user.role = normalizeSessionRole(token.role) ?? 'guest';
+        session.user.role = role;
+        session.user.parentStage = token.parentStage;
       }
       return session;
     },

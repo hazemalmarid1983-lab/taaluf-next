@@ -8,6 +8,7 @@ import {
   MAINTENANCE_PROBE_ERRORS_AR,
   recordMaintenanceProbe,
   type MaintenanceProbeError,
+  type MaintenanceProbeInput,
   type MaintenanceProbeResult,
 } from '@/lib/maintenanceSchedule';
 import { SESSION_SETTING_LABELS_AR, type SessionSetting } from '@/lib/skillMastery';
@@ -23,7 +24,7 @@ export default function MaintenanceProbeDialog({
 }: {
   goal: TrackedGoal;
   defaultTrainerName?: string;
-  onSaved: (result: Extract<MaintenanceProbeResult, { ok: true }>) => void;
+  onSaved: (result: Extract<MaintenanceProbeResult, { ok: true }>, input: MaintenanceProbeInput) => void;
   onCancel: () => void;
 }) {
   const [independencePct, setIndependencePct] = useState('');
@@ -33,12 +34,13 @@ export default function MaintenanceProbeDialog({
   const [errors, setErrors] = useState<MaintenanceProbeError[]>([]);
 
   const save = () => {
-    const result = recordMaintenanceProbe(goal, { independencePct, trainerName, setting, notes });
+    const input: MaintenanceProbeInput = { independencePct, trainerName, setting, notes };
+    const result = recordMaintenanceProbe(goal, input);
     if (!result.ok) {
       setErrors(result.errors);
       return;
     }
-    onSaved(result);
+    onSaved(result, input);
   };
 
   return (

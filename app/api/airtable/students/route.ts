@@ -1,7 +1,7 @@
-import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
-import { authOptions } from '@/lib/auth';
 import { logAction } from '@/lib/auditLog';
+import { requireApiPermission } from '@/lib/server/apiAuth';
+import { filterStudentsForActor } from '@/lib/studentVisibility';
 import { isAirtableConfigured, listStudents, createStudent } from '@/lib/airtable';
 
 function ageFromDob(dob: string) {
@@ -15,10 +15,8 @@ function ageFromDob(dob: string) {
 }
 
 export async function GET() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    return NextResponse.json({ success: false, error: 'UNAUTHORIZED' }, { status: 401 });
-  }
+  const auth = await requireApiPermission(['view_child_progress']);
+  if (!auth.ok) return auth.response;
 
   if (!isAirtableConfigured()) {
     return NextResponse.json({
@@ -30,7 +28,7 @@ export async function GET() {
   }
 
   try {
-    const records = await listStudents();
+    const records = filterStudentsForActor(await listStudents(), auth.actor);
     const data = records.map((r) => ({ id: r.id, ...r.fields }));
     return NextResponse.json({ success: true, source: 'airtable', data });
   } catch {
@@ -42,10 +40,9 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    return NextResponse.json({ success: false, error: 'UNAUTHORIZED' }, { status: 401 });
-  }
+  const auth = await requireApiPermission(['manage_assigned_cases', 'manage_all_cases', 'run_home_session']);
+  if (!auth.ok) return auth.response;
+  const userId = auth.actor.userId;
 
   try {
     const body = await request.json();
@@ -73,7 +70,7 @@ export async function POST(request: NextRequest) {
     if (!isAirtableConfigured()) {
       const id = `local_${Date.now().toString(36)}`;
       await logAction({
-        userId: session.user.id || '',
+        userId,
         action: 'create_student',
         entityType: 'student',
         entityId: id,
@@ -88,7 +85,7 @@ export async function POST(request: NextRequest) {
 
     const record = await createStudent(fields);
     await logAction({
-      userId: session.user.id || '',
+      userId,
       action: 'create_student',
       entityType: 'student',
       entityId: record.id,

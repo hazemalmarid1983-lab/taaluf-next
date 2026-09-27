@@ -1,6 +1,5 @@
-import { getServerSession } from 'next-auth';
 import { NextResponse } from 'next/server';
-import { authOptions } from '@/lib/auth';
+import { requireApiPermission } from '@/lib/server/apiAuth';
 import {
   CLASSIFICATIONS,
   CRITERIA_LIST,
@@ -10,10 +9,12 @@ import {
 
 /** يعيد المعايير الرسمية من taalof_criteria_v3.json (مصدر الحقيقة في التطبيق) */
 export async function GET() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    return NextResponse.json({ success: false, error: 'UNAUTHORIZED' }, { status: 401 });
-  }
+  const auth = await requireApiPermission([
+    'view_child_progress',
+    'review_clinical_content',
+    'edit_assessment',
+  ]);
+  if (!auth.ok) return auth.response;
 
   return NextResponse.json({
     success: true,

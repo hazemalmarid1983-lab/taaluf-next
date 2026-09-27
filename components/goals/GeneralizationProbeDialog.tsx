@@ -9,7 +9,6 @@ import {
   PROBE_PERSON_LABELS_AR,
   PROBE_PROMPT_LABELS_AR,
   buildGeneralizationProbe,
-  saveGeneralizationProbe,
   type GeneralizationProbeError,
   type GeneralizationProbeInput,
 } from '@/lib/generalizationProbeStore';
@@ -33,7 +32,11 @@ export default function GeneralizationProbeDialog({
   goalId: string;
   goalTitle: string;
   reportedBy: GeneralizationProbe['reported_by'];
-  onSaved: (probes: GeneralizationProbe[], countsTowardIndex: boolean) => void;
+  onSaved: (
+    probe: GeneralizationProbe,
+    countsTowardIndex: boolean,
+    input: GeneralizationProbeInput
+  ) => void;
   onCancel: () => void;
 }) {
   const [input, setInput] = useState<GeneralizationProbeInput>({
@@ -53,7 +56,7 @@ export default function GeneralizationProbeDialog({
       setErrors(result.errors);
       return;
     }
-    onSaved(saveGeneralizationProbe(result.probe), result.countsTowardIndex);
+    onSaved(result.probe, result.countsTowardIndex, input);
   };
 
   return (

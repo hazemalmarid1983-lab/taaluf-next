@@ -3,6 +3,7 @@
  */
 
 import { isFullyIndependentSession } from '@/lib/clinicalMastery';
+import { pushSessionEntry } from '@/lib/clinicalRecordClient';
 import type { GoalSession, TrackedGoal } from '@/lib/goalsEngine';
 import { loadGoalsLocal, upsertGoalLocal } from '@/lib/goalsStore';
 import { mostIntrusivePromptLevel } from '@/lib/skillMastery';
@@ -57,16 +58,15 @@ export function applyTrainingSessionToTrackedGoals(
     if (goalAlreadyHasTrainingSession(goal, session.id)) continue;
 
     const newCurrent = Math.min(100, goal.current + increment);
+    const entry = buildTrainingGoalSessionEntry(session, metrics, newCurrent);
     const updated: TrackedGoal = {
       ...goal,
       current: newCurrent,
       lastUpdate: session.endedAt ?? new Date().toISOString(),
-      sessions: [
-        ...goal.sessions,
-        buildTrainingGoalSessionEntry(session, metrics, newCurrent),
-      ],
+      sessions: [...goal.sessions, entry],
     };
     upsertGoalLocal(updated);
+    pushSessionEntry(session.childId, goalId, entry);
     updatedGoals.push(updated);
   }
 

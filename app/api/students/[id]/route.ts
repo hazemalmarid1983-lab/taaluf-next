@@ -1,16 +1,14 @@
-import { getServerSession } from 'next-auth';
 import { NextResponse } from 'next/server';
-import { authOptions } from '@/lib/auth';
 import { isAirtableConfigured, listStudents } from '@/lib/airtable';
+import { requireApiPermission } from '@/lib/server/apiAuth';
+import { filterStudentsForActor } from '@/lib/studentVisibility';
 
 export async function GET(
   _req: Request,
   { params }: { params: { id: string } }
 ) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
-  }
+  const auth = await requireApiPermission(['view_child_progress']);
+  if (!auth.ok) return auth.response;
 
   const id = params.id;
 
@@ -19,6 +17,9 @@ export async function GET(
       const records = await listStudents(100);
       const found = records.find((r) => r.id === id);
       if (found) {
+        if (!filterStudentsForActor([found], auth.actor).length) {
+          return NextResponse.json({ error: 'FORBIDDEN' }, { status: 403 });
+        }
         return NextResponse.json({ ok: true, student: found, source: 'airtable' });
       }
     } catch {

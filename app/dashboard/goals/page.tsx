@@ -7,8 +7,20 @@ import GeneralizationProbeDialog from '@/components/goals/GeneralizationProbeDia
 import GoalSessionDialog from '@/components/goals/GoalSessionDialog';
 import MaintenanceProbeDialog from '@/components/goals/MaintenanceProbeDialog';
 import { GOAL_PHASE_LABELS_AR } from '@/lib/maintenanceSchedule';
+import {
+  cacheServerGoal,
+  postGoalAction,
+  syncChildClinicalRecord,
+  type GoalActionResponse,
+} from '@/lib/clinicalRecordClient';
 import type { GeneralizationProbe } from '@/lib/generalizationIndex';
-import { loadGeneralizationProbes } from '@/lib/generalizationProbeStore';
+import {
+  loadGeneralizationProbes,
+  saveGeneralizationProbe,
+  type GeneralizationProbeInput,
+} from '@/lib/generalizationProbeStore';
+import type { GoalSessionFormInput } from '@/lib/goalSessionForm';
+import type { MaintenanceProbeInput } from '@/lib/maintenanceSchedule';
 import {
   createTrackedGoalsFromScores,
   todayPracticeFromGoal,
@@ -59,20 +71,25 @@ export default function GoalsPage() {
   const [probeGoalId, setProbeGoalId] = useState<string | null>(null);
   const [maintenanceGoalId, setMaintenanceGoalId] = useState<string | null>(null);
   const [probes, setProbes] = useState<GeneralizationProbe[]>([]);
+  const [serverBacked, setServerBacked] = useState(false);
   const [msg, setMsg] = useState('');
-  const reportedBy: GeneralizationProbe['reported_by'] =
-    authSession?.user?.role === 'parent' ? 'parent_report' : 'professional';
+  const isParent = authSession?.user?.role === 'parent';
+  const reportedBy: GeneralizationProbe['reported_by'] = isParent ? 'parent_report' : 'professional';
 
   useEffect(() => {
     setProbes(loadGeneralizationProbes());
   }, []);
 
   useEffect(() => {
+    let cancelled = false;
+    let id = 'child_local';
+    let childName: string | undefined;
     try {
       const active = JSON.parse(
         localStorage.getItem('taaluf.activeStudent') || 'null'
       );
-      const id = active?.id || 'child_local';
+      id = active?.id || 'child_local';
+      childName = active?.name;
       setChildId(id);
       let list = loadGoalsLocal(id);
       if (!list.length) {
@@ -90,7 +107,27 @@ export default function GoalsPage() {
     } catch {
       /* ignore */
     }
+    void syncChildClinicalRecord(id, { childName }).then((result) => {
+      if (cancelled || result.source !== 'server') return;
+      setServerBacked(true);
+      setGoals(result.goals);
+      setProbes(loadGeneralizationProbes());
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
+
+  const applyServerGoal = (goal: TrackedGoal, serverProbes?: GeneralizationProbe[]) => {
+    cacheServerGoal(goal, serverProbes);
+    setGoals((prev) => prev.map((g) => (g.id === goal.id ? goal : g)));
+    if (serverProbes) setProbes(loadGeneralizationProbes());
+  };
+
+  const serverError = (res: Extract<GoalActionResponse, { ok: false }>) =>
+    res.status === 403
+      ? 'لا تملك صلاحية هذا الإجراء على ملف الطفل'
+      : `تعذّر الحفظ على الخادم (${res.error})`;
 
   const practice = useMemo(
     () => todayPracticeFromGoal(goals[0] || null),
@@ -120,33 +157,83 @@ export default function GoalsPage() {
     return 'bg-rose-500';
   };
 
-  const saveSession = async (updated: TrackedGoal) => {
+  const saveLocalGoal = (updated: TrackedGoal) => {
     upsertGoalLocal(updated);
     setGoals((prev) => prev.map((g) => (g.id === updated.id ? updated : g)));
-    setNoteGoalId(null);
-    setMsg('تم حفظ الجلسة');
-    const session = updated.sessions[updated.sessions.length - 1];
-    await fetch(`/api/goals/${updated.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        goal: { ...updated, sessions: updated.sessions.slice(0, -1) },
-        session,
-        current: updated.current,
-      }),
-    }).catch(() => undefined);
   };
 
-  const saveMaintenance = async (updated: TrackedGoal, message: string) => {
-    upsertGoalLocal(updated);
-    setGoals((prev) => prev.map((g) => (g.id === updated.id ? updated : g)));
+  const saveSession = async (updated: TrackedGoal, input: GoalSessionFormInput) => {
+    setNoteGoalId(null);
+    if (!serverBacked) {
+      saveLocalGoal(updated);
+      setMsg('تم حفظ الجلسة على هذا الجهاز');
+      return;
+    }
+    const res = await postGoalAction(childId, updated.id, {
+      action: 'session',
+      input: input as Record<string, unknown>,
+    });
+    if (res.ok) {
+      applyServerGoal(res.goal);
+      setMsg('تم حفظ الجلسة في السجل السريري');
+    } else if (res.status === 0) {
+      // تُرفع الجلسة في المزامنة التالية (session_entry)
+      saveLocalGoal(updated);
+      setMsg('لا اتصال — حُفظت الجلسة على الجهاز وستُرفع عند المزامنة');
+    } else {
+      setMsg(serverError(res));
+    }
+  };
+
+  const saveMaintenance = async (
+    updated: TrackedGoal,
+    input: MaintenanceProbeInput,
+    messageFor: (withdrawn: boolean, passed: boolean) => string,
+    local: { withdrawn: boolean; passed: boolean }
+  ) => {
     setMaintenanceGoalId(null);
-    setMsg(message);
-    await fetch(`/api/goals/${updated.id}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ goal: updated }),
-    }).catch(() => undefined);
+    if (!serverBacked) {
+      saveLocalGoal(updated);
+      setMsg(messageFor(local.withdrawn, local.passed));
+      return;
+    }
+    const res = await postGoalAction(childId, updated.id, {
+      action: 'maintenance_probe',
+      input: input as Record<string, unknown>,
+    });
+    if (res.ok) {
+      applyServerGoal(res.goal);
+      setMsg(messageFor(res.withdrawn, res.passed ?? false));
+    } else {
+      setMsg(serverError(res));
+    }
+  };
+
+  const saveGeneralization = async (
+    probe: GeneralizationProbe,
+    countsLocal: boolean,
+    input: GeneralizationProbeInput
+  ) => {
+    setProbeGoalId(null);
+    const message = (counts: boolean) =>
+      counts
+        ? 'تم حفظ قياس التعميم'
+        : 'تم الحفظ — لا يُحتسب في مؤشر التعميم لأنه لم يختبر ظرفاً جديداً';
+    if (!serverBacked) {
+      setProbes(saveGeneralizationProbe(probe));
+      setMsg(message(countsLocal));
+      return;
+    }
+    const res = await postGoalAction(childId, probe.goal_id, {
+      action: 'generalization_probe',
+      input: input as Record<string, unknown>,
+    });
+    if (res.ok) {
+      applyServerGoal(res.goal, res.generalizationProbes);
+      setMsg(message(res.countsTowardIndex ?? false));
+    } else {
+      setMsg(serverError(res));
+    }
   };
 
   const noteGoal = goals.find((g) => g.id === noteGoalId) || null;
@@ -226,7 +313,8 @@ export default function GoalsPage() {
                     >
                       قياس تعميم
                     </Button>
-                    {tracking.phase === 'maintenance' || tracking.phase === 'maintained' ? (
+                    {!isParent &&
+                    (tracking.phase === 'maintenance' || tracking.phase === 'maintained') ? (
                       <Button
                         variant={tracking.maintenanceDueNow ? 'default' : 'ghost'}
                         size="sm"
@@ -301,7 +389,7 @@ export default function GoalsPage() {
         <GoalSessionDialog
           goal={noteGoal}
           defaultTrainerName={authSession?.user?.name ?? undefined}
-          onSaved={(updated) => void saveSession(updated)}
+          onSaved={(updated, input) => void saveSession(updated, input)}
           onCancel={() => setNoteGoalId(null)}
         />
       )}
@@ -311,15 +399,7 @@ export default function GoalsPage() {
           goalId={probeGoal.id}
           goalTitle={probeGoal.title}
           reportedBy={reportedBy}
-          onSaved={(next, counts) => {
-            setProbes(next);
-            setProbeGoalId(null);
-            setMsg(
-              counts
-                ? 'تم حفظ قياس التعميم'
-                : 'تم الحفظ — لا يُحتسب في مؤشر التعميم لأنه لم يختبر ظرفاً جديداً'
-            );
-          }}
+          onSaved={(probe, counts, input) => void saveGeneralization(probe, counts, input)}
           onCancel={() => setProbeGoalId(null)}
         />
       )}
@@ -328,14 +408,17 @@ export default function GoalsPage() {
         <MaintenanceProbeDialog
           goal={maintenanceGoal}
           defaultTrainerName={authSession?.user?.name ?? undefined}
-          onSaved={(result) =>
+          onSaved={(result, input) =>
             void saveMaintenance(
               result.goal,
-              result.withdrawn
-                ? 'سُحب الإتقان: مجسّا صيانة متتاليان دون 80% — عاد الهدف إلى إعادة الاكتساب'
-                : result.passed
-                  ? 'تم حفظ مجس الصيانة — ناجح'
-                  : 'مجس دون 80% — أجرِ مجساً تأكيدياً خلال 48 ساعة'
+              input,
+              (withdrawn, passed) =>
+                withdrawn
+                  ? 'سُحب الإتقان: مجسّا صيانة متتاليان دون 80% — عاد الهدف إلى إعادة الاكتساب'
+                  : passed
+                    ? 'تم حفظ مجس الصيانة — ناجح'
+                    : 'مجس دون 80% — أجرِ مجساً تأكيدياً خلال 48 ساعة',
+              { withdrawn: result.withdrawn, passed: result.passed }
             )
           }
           onCancel={() => setMaintenanceGoalId(null)}

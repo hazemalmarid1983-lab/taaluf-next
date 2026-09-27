@@ -1,7 +1,9 @@
-import { getServerSession } from 'next-auth';
 import { NextResponse } from 'next/server';
-import { authOptions } from '@/lib/auth';
 import { logAction } from '@/lib/auditLog';
+import { ASSESSMENT_SUBMIT_PERMISSIONS } from '@/lib/clinicalAccess';
+import { requireApiPermission } from '@/lib/server/apiAuth';
+import { recordAssessmentSummary } from '@/lib/server/clinicalRecordService';
+import { isValidStoreId } from '@/lib/server/clinicalRecordStore';
 import {
   buildCooldownRecord,
   resolveCooldown,
@@ -27,10 +29,9 @@ function asPlan(value: unknown): SubscriptionTierId {
 }
 
 export async function POST(req: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
-  }
+  const auth = await requireApiPermission(ASSESSMENT_SUBMIT_PERMISSIONS);
+  if (!auth.ok) return auth.response;
+  const { actor } = auth;
 
   try {
     const body = await req.json();
@@ -54,7 +55,7 @@ export async function POST(req: Request) {
     const id = `parent_${Date.now().toString(36)}`;
 
     await logAction({
-      userId: session.user.id || '',
+      userId: actor.userId,
       action: 'create_assessment',
       entityType: 'assessment',
       entityId: id,
@@ -71,7 +72,7 @@ export async function POST(req: Request) {
       if (childId !== 'child_local') await saveChildJourneys(
         upsertJourney(await loadChildJourneys(), {
           childId,
-          parentUserId: session.user.role === 'parent' ? session.user.id : undefined,
+          parentUserId: actor.role === 'PARENT' ? actor.userId : undefined,
           planId,
           parentAssessment: {
             id,
@@ -82,6 +83,13 @@ export async function POST(req: Request) {
           },
         })
       );
+      if (isValidStoreId(childId)) {
+        await recordAssessmentSummary(actor, childId, {
+          id,
+          savedAt,
+          source: 'parent',
+        }).catch(() => undefined);
+      }
     }
 
     return NextResponse.json({

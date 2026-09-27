@@ -1,14 +1,14 @@
 'use client';
 
 import type { ReactNode } from 'react';
-import ParentStageCookieSync from '@/components/access/ParentStageCookieSync';
+import ClinicalRecordSync from '@/components/access/ClinicalRecordSync';
 import { PermissionsProvider } from '@/components/access/PermissionsProvider';
 import RoleSwitcher from '@/components/access/RoleSwitcher';
 
 export default function RbacShell({ children }: { children: ReactNode }) {
   return (
     <PermissionsProvider>
-      <ParentStageCookieSync />
+      <ClinicalRecordSync />
       {children}
       <RoleSwitcher />
     </PermissionsProvider>

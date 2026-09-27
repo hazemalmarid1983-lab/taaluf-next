@@ -1,7 +1,7 @@
-import { getServerSession } from 'next-auth';
 import { NextResponse } from 'next/server';
-import { authOptions } from '@/lib/auth';
 import { logAction } from '@/lib/auditLog';
+import { requireApiPermission } from '@/lib/server/apiAuth';
+import { filterStudentsForActor } from '@/lib/studentVisibility';
 import {
   createStudent,
   isAirtableConfigured,
@@ -19,10 +19,8 @@ function ageFromDob(dob: string) {
 }
 
 export async function GET() {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
-  }
+  const auth = await requireApiPermission(['view_child_progress']);
+  if (!auth.ok) return auth.response;
 
   if (!isAirtableConfigured()) {
     return NextResponse.json({
@@ -35,25 +33,7 @@ export async function GET() {
 
   try {
     const records = await listStudents();
-    const role = session.user.role;
-    const email = String(session.user.email || '').toLowerCase();
-    const visible =
-      role === 'parent'
-        ? records.filter(
-            (r) =>
-              String(
-                (r.fields as { parent_email?: string }).parent_email || ''
-              ).toLowerCase() === email
-          )
-        : role === 'specialist'
-          ? records.filter((r) => {
-              const assigned = String(
-                (r.fields as { specialist_email?: string }).specialist_email ||
-                  ''
-              ).toLowerCase();
-              return !assigned || assigned === email;
-            })
-          : records;
+    const visible = filterStudentsForActor(records, auth.actor);
     return NextResponse.json({ ok: true, source: 'airtable', records: visible });
   } catch (err) {
     const message = err instanceof Error ? err.message : 'LIST_FAILED';
@@ -62,10 +42,16 @@ export async function GET() {
 }
 
 export async function POST(req: Request) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    return NextResponse.json({ error: 'UNAUTHORIZED' }, { status: 401 });
-  }
+  const auth = await requireApiPermission(['manage_assigned_cases', 'manage_all_cases', 'run_home_session']);
+  if (!auth.ok) return auth.response;
+  const session = {
+    user: {
+      id: auth.actor.userId,
+      role: auth.actor.sessionRole,
+      name: auth.actor.name,
+      email: auth.actor.email,
+    },
+  };
 
   const body = await req.json();
   const name = String(body.name || '').trim();

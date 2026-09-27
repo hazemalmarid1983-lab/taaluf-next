@@ -1,10 +1,9 @@
 /**
  * حراسة مسارات ولي الأمر في الـ middleware (CLINICAL_RULES).
- * الطفل المسجل محفوظ في المتصفح، فتُنسخ حالته إلى كوكي يقرؤه الـ middleware.
- * غياب الكوكي = حالة غير معروفة → لا تقييد (حتى لا يُحبس مستخدم قبل المزامنة).
+ * المرحلة تُحسب على الخادم من السجل السريري وتُحفظ في JWT الموقّع (parentStage)؛
+ * لا يمكن للمتصفح تعديلها. غيابها = حالة غير معروفة → لا تقييد.
  */
 
-export const PARENT_STAGE_COOKIE = 'taaluf_parent_stage';
 export const PARENT_REGISTER_CHILD_PATH = '/parent/register-child';
 export const PARENT_HOME_PATH = '/parent';
 
@@ -36,7 +35,7 @@ function matches(path: string, prefixes: string[]): boolean {
   return prefixes.some((p) => path === p || path.startsWith(`${p}/`) || path.startsWith(`${p}?`));
 }
 
-export function parseParentStage(value: string | undefined | null): ParentStage | null {
+export function parseParentStage(value: unknown): ParentStage | null {
   return value === 'no_child' || value === 'has_child' ? value : null;
 }
 
@@ -50,10 +49,4 @@ export function parentStageRedirect(stage: ParentStage | null, path: string): st
     return PARENT_HOME_PATH;
   }
   return null;
-}
-
-export function writeParentStageCookie(hasChild: boolean) {
-  if (typeof document === 'undefined') return;
-  const stage: ParentStage = hasChild ? 'has_child' : 'no_child';
-  document.cookie = `${PARENT_STAGE_COOKIE}=${stage}; path=/; max-age=${60 * 60 * 24 * 180}; samesite=lax`;
 }

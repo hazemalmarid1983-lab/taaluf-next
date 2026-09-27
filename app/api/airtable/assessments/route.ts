@@ -1,7 +1,6 @@
-import { getServerSession } from 'next-auth';
 import { NextRequest, NextResponse } from 'next/server';
-import { authOptions } from '@/lib/auth';
 import { logAction } from '@/lib/auditLog';
+import { requireApiPermission } from '@/lib/server/apiAuth';
 import {
   createAssessment,
   createAssessmentCriteriaRows,
@@ -16,10 +15,9 @@ import {
 } from '@/types/taalof';
 
 export async function POST(request: NextRequest) {
-  const session = await getServerSession(authOptions);
-  if (!session?.user) {
-    return NextResponse.json({ success: false, error: 'UNAUTHORIZED' }, { status: 401 });
-  }
+  const auth = await requireApiPermission(['manage_assigned_cases', 'manage_all_cases']);
+  if (!auth.ok) return auth.response;
+  const userId = auth.actor.userId;
 
   try {
     const body = await request.json();
@@ -42,7 +40,7 @@ export async function POST(request: NextRequest) {
 
     const fields = {
       student_id: studentId,
-      specialist_id: session.user.id || '',
+      specialist_id: userId,
       scores_json: JSON.stringify(scores),
       total_score: result.totalScore,
       max_score: result.maxScore,
@@ -58,7 +56,7 @@ export async function POST(request: NextRequest) {
     if (!isAirtableConfigured()) {
       const localId = `local_assess_${Date.now().toString(36)}`;
       await logAction({
-        userId: session.user.id || '',
+        userId: userId,
         action: 'create_assessment',
         entityType: 'assessment',
         entityId: localId,
@@ -90,7 +88,7 @@ export async function POST(request: NextRequest) {
     }
 
     await logAction({
-      userId: session.user.id || '',
+      userId: userId,
       action: 'create_assessment',
       entityType: 'assessment',
       entityId: record.id,

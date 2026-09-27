@@ -8,6 +8,7 @@ import {
   buildGoalSessionFromForm,
   goalSessionFormFields,
   type GoalSessionFormError,
+  type GoalSessionFormInput,
 } from '@/lib/goalSessionForm';
 import {
   CLINICAL_PROMPT_LABELS_AR,
@@ -30,7 +31,7 @@ export default function GoalSessionDialog({
 }: {
   goal: TrackedGoal;
   defaultTrainerName?: string;
-  onSaved: (updated: TrackedGoal) => void;
+  onSaved: (updated: TrackedGoal, input: GoalSessionFormInput) => void;
   onCancel: () => void;
 }) {
   const fields = goalSessionFormFields(goal);
@@ -57,7 +58,7 @@ export default function GoalSessionDialog({
 
   const save = () => {
     const progress = Math.min(100, goal.current + (mood === '😊' ? 5 : mood === '😐' ? 2 : 0));
-    const result = buildGoalSessionFromForm(goal, {
+    const input: GoalSessionFormInput = {
       mood,
       activity,
       notes,
@@ -70,12 +71,13 @@ export default function GoalSessionDialog({
       setting,
       behaviorValue,
       frequencyTarget: { measure, direction, target },
-    });
+    };
+    const result = buildGoalSessionFromForm(goal, input);
     if (!result.ok) {
       setErrors(result.errors);
       return;
     }
-    onSaved({ ...result.goal, current: progress });
+    onSaved({ ...result.goal, current: progress }, input);
   };
 
   const unit = measure === 'count' ? 'مرة' : 'دقيقة';
