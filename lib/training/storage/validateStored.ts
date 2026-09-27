@@ -65,6 +65,13 @@ export function validateTrainingProgress(input: unknown): TrainingValidationResu
     }
   }
 
+  if (input.consecutiveIndependentSessions !== undefined) {
+    const streak = Number(input.consecutiveIndependentSessions);
+    if (!Number.isInteger(streak) || streak < 0) {
+      errors.push('consecutiveIndependentSessions يجب أن يكون عدداً صحيحاً غير سالب');
+    }
+  }
+
   if (input.lastSessionAt !== undefined && !isIsoDate(input.lastSessionAt)) {
     errors.push('lastSessionAt يجب أن يكون تاريخاً صالحاً');
   }

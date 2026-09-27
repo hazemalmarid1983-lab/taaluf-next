@@ -65,12 +65,35 @@ describe('progress tracker', () => {
       current: 70,
       startDate: '2026-01-01',
       targetDate: '2026-04-01',
-      status: 'done',
-      sessions: [],
+      status: 'active',
+      sessions: [
+        { at: '2026-01-10', fullyIndependent: true },
+        { at: '2026-01-11', fullyIndependent: true },
+        { at: '2026-01-12', fullyIndependent: true },
+      ],
     };
     const item = toGoalTrackingItem(goal);
     expect(item.status).toBe('mastered');
     expect(item.currentProgress).toBe(100);
+  });
+
+  it('does not report mastery from a full progress bar without the session evidence', () => {
+    const goal: TrackedGoal = {
+      id: 'g2',
+      childId: 'child_1',
+      criterionId: 'C1',
+      domain: 'التواصل الاستجابي والتعبيري',
+      title: 'الطلب',
+      smartText: 'أن يطلب بكلمة',
+      baseline: 40,
+      target: 70,
+      current: 70,
+      startDate: '2026-01-01',
+      targetDate: '2026-04-01',
+      status: 'done',
+      sessions: [],
+    };
+    expect(toGoalTrackingItem(goal).status).toBe('in_progress');
   });
 
   it('infers the tracking plan from the number of rounds', () => {

@@ -2,6 +2,7 @@
  * ربط اكتمال الجلسة بالتخزين المحلي — طبقة منفصلة عن UI.
  */
 
+import { meetsClinicalMastery, nextIndependentStreak } from '@/lib/clinicalMastery';
 import { calculateSessionMetrics } from '@/lib/training/engine/metrics';
 import type { TrainingSessionMetrics } from '@/lib/training/engine/types';
 import type { TrainingSessionRuntime } from '@/lib/training/engine/types';
@@ -28,15 +29,15 @@ import type { TrainingProgress } from '@/lib/training/types';
  * independenceRate يُشتق من TrainingTrial.promptLevel:
  * independent = أنجز دون مساعدة رقمية/بشرية مسجّلة — وليس من سرعة الاستجابة.
  *
- * القيم emerging → developing → mastered تُشتق من آخر جلسة مكتملة
- * وعدد الجلسات التراكمي، وتُستخدم لعرض/تخزين التقدم فقط.
+ * «mastered» يخضع لقاعدة CLINICAL_RULES: 3 جلسات متتالية باستقلال تام 100%.
+ * emerging / developing مؤشرات عرض فقط من آخر جلسة وعدد الجلسات.
  */
 export function deriveTrainingMasteryLevel(
   accuracy: number,
-  independence: number,
-  completedSessions: number
+  completedSessions: number,
+  consecutiveIndependentSessions: number
 ): NonNullable<TrainingProgress['masteryLevel']> {
-  if (completedSessions >= 3 && accuracy >= 80 && independence >= 70) {
+  if (meetsClinicalMastery(consecutiveIndependentSessions)) {
     return 'mastered';
   }
   if (completedSessions >= 2 && accuracy >= 55) {
@@ -54,6 +55,10 @@ export function buildUpdatedTrainingProgress(
   metrics: TrainingSessionMetrics
 ): TrainingProgress {
   const completedSessions = (existing?.completedSessions ?? 0) + 1;
+  const consecutiveIndependentSessions = nextIndependentStreak(
+    existing?.consecutiveIndependentSessions ?? 0,
+    session.trials
+  );
 
   return {
     childId: session.childId,
@@ -63,10 +68,11 @@ export function buildUpdatedTrainingProgress(
     lastDifficulty: session.difficulty,
     independenceRate: metrics.independence,
     lastSessionAt: session.endedAt ?? new Date().toISOString(),
+    consecutiveIndependentSessions,
     masteryLevel: deriveTrainingMasteryLevel(
       metrics.accuracy,
-      metrics.independence,
-      completedSessions
+      completedSessions,
+      consecutiveIndependentSessions
     ),
   };
 }

@@ -30,6 +30,8 @@ export type GoalSession = {
   activity?: string;
   notes?: string;
   progress?: number;
+  /** كل محاولات الجلسة باستقلال تام — شرط احتسابها في عداد الإتقان */
+  fullyIndependent?: boolean;
 };
 
 export type TrackedGoal = {

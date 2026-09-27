@@ -238,6 +238,8 @@ export type TrainingProgress = {
   lastDifficulty: TrainingDifficulty;
   independenceRate?: number;
   lastSessionAt?: string;
+  /** جلسات مستقلة تماماً متتالية حتى آخر جلسة — أساس حكم الإتقان */
+  consecutiveIndependentSessions?: number;
   masteryLevel?: 'not_started' | 'emerging' | 'developing' | 'mastered';
 };
 

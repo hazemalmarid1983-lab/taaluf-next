@@ -43,10 +43,11 @@ beforeEach(() => {
 });
 
 describe('training session persistence layer', () => {
-  it('derives mastery levels from metrics', () => {
-    expect(deriveTrainingMasteryLevel(85, 75, 3)).toBe('mastered');
-    expect(deriveTrainingMasteryLevel(60, 40, 2)).toBe('developing');
-    expect(deriveTrainingMasteryLevel(40, 20, 1)).toBe('emerging');
+  it('derives mastery only from 3 consecutive fully independent sessions', () => {
+    expect(deriveTrainingMasteryLevel(100, 3, 3)).toBe('mastered');
+    expect(deriveTrainingMasteryLevel(85, 5, 2)).toBe('developing');
+    expect(deriveTrainingMasteryLevel(60, 2, 0)).toBe('developing');
+    expect(deriveTrainingMasteryLevel(40, 1, 1)).toBe('emerging');
   });
 
   it('builds progress snapshot with accuracy independence and sessions', () => {

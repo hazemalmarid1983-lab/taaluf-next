@@ -6,6 +6,12 @@
  */
 
 import { publishGameSession } from '@/lib/airtableRealtimeClient';
+import {
+  CLINICAL_MASTERY_CONSECUTIVE_SESSIONS,
+  isFullyIndependentCounts,
+  meetsClinicalMastery,
+  trailingIndependentStreak,
+} from '@/lib/clinicalMastery';
 import type { RegulationZoneId } from './regulationZones';
 import {
   buildPromptFadingCue,
@@ -119,6 +125,10 @@ export interface HomeSessionSummary {
   noResponseCount: number;
   masteryPercentage: number;
   band: MasteryBand;
+  /** كل المحاولات باستقلال تام في هذه الجلسة */
+  fullyIndependent?: boolean;
+  /** جلسات مستقلة تماماً متتالية لنفس الهدف حتى هذه الجلسة */
+  consecutiveIndependentSessions?: number;
   clinicalNoteAr: string;
   clinicalNoteEn: string;
   recommendedNextStepAr: string;
@@ -591,28 +601,53 @@ export function evaluateHomeSession(
     independenceCompare
   );
 
+  const fullyIndependent = isFullyIndependentCounts(independent, total);
+  const priorForGoal = loadHomeSessions()
+    .filter(
+      (s) =>
+        s.childId === childId &&
+        s.goalId === goalId &&
+        s.sessionDate < base.sessionDate
+    )
+    .sort((a, b) => a.sessionDate.localeCompare(b.sessionDate))
+    .map((s) => ({
+      fullyIndependent:
+        s.fullyIndependent ?? isFullyIndependentCounts(s.independentCount, s.totalTrials),
+    }));
+  const consecutiveIndependentSessions = fullyIndependent
+    ? trailingIndependentStreak(priorForGoal) + 1
+    : 0;
+
   let band: MasteryBand = 'needs_support';
   let clinicalNoteAr = '';
   let clinicalNoteEn = '';
   let recommendedNextStepAr = '';
   let recommendedNextStepEn = '';
 
-  if (masteryPercentage >= 80) {
+  if (meetsClinicalMastery(consecutiveIndependentSessions)) {
     band = 'mastered';
-    clinicalNoteAr = `أظهر الطفل استقلالية عالية وإتقاناً ممتازاً للهدف بنسبة ${masteryPercentage}%.`;
-    clinicalNoteEn = `The child showed high independence and mastery of the goal at ${masteryPercentage}%.`;
+    clinicalNoteAr = `استقلال تام 100% في ${consecutiveIndependentSessions} جلسات متتالية — تحقق شرط إتقان الهدف.`;
+    clinicalNoteEn = `100% independence across ${consecutiveIndependentSessions} consecutive sessions — goal mastery criterion met.`;
     recommendedNextStepAr =
       'تعميم المهارة على بيئات ومواد جديدة، ثم الانتقال للهدف التالي في الخطة الفردية.';
     recommendedNextStepEn =
       'Generalise the skill to new settings and materials, then move to the next IEP goal.';
+  } else if (fullyIndependent) {
+    band = 'emerging';
+    clinicalNoteAr = `استقلال تام 100% في هذه الجلسة (${consecutiveIndependentSessions} من ${CLINICAL_MASTERY_CONSECUTIVE_SESSIONS} جلسات متتالية مطلوبة للإتقان).`;
+    clinicalNoteEn = `100% independence this session (${consecutiveIndependentSessions} of ${CLINICAL_MASTERY_CONSECUTIVE_SESSIONS} consecutive sessions required for mastery).`;
+    recommendedNextStepAr =
+      'واصل الهدف نفسه دون أي مساعدة حتى تكتمل 3 جلسات متتالية باستقلال تام قبل الانتقال.';
+    recommendedNextStepEn =
+      'Keep the same goal with no prompts until 3 consecutive fully independent sessions are complete before moving on.';
   } else if (masteryPercentage >= 50) {
     band = 'emerging';
-    clinicalNoteAr = `استجابة جيدة مع الاعتماد على المساعدة اللفظية/الإشارية — نسبة الإتقان المستقل ${masteryPercentage}%.`;
-    clinicalNoteEn = `Good responding with reliance on verbal/gestural prompts — independent mastery ${masteryPercentage}%.`;
+    clinicalNoteAr = `استجابة جيدة مع الاعتماد على المساعدة اللفظية/الإشارية — نسبة الاستقلالية ${masteryPercentage}%.`;
+    clinicalNoteEn = `Good responding with reliance on verbal/gestural prompts — independence at ${masteryPercentage}%.`;
     recommendedNextStepAr =
-      'مواصلة التدريب مع سحب المساعدة تدريجياً (Prompt Fading) للوصول إلى 80% استقلالية.';
+      'مواصلة التدريب مع سحب المساعدة تدريجياً (Prompt Fading) للوصول إلى استقلال تام 100% في 3 جلسات متتالية.';
     recommendedNextStepEn =
-      'Continue training with systematic prompt fading to reach 80% independence.';
+      'Continue training with systematic prompt fading toward 100% independence across 3 consecutive sessions.';
   } else {
     clinicalNoteAr = `الطفل لا يزال بحاجة لدعم ومساعدة جسدية متكررة — نسبة الاستقلالية ${masteryPercentage}%.`;
     clinicalNoteEn = `The child still needs frequent physical support — independence at ${masteryPercentage}%.`;
@@ -630,6 +665,8 @@ export function evaluateHomeSession(
     noResponseCount: noResponse,
     masteryPercentage,
     band,
+    fullyIndependent,
+    consecutiveIndependentSessions,
     clinicalNoteAr,
     clinicalNoteEn,
     recommendedNextStepAr,

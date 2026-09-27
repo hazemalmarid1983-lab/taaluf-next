@@ -4,6 +4,7 @@
  */
 
 import { listStudentAssessmentsChronological } from '@/lib/assessmentHelpers';
+import { hasClinicalMastery } from '@/lib/clinicalMastery';
 import type { TrackedGoal } from '@/lib/goalsEngine';
 import { getCriterionById } from '@/types/taalof';
 
@@ -164,10 +165,9 @@ export function goalProgressPercent(goal: TrackedGoal): number {
 
 export function toGoalTrackingItem(goal: TrackedGoal): GoalTrackingItem {
   const currentProgress = goalProgressPercent(goal);
-  const status: GoalTrackingItem['status'] =
-    goal.status === 'done' || currentProgress >= 100
-      ? 'mastered'
-      : goal.status === 'paused' || currentProgress <= 0
+  const status: GoalTrackingItem['status'] = hasClinicalMastery(goal.sessions || [])
+    ? 'mastered'
+    : goal.status === 'paused' || currentProgress <= 0
         ? 'not_started'
         : 'in_progress';
   return {

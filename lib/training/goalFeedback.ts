@@ -2,6 +2,7 @@
  * ربط جلسة التدريب المكتملة بـ TrackedGoal — بدون Goal engine جديد.
  */
 
+import { isFullyIndependentSession } from '@/lib/clinicalMastery';
 import type { GoalSession, TrackedGoal } from '@/lib/goalsEngine';
 import { loadGoalsLocal, upsertGoalLocal } from '@/lib/goalsStore';
 import type { TrainingSessionMetrics } from '@/lib/training/engine/types';
@@ -26,6 +27,7 @@ function buildTrainingGoalSessionEntry(
     activity: `تدريب: ${session.mediaId}`,
     notes: `${TRAINING_SESSION_NOTE_PREFIX}${session.id}; independence=${metrics.independence}%; accuracy=${metrics.accuracy}%`,
     progress: newCurrent,
+    fullyIndependent: isFullyIndependentSession(session.trials),
   };
 }
 
