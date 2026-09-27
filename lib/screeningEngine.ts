@@ -10,11 +10,19 @@ export type ScreeningDimensionScore = {
   scorePercent: number;
 };
 
+export type ScreeningReferralReason =
+  | { kind: 'overall'; label_ar: string }
+  | { kind: 'red_flag'; itemId: string; label_ar: string }
+  | { kind: 'domain'; dimension: string; label_ar: string };
+
 export type ScreeningResult = {
   domainScores: ScreeningDimensionScore[];
   overall: number;
   band: 'balanced' | 'moderate' | 'elevated';
   recommendFullAssessment: boolean;
+  /** بنود الإنذار المبكر التي بلغت عتبتها (غائبة في نتائج محفوظة قبل v2.1) */
+  redFlags?: string[];
+  referralReasons?: ScreeningReferralReason[];
 };
 
 export const SCREENING_ITEMS = screeningData.items;
@@ -24,6 +32,25 @@ export const SCREENING_THRESHOLDS = {
   moderate: 25,
   elevated: 50,
 } as const;
+
+/**
+ * بنود الإنذار المبكر: درجة شديدة في أي منها توصي بالتقييم الشامل
+ * مهما كان المؤشر العام. مقترح للمراجعة العلمية.
+ */
+export const SCREENING_RED_FLAGS: ReadonlyArray<{
+  itemId: string;
+  minScore: number;
+  label_ar: string;
+}> = [
+  { itemId: 'S8', minScore: 2, label_ar: 'ضعف الاستجابة عند المناداة بالاسم' },
+  { itemId: 'S12', minScore: 2, label_ar: 'غياب الإشارة لمشاركة الاهتمام' },
+  { itemId: 'S4', minScore: 2, label_ar: 'تجنب واضح للتواصل البصري' },
+  { itemId: 'S1', minScore: 3, label_ar: 'غياب وسيلة مفهومة للتعبير عن الاحتياجات' },
+  { itemId: 'S2', minScore: 3, label_ar: 'عدم الاستجابة للكلام الموجّه' },
+];
+
+/** محور واحد عند هذه النسبة أو أعلى يوصي بالتقييم الشامل */
+export const SCREENING_DOMAIN_REFERRAL_PERCENT = 67;
 
 const DIMENSIONS = SCREENING_DIMENSIONS.map((d) => d.id);
 
@@ -156,12 +183,70 @@ export function calculateScreening(answers: ScreeningAnswer[]): ScreeningResult 
         ? 'moderate'
         : 'elevated';
 
+  const redFlags = SCREENING_RED_FLAGS.filter(
+    (f) => byId.has(f.itemId) && concernValue(byId.get(f.itemId)!) >= f.minScore
+  );
+  const referralReasons: ScreeningReferralReason[] = [
+    ...redFlags.map((f) => ({ kind: 'red_flag' as const, itemId: f.itemId, label_ar: f.label_ar })),
+    ...domainScores
+      .filter((d) => d.scorePercent >= SCREENING_DOMAIN_REFERRAL_PERCENT)
+      .map((d) => ({
+        kind: 'domain' as const,
+        dimension: d.dimension,
+        label_ar: `ارتفاع ملحوظ في محور ${d.label_ar}`,
+      })),
+    ...(band === 'elevated'
+      ? [{ kind: 'overall' as const, label_ar: 'المؤشر العام مرتفع' }]
+      : []),
+  ];
+
   return {
     domainScores,
     overall,
     band,
-    recommendFullAssessment: band === 'elevated',
+    recommendFullAssessment: referralReasons.length > 0,
+    redFlags: redFlags.map((f) => f.itemId),
+    referralReasons,
   };
+}
+
+export type ScreeningAnswersValidation =
+  | { ok: true; answers: ScreeningAnswer[] }
+  | { ok: false; error: 'MISSING_ITEMS' | 'UNKNOWN_ITEM' | 'DUPLICATE_ITEM' | 'INVALID_VALUE'; itemIds: string[] };
+
+/** يشترط إجابة واحدة صحيحة (0–3) لكل بند من البنود الاثني عشر */
+export function validateScreeningAnswers(input: unknown): ScreeningAnswersValidation {
+  const list = Array.isArray(input) ? input : [];
+  const known = new Set(SCREENING_ITEMS.map((i) => i.id));
+  const seen = new Set<string>();
+  const unknown: string[] = [];
+  const duplicate: string[] = [];
+  const invalid: string[] = [];
+  const answers: ScreeningAnswer[] = [];
+  for (const raw of list) {
+    const id = String((raw as { id?: unknown })?.id ?? '');
+    const value = (raw as { value?: unknown })?.value;
+    if (!known.has(id)) {
+      unknown.push(id);
+      continue;
+    }
+    if (seen.has(id)) {
+      duplicate.push(id);
+      continue;
+    }
+    seen.add(id);
+    if (typeof value !== 'number' || !Number.isInteger(value) || value < 0 || value > 3) {
+      invalid.push(id);
+      continue;
+    }
+    answers.push({ id, value });
+  }
+  if (unknown.length) return { ok: false, error: 'UNKNOWN_ITEM', itemIds: unknown };
+  if (duplicate.length) return { ok: false, error: 'DUPLICATE_ITEM', itemIds: duplicate };
+  if (invalid.length) return { ok: false, error: 'INVALID_VALUE', itemIds: invalid };
+  const missing = SCREENING_ITEMS.map((i) => i.id).filter((id) => !seen.has(id));
+  if (missing.length) return { ok: false, error: 'MISSING_ITEMS', itemIds: missing };
+  return { ok: true, answers };
 }
 
 export function bandLabelAr(band: ScreeningResult['band']) {

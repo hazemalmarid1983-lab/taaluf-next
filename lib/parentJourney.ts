@@ -8,6 +8,7 @@ import { CHILD_ROOM_PATH } from '@/lib/childRoom/gate';
 import { loadStoredAssessments } from '@/lib/assessmentHelpers';
 import { CONSENT_STORAGE_KEY } from '@/lib/consentConstants';
 import { isLearningDifficultiesEnabled } from '@/lib/featureFlags';
+import { writeParentStageCookie } from '@/lib/parentRouteGuard';
 
 export const PARENT_ROUTES = {
   home: '/parent',
@@ -215,6 +216,7 @@ export function saveActiveChild(child: ParentChild) {
   const payload = JSON.stringify(child);
   localStorage.setItem(ACTIVE_CHILD_KEY, payload);
   localStorage.setItem(ACTIVE_CHILD_KEY_ALIAS, payload);
+  writeParentStageCookie(Boolean(child.id) && child.id !== 'local');
 }
 
 /** يفرّغ الملف النشط في المتصفح لبدء تسجيل طفل آخر دون حذف موافقة المنصة */
@@ -225,6 +227,7 @@ export function clearActiveChildSession() {
   localStorage.removeItem(SCREENING_RESULT_KEY_ALIAS);
   localStorage.removeItem(JOURNEY_MODE_KEY);
   localStorage.removeItem(GAMES_SKIPPED_KEY);
+  writeParentStageCookie(false);
 }
 
 export type ParentNextCopyId =

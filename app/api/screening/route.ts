@@ -2,7 +2,7 @@ import { getServerSession } from 'next-auth';
 import { NextResponse } from 'next/server';
 import { authOptions } from '@/lib/auth';
 import { logAction } from '@/lib/auditLog';
-import { calculateScreening, type ScreeningAnswer } from '@/lib/screeningEngine';
+import { calculateScreening, validateScreeningAnswers } from '@/lib/screeningEngine';
 
 export async function POST(req: Request) {
   const session = await getServerSession(authOptions);
@@ -12,13 +12,16 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
-    const answers = (body.answers || []) as ScreeningAnswer[];
     const childId = String(body.childId || '');
-    if (!answers.length) {
-      return NextResponse.json({ error: 'ANSWERS_REQUIRED' }, { status: 400 });
+    const validation = validateScreeningAnswers(body.answers);
+    if (!validation.ok) {
+      return NextResponse.json(
+        { error: validation.error, itemIds: validation.itemIds },
+        { status: 400 }
+      );
     }
 
-    const result = calculateScreening(answers);
+    const result = calculateScreening(validation.answers);
     const id = `screen_${Date.now().toString(36)}`;
 
     await logAction({

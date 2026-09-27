@@ -1,7 +1,12 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import { useSession } from 'next-auth/react';
 import { Button } from '@/components/ui/button';
+import GeneralizationProbeDialog from '@/components/goals/GeneralizationProbeDialog';
+import GoalSessionDialog from '@/components/goals/GoalSessionDialog';
+import type { GeneralizationProbe } from '@/lib/generalizationIndex';
+import { loadGeneralizationProbes } from '@/lib/generalizationProbeStore';
 import {
   createTrackedGoalsFromScores,
   todayPracticeFromGoal,
@@ -9,10 +14,10 @@ import {
 } from '@/lib/goalsEngine';
 import { loadGoalsLocal, saveGoalsLocal, upsertGoalLocal } from '@/lib/goalsStore';
 import { loadStoredAssessments } from '@/lib/assessmentHelpers';
+import { toGoalTrackingItem } from '@/lib/progressTracker';
+import { SKILL_MASTERY_BLOCKER_LABELS_AR, SKILL_TYPE_CONFIGS } from '@/lib/skillMastery';
 import { useLanguage } from '@/components/LanguageProvider';
 import SensoryHubRecommendationsCard from '@/components/sensory-hub/SensoryHubRecommendationsCard';
-
-const MOODS = ['😊', '😐', '😟', '😢'] as const;
 
 function WeekChart({ values }: { values: number[] }) {
   const w = 280;
@@ -47,11 +52,17 @@ export default function GoalsPage() {
   const isAr = lang === 'ar';
   const [childId, setChildId] = useState('child_local');
   const [goals, setGoals] = useState<TrackedGoal[]>([]);
+  const { data: authSession } = useSession();
   const [noteGoalId, setNoteGoalId] = useState<string | null>(null);
-  const [mood, setMood] = useState<string>('😊');
-  const [activity, setActivity] = useState('');
-  const [notes, setNotes] = useState('');
+  const [probeGoalId, setProbeGoalId] = useState<string | null>(null);
+  const [probes, setProbes] = useState<GeneralizationProbe[]>([]);
   const [msg, setMsg] = useState('');
+  const reportedBy: GeneralizationProbe['reported_by'] =
+    authSession?.user?.role === 'parent' ? 'parent_report' : 'professional';
+
+  useEffect(() => {
+    setProbes(loadGeneralizationProbes());
+  }, []);
 
   useEffect(() => {
     try {
@@ -106,45 +117,25 @@ export default function GoalsPage() {
     return 'bg-rose-500';
   };
 
-  const saveNote = async () => {
-    if (!noteGoalId) return;
-    const goal = goals.find((g) => g.id === noteGoalId);
-    if (!goal) return;
-    const progress = Math.min(
-      100,
-      goal.current + (mood === '😊' ? 5 : mood === '😐' ? 2 : 0)
-    );
-    const updated: TrackedGoal = {
-      ...goal,
-      current: progress,
-      lastUpdate: new Date().toISOString(),
-      sessions: [
-        ...goal.sessions,
-        {
-          at: new Date().toISOString(),
-          mood,
-          activity,
-          notes,
-          progress,
-        },
-      ],
-    };
+  const saveSession = async (updated: TrackedGoal) => {
     upsertGoalLocal(updated);
     setGoals((prev) => prev.map((g) => (g.id === updated.id ? updated : g)));
+    setNoteGoalId(null);
+    setMsg('تم حفظ الجلسة');
+    const session = updated.sessions[updated.sessions.length - 1];
     await fetch(`/api/goals/${updated.id}`, {
       method: 'PATCH',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        goal: updated,
-        session: updated.sessions[updated.sessions.length - 1],
-        current: progress,
+        goal: { ...updated, sessions: updated.sessions.slice(0, -1) },
+        session,
+        current: updated.current,
       }),
     }).catch(() => undefined);
-    setMsg('تم حفظ الملاحظة');
-    setNoteGoalId(null);
-    setActivity('');
-    setNotes('');
   };
+
+  const noteGoal = goals.find((g) => g.id === noteGoalId) || null;
+  const probeGoal = goals.find((g) => g.id === probeGoalId) || null;
 
   return (
     <section className="space-y-6">
@@ -184,6 +175,7 @@ export default function GoalsPage() {
               100,
               Math.max(0, ((g.current - g.baseline) / range) * 100)
             );
+            const tracking = toGoalTrackingItem(g, probes);
             return (
               <article
                 key={g.id}
@@ -203,13 +195,22 @@ export default function GoalsPage() {
                       {g.domain}
                     </p>
                   </div>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setNoteGoalId(g.id)}
-                  >
-                    سجّل ملاحظة
-                  </Button>
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setNoteGoalId(g.id)}
+                    >
+                      سجّل جلسة
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setProbeGoalId(g.id)}
+                    >
+                      قياس تعميم
+                    </Button>
+                  </div>
                 </div>
                 <p className="mt-3 text-sm leading-7 text-slate-600">
                   {g.smartText}
@@ -228,6 +229,25 @@ export default function GoalsPage() {
                     />
                   </div>
                 </div>
+                <div className="mt-3 space-y-1 rounded-2xl bg-slate-50 p-3 text-xs text-slate-600">
+                  <p>
+                    <span className="font-semibold">
+                      {SKILL_TYPE_CONFIGS[tracking.skillType].label_ar}:
+                    </span>{' '}
+                    {tracking.status === 'mastered'
+                      ? 'متقن ✓'
+                      : tracking.masteryBlockers
+                          .map((b) => SKILL_MASTERY_BLOCKER_LABELS_AR[b])
+                          .join(' · ') || 'قيد التدريب'}
+                  </p>
+                  {tracking.generalization ? (
+                    <p>
+                      <span className="font-semibold">مؤشر التعميم:</span>{' '}
+                      {tracking.generalization.generalization_index}% ·{' '}
+                      {tracking.generalization.gen_status}
+                    </p>
+                  ) : null}
+                </div>
                 <p className="mt-2 text-xs text-slate-400">
                   جلسات: {g.sessions.length}
                   {g.lastUpdate
@@ -245,47 +265,31 @@ export default function GoalsPage() {
         <SensoryHubRecommendationsCard goals={goals} isAr={isAr} />
       </div>
 
-      {noteGoalId && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
-          <div className="w-full max-w-md rounded-3xl bg-white p-6">
-            <h3 className="text-lg font-bold">سجّل ملاحظة</h3>
-            <div className="mt-3 flex gap-2">
-              {MOODS.map((m) => (
-                <button
-                  key={m}
-                  type="button"
-                  onClick={() => setMood(m)}
-                  className={
-                    mood === m
-                      ? 'rounded-xl bg-emerald-50 px-3 py-2 text-xl ring-2 ring-[#2D8B5A]'
-                      : 'rounded-xl px-3 py-2 text-xl'
-                  }
-                >
-                  {m}
-                </button>
-              ))}
-            </div>
-            <input
-              className="mt-3 w-full rounded-xl border px-3 py-2 text-sm"
-              placeholder="النشاط المنزلي"
-              value={activity}
-              onChange={(e) => setActivity(e.target.value)}
-            />
-            <textarea
-              className="mt-2 w-full rounded-xl border px-3 py-2 text-sm"
-              rows={3}
-              placeholder="ملاحظات"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-            />
-            <div className="mt-4 flex gap-2">
-              <Button onClick={saveNote}>حفظ</Button>
-              <Button variant="ghost" onClick={() => setNoteGoalId(null)}>
-                إلغاء
-              </Button>
-            </div>
-          </div>
-        </div>
+      {noteGoal && (
+        <GoalSessionDialog
+          goal={noteGoal}
+          defaultTrainerName={authSession?.user?.name ?? undefined}
+          onSaved={(updated) => void saveSession(updated)}
+          onCancel={() => setNoteGoalId(null)}
+        />
+      )}
+
+      {probeGoal && (
+        <GeneralizationProbeDialog
+          goalId={probeGoal.id}
+          goalTitle={probeGoal.title}
+          reportedBy={reportedBy}
+          onSaved={(next, counts) => {
+            setProbes(next);
+            setProbeGoalId(null);
+            setMsg(
+              counts
+                ? 'تم حفظ قياس التعميم'
+                : 'تم الحفظ — لا يُحتسب في مؤشر التعميم لأنه لم يختبر ظرفاً جديداً'
+            );
+          }}
+          onCancel={() => setProbeGoalId(null)}
+        />
       )}
 
       {msg && <p className="text-sm text-[#2D8B5A]">{msg}</p>}

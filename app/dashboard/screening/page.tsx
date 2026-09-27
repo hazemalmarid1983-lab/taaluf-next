@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import ScreeningResultsHero from '@/components/screening/ScreeningResultsHero';
 import { useStepNav } from '@/hooks/useStepNav';
 import { publishChildJourney } from '@/lib/childRoom/journeyClient';
@@ -44,7 +43,6 @@ function screeningMatchesChild(
 }
 
 export default function ScreeningPage() {
-  const router = useRouter();
   const [step, setStep] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [result, setResult] = useState<ScreeningResult | null>(null);
@@ -125,7 +123,6 @@ export default function ScreeningPage() {
       unlockFullPath();
       setResult(computed);
       setMsg('تم حفظ نتيجة الفرز');
-      router.push('/pricing?from=screening');
 
       fetch('/api/screening', {
         method: 'POST',

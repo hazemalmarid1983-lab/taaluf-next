@@ -142,6 +142,19 @@ export type SkillMasteryBlocker =
   | 'insufficient_distinct_trainers'
   | 'insufficient_distinct_settings';
 
+export const SKILL_MASTERY_BLOCKER_LABELS_AR: Record<SkillMasteryBlocker, string> = {
+  insufficient_consecutive_sessions: 'جلسات مؤهلة متتالية غير كافية',
+  insufficient_distinct_trainers: 'يلزم تنفيذ الجلسات مع مدرّبين مختلفين',
+  insufficient_distinct_settings: 'يلزم تنفيذ الجلسات في بيئات مختلفة',
+};
+
+export const SESSION_SETTING_LABELS_AR: Record<SessionSetting, string> = {
+  clinic: 'العيادة / المركز',
+  home: 'المنزل',
+  school: 'المدرسة',
+  public_place: 'مكان عام',
+};
+
 export interface SkillMasteryResult {
   skill_type_id: SkillCategoryId;
   mastered: boolean;

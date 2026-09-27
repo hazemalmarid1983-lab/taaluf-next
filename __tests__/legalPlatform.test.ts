@@ -29,14 +29,16 @@ describe('القالب القانوني والعماني', () => {
     expect(THREE_TIER_CONSENTS.dataConsent.fullText).toContain('سلطنة عمان');
   });
 
-  it('exposes five live disclaimer slots', () => {
+  it('exposes six live disclaimer slots', () => {
     expect(Object.keys(LEGAL_DISCLAIMERS)).toEqual([
       'registration',
       'preAssessment',
       'resultsBanner',
       'pdfFooter',
       'aiPrefix',
+      'screeningResults',
     ]);
+    expect(LEGAL_DISCLAIMERS.screeningResults).toMatch(/ليس تشخيصاً/);
     expect(LEGAL_DISCLAIMERS.pdfFooter).toContain('سلطنة عمان');
     expect(LEGAL_DISCLAIMERS.aiPrefix).toMatch(/اصطناعي/);
     expect(CHILD_VERBAL_ASSENT.length).toBeGreaterThan(20);

@@ -8,6 +8,7 @@ import {
   canonicalScreeningDomainLabel,
   getImmediateScreeningTip,
 } from '@/lib/screeningEngine';
+import { LEGAL_DISCLAIMERS } from '@/lib/legalContent';
 import { PRICING_PATH } from '@/lib/subscriptionTiers';
 import PdfExportButton from '@/components/reports/PdfExportButton';
 import { Button } from '@/components/ui/button';
@@ -83,10 +84,38 @@ export default function ScreeningResultsHero({
         <p className="mx-auto max-w-xl text-xs text-gray-500">
           المؤشر العام:{' '}
           <strong className="text-[#1F2A37]">%{result.overall}</strong> •{' '}
-          {bandLabelAr(result.band)} • الفرز مجاني. التقييم الكامل والاشتراك
-          يتيحان لك باقي المسار.
+          {bandLabelAr(result.band)}
         </p>
       </header>
+
+      <div
+        role="note"
+        className="rounded-2xl border border-slate-300 bg-slate-50 p-4 text-xs leading-6 text-slate-700 sm:text-sm"
+      >
+        <strong className="block text-slate-900">ليس تشخيصاً</strong>
+        {LEGAL_DISCLAIMERS.screeningResults}
+      </div>
+
+      {result.recommendFullAssessment ? (
+        <div className="rounded-2xl border-2 border-red-200 bg-[#FEF2F2] p-5">
+          <h2 className="text-base font-bold text-[#991B1B]">
+            نوصي بتقييم شامل لدى أخصائي مؤهل
+          </h2>
+          <p className="mt-1 text-xs leading-6 text-slate-700 sm:text-sm">
+            ظهرت في إجاباتك مؤشرات تستحق تقييماً متخصصاً، حتى لو بدا المؤشر العام
+            منخفضاً:
+          </p>
+          <ul className="mt-2 list-disc space-y-1 pr-5 text-xs text-slate-800 sm:text-sm">
+            {(result.referralReasons ?? [{ kind: 'overall', label_ar: 'المؤشر العام مرتفع' }]).map(
+              (r) => (
+                <li key={r.kind === 'red_flag' ? r.itemId : r.kind === 'domain' ? r.dimension : r.kind}>
+                  {r.label_ar}
+                </li>
+              )
+            )}
+          </ul>
+        </div>
+      ) : null}
 
       <div className="rounded-2xl border-2 border-[#2E7D8E]/30 bg-gradient-to-l from-[#F0FDFA] to-[#FAF7F1] p-6 shadow-sm">
         <div className="flex items-start gap-3">
@@ -139,12 +168,15 @@ export default function ScreeningResultsHero({
       </div>
 
       <div className="rounded-2xl border border-gray-100 bg-white p-6 text-center print:hidden">
-        <h2 className="text-lg font-bold text-[#1F2A37]">النتيجة الأولية فقط</h2>
+        <h2 className="text-lg font-bold text-[#1F2A37]">الخطوة التالية اختيارك</h2>
         <p className="mt-2 text-sm leading-6 text-slate-600">
-          هذه نتيجة الفرز المجاني. الخطوة التالية هي اختيار الباقة ثم تسجيل الطفل.
+          يمكنك الاكتفاء بهذه النتيجة والتوصية المنزلية، أو متابعة التقييم الشامل عبر
+          المنصة متى رغبت.
         </p>
         <Link href={`${PRICING_PATH}?from=screening`} className="mt-4 block">
-          <Button className="h-12 w-full font-bold">متابعة اختيار الباقة</Button>
+          <Button variant="outline" className="h-12 w-full font-bold">
+            عرض خيارات التقييم الشامل
+          </Button>
         </Link>
         <div className="mt-4 flex flex-wrap justify-center gap-4 text-xs text-slate-400">
           {onRetake ? (

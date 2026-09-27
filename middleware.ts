@@ -16,6 +16,11 @@ import {
   isLearningDifficultiesRoute,
 } from '@/lib/featureFlags';
 import {
+  PARENT_STAGE_COOKIE,
+  parentStageRedirect,
+  parseParentStage,
+} from '@/lib/parentRouteGuard';
+import {
   isProductionPlatform,
   maintenanceModeEnabled,
   roleBypassesMaintenance,
@@ -87,6 +92,22 @@ export default withAuth(
             ? '/parent'
             : '/dashboard';
       return NextResponse.redirect(new URL(dest, req.url));
+    }
+
+    if (role === 'parent') {
+      const dest = parentStageRedirect(
+        parseParentStage(req.cookies.get(PARENT_STAGE_COOKIE)?.value),
+        path
+      );
+      if (dest && dest !== path) {
+        return NextResponse.redirect(new URL(dest, req.url));
+      }
+    }
+
+    if (path.startsWith('/onboarding') && role !== 'parent' && role !== 'admin') {
+      return NextResponse.redirect(
+        new URL(role ? homePathForRole(role) : '/login?portal=parent', req.url)
+      );
     }
 
     if (path.startsWith('/parent')) {
@@ -201,6 +222,7 @@ export const config = {
     '/hub/:path*',
     '/parent',
     '/parent/:path*',
+    '/onboarding/:path*',
     '/specialist/:path*',
     '/payments/:path*',
     '/consent',

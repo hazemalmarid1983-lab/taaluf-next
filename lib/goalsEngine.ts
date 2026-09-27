@@ -42,6 +42,15 @@ export type GoalSession = {
   setting?: 'clinic' | 'home' | 'school' | 'public_place';
   /** أهداف التكرار/المدة: تحقق معيار الهدف في الجلسة */
   metFrequencyCriterion?: boolean;
+  behaviorCount?: number;
+  behaviorDurationMinutes?: number;
+};
+
+/** معيار أهداف التكرار/المدة: مثلاً «نوبات غضب ≤ 2 في الجلسة» */
+export type FrequencyTarget = {
+  measure: 'count' | 'duration_minutes';
+  direction: 'decrease' | 'increase';
+  target: number;
 };
 
 export type TrackedGoal = {
@@ -60,6 +69,7 @@ export type TrackedGoal = {
   status: 'active' | 'done' | 'paused';
   sessions: GoalSession[];
   lastUpdate?: string;
+  frequencyTarget?: FrequencyTarget;
 };
 
 export const DEFAULT_GOAL_WHY =

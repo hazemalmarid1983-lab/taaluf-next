@@ -74,10 +74,11 @@ export type DisclaimerSlot =
   | 'preAssessment'
   | 'resultsBanner'
   | 'pdfFooter'
-  | 'aiPrefix';
+  | 'aiPrefix'
+  | 'screeningResults';
 
 /**
- * النصوص الخمسة لإخلاء المسؤولية — تُستدعى في الواجهة وPDF والذكاء الاصطناعي.
+ * نصوص إخلاء المسؤولية — تُستدعى في الواجهة وPDF والذكاء الاصطناعي.
  */
 export const LEGAL_DISCLAIMERS: Record<DisclaimerSlot, string> = {
   registration:
@@ -89,6 +90,8 @@ export const LEGAL_DISCLAIMERS: Record<DisclaimerSlot, string> = {
   pdfFooter: `تآلف — ${LEGAL_COUNTRY_AR}. لا تقدم تشخيصاً طبياً. النتائج مؤشرات تربوية مساعدة. يجب مراجعة أخصائي مؤهل قبل أي قرار يتعلق برعاية الطفل. النزاعات تُحال إلى ${LEGAL_JURISDICTION_AR}.`,
   aiPrefix:
     'تنبيه: هذا النص توليد مساعد بالذكاء الاصطناعي لأغراض تربوية فقط، وليس تشخيصاً طبياً. المحتوى إرشادي ويخضع للمراجعة التربوية.',
+  screeningResults:
+    'هذا فرز أولي من 12 سؤالاً مبني على وصفك لطفلك، وليس تشخيصاً طبياً أو نفسياً ولا يثبت وجود التوحد أو ينفيه. نتيجة مطمئنة لا تغني عن مراجعة الأخصائي إن استمر قلقك، ونتيجة مرتفعة تعني أن طفلك يستحق تقييماً شاملاً لدى أخصائي مؤهل.',
 };
 
 export function getDisclaimer(slot: DisclaimerSlot): string {
