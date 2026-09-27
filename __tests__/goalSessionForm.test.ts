@@ -38,16 +38,29 @@ describe('session form fields per skill type', () => {
     });
   });
 
-  it('requires trainer and setting for social goals (C11)', () => {
+  it('requires a trainer and the cold probe for social goals (C11)', () => {
     expect(goalSessionFormFields(goal('C11'))).toMatchObject({
       trainerRequired: true,
-      settingRequired: true,
-      askNaturalCue: true,
+      settingRequired: false,
+      askFirstTrial: true,
+      askNaturalCue: false,
     });
   });
 
-  it('uses frequency mode for self-regulation goals (C33)', () => {
-    expect(goalSessionFormFields(goal('C33')).frequencyMode).toBe(true);
+  it('requires a setting and offers the natural cue for self-help goals (C34)', () => {
+    expect(goalSessionFormFields(goal('C34'))).toMatchObject({
+      settingRequired: true,
+      askNaturalCue: true,
+      askFirstTrial: true,
+    });
+  });
+
+  it('uses frequency mode with a required trainer for self-regulation goals (C33)', () => {
+    expect(goalSessionFormFields(goal('C33'))).toMatchObject({
+      frequencyMode: true,
+      trainerRequired: true,
+      settingRequired: false,
+    });
   });
 });
 
@@ -58,9 +71,14 @@ describe('buildGoalSessionFromForm', () => {
     expect(buildGoalSessionFromForm(goal('C1'), { independencePct: '120' }).ok).toBe(false);
   });
 
-  it('rejects a social session without trainer and setting', () => {
+  it('rejects a social session without a trainer', () => {
     const r = buildGoalSessionFromForm(goal('C11'), { independencePct: 90 });
-    expect(r).toEqual({ ok: false, errors: ['TRAINER_REQUIRED', 'SETTING_REQUIRED'] });
+    expect(r).toEqual({ ok: false, errors: ['TRAINER_REQUIRED'] });
+  });
+
+  it('rejects a self-help session without a setting', () => {
+    const r = buildGoalSessionFromForm(goal('C34'), { independencePct: 90 });
+    expect(r).toEqual({ ok: false, errors: ['SETTING_REQUIRED'] });
   });
 
   it('records independence, cold probe, trainer and setting', () => {
@@ -87,7 +105,7 @@ describe('buildGoalSessionFromForm', () => {
   it('requires a frequency target and value for self-regulation goals', () => {
     expect(buildGoalSessionFromForm(goal('C33'), {})).toEqual({
       ok: false,
-      errors: ['SETTING_REQUIRED', 'FREQUENCY_TARGET_REQUIRED', 'BEHAVIOR_VALUE_REQUIRED'],
+      errors: ['TRAINER_REQUIRED', 'FREQUENCY_TARGET_REQUIRED', 'BEHAVIOR_VALUE_REQUIRED'],
     });
   });
 
@@ -96,7 +114,7 @@ describe('buildGoalSessionFromForm', () => {
       goal('C33'),
       {
         behaviorValue: '2',
-        setting: 'home',
+        trainerName: 'الأم',
         frequencyTarget: { measure: 'count', direction: 'decrease', target: '3' },
       },
       day(1)
@@ -105,41 +123,45 @@ describe('buildGoalSessionFromForm', () => {
     expect(first.goal.frequencyTarget).toEqual({ measure: 'count', direction: 'decrease', target: 3 });
     expect(first.session).toMatchObject({ behaviorCount: 2, metFrequencyCriterion: true });
 
-    const second = buildGoalSessionFromForm(first.goal, { behaviorValue: 5, setting: 'school' }, day(2));
+    const second = buildGoalSessionFromForm(first.goal, { behaviorValue: 5, trainerName: 'الأم' }, day(2));
     expect(second.ok && second.session.metFrequencyCriterion).toBe(false);
   });
 
   it('stores duration for duration targets', () => {
     const r = buildGoalSessionFromForm(
       goal('C33', { frequencyTarget: { measure: 'duration_minutes', direction: 'increase', target: 10 } }),
-      { behaviorValue: 12, setting: 'home' }
+      { behaviorValue: 12, trainerName: 'الأم' }
     );
     expect(r.ok && r.session).toMatchObject({ behaviorDurationMinutes: 12, metFrequencyCriterion: true });
   });
 });
 
 describe('form sessions feed the skill-type mastery rules', () => {
-  it('lets a social goal reach mastery across trainers and settings', () => {
+  it('lets a social goal reach mastery on four sessions across two trainers', () => {
     let g = goal('C11');
-    const plan: Array<[string, 'clinic' | 'home' | 'school']> = [
-      ['أ. سارة', 'clinic'],
-      ['الأم', 'home'],
-      ['أ. سارة', 'school'],
-    ];
-    plan.forEach(([trainerName, setting], i) => {
-      const r = buildGoalSessionFromForm(g, { independencePct: 85, trainerName, setting }, day(i + 1));
+    ['أ. سارة', 'الأم', 'أ. سارة'].forEach((trainerName, i) => {
+      const r = buildGoalSessionFromForm(
+        g,
+        { independencePct: 85, firstTrialIndependent: true, trainerName },
+        day(i + 1)
+      );
       if (!r.ok) throw new Error('expected ok');
       g = r.goal;
     });
-    const item = toGoalTrackingItem(g);
-    expect(item.status).toBe('mastered');
-    expect(item.masteryBlockers).toEqual([]);
+    expect(toGoalTrackingItem(g).masteryBlockers).toEqual(['insufficient_consecutive_sessions']);
+    const r = buildGoalSessionFromForm(
+      g,
+      { independencePct: 85, firstTrialIndependent: true, trainerName: 'الأم' },
+      day(4)
+    );
+    if (!r.ok) throw new Error('expected ok');
+    expect(toGoalTrackingItem(r.goal).status).toBe('mastered');
   });
 
-  it('lets a self-regulation goal reach mastery on three met sessions in two settings', () => {
+  it('lets a self-regulation goal reach mastery on five met sessions across two trainers', () => {
     let g = goal('C33', { frequencyTarget: { measure: 'count', direction: 'decrease', target: 2 } });
-    (['home', 'school', 'home'] as const).forEach((setting, i) => {
-      const r = buildGoalSessionFromForm(g, { behaviorValue: 1, setting }, day(i + 1));
+    ['الأم', 'أ. سارة', 'الأم', 'أ. سارة', 'الأم'].forEach((trainerName, i) => {
+      const r = buildGoalSessionFromForm(g, { behaviorValue: 1, trainerName }, day(i + 1));
       if (!r.ok) throw new Error('expected ok');
       g = r.goal;
     });

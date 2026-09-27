@@ -97,7 +97,11 @@ describe('probe storage', () => {
     save('d', 'person', 'g2');
     const g1 = loadGeneralizationProbes('g1');
     expect(g1).toHaveLength(3);
-    expect(calculateGeneralizationIndex(g1).gen_status).toBe('معمَّم بالكامل ✅');
+    expect(calculateGeneralizationIndex(g1).breakdown).toEqual({
+      person_score: 33,
+      place_score: 33,
+      material_score: 33,
+    });
     expect(loadGeneralizationProbes()).toHaveLength(4);
   });
 

@@ -2,6 +2,8 @@ import type { TrackedGoal } from '../lib/goalsEngine';
 import {
   GENERALIZATION_FULL_THRESHOLD,
   GENERALIZATION_PARTIAL_THRESHOLD,
+  GENERALIZATION_PROBE_SUCCESS_PCT,
+  GENERALIZATION_WEIGHTS,
   calculateGeneralizationIndex,
   generalizationStatus,
   probeTestsNovelCondition,
@@ -29,74 +31,93 @@ const probe = (
     reported_by: 'professional',
   };
 };
-const person = (pct: number, goal?: string) => probe('person', pct, { person_type: 'parent' }, goal);
-const place = (pct: number, goal?: string) => probe('place', pct, { setting: 'home' }, goal);
-const material = (pct: number, goal?: string) =>
-  probe('material_stimulus', pct, { is_novel_material: true }, goal);
+const person = (id: string, pct = 90, goal?: string) =>
+  probe('person', pct, { person_type: 'teacher', person_id: id }, goal);
+const place = (setting: 'home' | 'school' | 'public_place' | 'clinic', pct = 90, goal?: string) =>
+  probe('place', pct, { setting }, goal);
+const material = (pct = 90, goal?: string) =>
+  probe('material_stimulus', pct, { is_novel_material: true, material_used: 'x' }, goal);
+
+const FULL = [
+  person('a'),
+  person('b'),
+  person('c'),
+  place('home'),
+  place('school'),
+  place('public_place'),
+  material(),
+  material(),
+  material(),
+];
 
 describe('generalization index formula', () => {
-  it('uses the 85 / 50 cut-offs', () => {
+  it('uses the approved constants', () => {
     expect(GENERALIZATION_FULL_THRESHOLD).toBe(85);
     expect(GENERALIZATION_PARTIAL_THRESHOLD).toBe(50);
+    expect(GENERALIZATION_PROBE_SUCCESS_PCT).toBe(80);
+    expect(GENERALIZATION_WEIGHTS).toEqual({ person: 0.34, place: 0.33, material_stimulus: 0.33 });
+  });
+
+  it('maps the index to status at 85 / 50', () => {
     expect(generalizationStatus(85)).toBe('معمَّم بالكامل ✅');
     expect(generalizationStatus(84)).toBe('تعميم جزئي ⚠️');
     expect(generalizationStatus(50)).toBe('تعميم جزئي ⚠️');
     expect(generalizationStatus(49)).toBe('غير معمَّم بعد ❌ (مقتصر على بيئة التدريب)');
   });
 
-  it('weights the three dimensions equally', () => {
-    const result = calculateGeneralizationIndex([person(90), place(60), material(30)]);
-    expect(result.breakdown).toEqual({ person_score: 90, place_score: 60, material_score: 30 });
-    expect(result.generalization_index).toBe(60);
-    expect(result.gen_status).toBe('تعميم جزئي ⚠️');
-    expect(result.weak_dimension).toBe('material_stimulus');
-  });
-
-  it('averages multiple probes inside a dimension', () => {
-    const result = calculateGeneralizationIndex([
-      person(100),
-      person(80),
-      place(90),
-      material(90),
-    ]);
-    expect(result.breakdown.person_score).toBe(90);
-    expect(result.generalization_index).toBe(90);
+  it('reaches 100 with three distinct successes in every dimension', () => {
+    const result = calculateGeneralizationIndex(FULL);
+    expect(result.breakdown).toEqual({ person_score: 100, place_score: 100, material_score: 100 });
+    expect(result.generalization_index).toBe(100);
     expect(result.gen_status).toBe('معمَّم بالكامل ✅');
   });
 
-  it('scores a dimension with no probes as 0 so it cannot be skipped', () => {
-    const result = calculateGeneralizationIndex([person(100), place(100)]);
-    expect(result.breakdown.material_score).toBe(0);
-    expect(result.generalization_index).toBe(67);
-    expect(result.gen_status).toBe('تعميم جزئي ⚠️');
+  it('scores each dimension by distinct successes out of three', () => {
+    const result = calculateGeneralizationIndex([person('a'), person('a'), place('home'), place('school')]);
+    expect(result.breakdown).toEqual({ person_score: 33, place_score: 67, material_score: 0 });
+    expect(result.generalization_index).toBe(Math.round((100 / 3) * 0.34 + (200 / 3) * 0.33));
     expect(result.weak_dimension).toBe('material_stimulus');
+  });
+
+  it('counts repeated novel-material successes, not distinct materials', () => {
+    expect(calculateGeneralizationIndex([material(), material()]).breakdown.material_score).toBe(67);
+  });
+
+  it('ignores probes below 80% independence', () => {
+    const result = calculateGeneralizationIndex([person('a', 79), place('home', 79), material(79)]);
+    expect(result.generalization_index).toBe(0);
+    expect(calculateGeneralizationIndex([person('a', 80)]).breakdown.person_score).toBe(33);
+  });
+
+  it('ignores probes that do not test a novel condition', () => {
+    const primary = probe('person', 100, { person_type: 'primary_specialist', person_id: 'x' });
+    const clinic = place('clinic', 100);
+    const sameMaterial = probe('material_stimulus', 100, { is_novel_material: false });
+    for (const p of [primary, clinic, sameMaterial]) expect(probeTestsNovelCondition(p)).toBe(false);
+    expect(calculateGeneralizationIndex([primary, clinic, sameMaterial]).generalization_index).toBe(0);
+  });
+
+  it('falls back to person_type when no person_id is given', () => {
+    const result = calculateGeneralizationIndex([
+      probe('person', 90, { person_type: 'parent' }),
+      probe('person', 90, { person_type: 'teacher' }),
+      probe('person', 90, { person_type: 'teacher' }),
+    ]);
+    expect(result.breakdown.person_score).toBe(67);
   });
 
   it('reports not generalized when there are no probes', () => {
     const result = calculateGeneralizationIndex([]);
     expect(result.generalization_index).toBe(0);
     expect(result.gen_status).toBe('غير معمَّم بعد ❌ (مقتصر على بيئة التدريب)');
-  });
-
-  it('ignores probes that do not test a novel condition', () => {
-    const primary = probe('person', 100, { person_type: 'primary_specialist' });
-    const clinic = probe('place', 100, { setting: 'clinic' });
-    const sameMaterial = probe('material_stimulus', 100, { is_novel_material: false });
-    for (const p of [primary, clinic, sameMaterial]) expect(probeTestsNovelCondition(p)).toBe(false);
-    expect(calculateGeneralizationIndex([primary, clinic, sameMaterial]).generalization_index).toBe(0);
-  });
-
-  it('clamps out-of-range independence values', () => {
-    const result = calculateGeneralizationIndex([person(150), place(-20), material(100)]);
-    expect(result.breakdown).toEqual({ person_score: 100, place_score: 0, material_score: 100 });
+    expect(result.weak_dimension).toBe('person');
   });
 
   it('scopes probes to the requested goal', () => {
-    const result = calculateGeneralizationIndex(
-      [person(100, 'a'), place(100, 'a'), material(100, 'a'), person(0, 'b')],
-      'a'
+    const other = FULL.map((p) => ({ ...p, goal_id: 'other' }));
+    expect(calculateGeneralizationIndex([...other, person('a', 90, 'g')], 'g').generalization_index).toBe(
+      Math.round((100 / 3) * 0.34)
     );
-    expect(result.generalization_index).toBe(100);
   });
 });
 
@@ -119,7 +140,7 @@ describe('generalization in goal tracking', () => {
   it('attaches the index only to goals that have probes', () => {
     const { items } = summarizeGoalTracking(
       [goal('a'), goal('b')],
-      [person(90, 'a'), place(90, 'a'), material(90, 'a')]
+      FULL.map((p) => ({ ...p, goal_id: 'a' }))
     );
     expect(items[0].generalization?.gen_status).toBe('معمَّم بالكامل ✅');
     expect(items[1].generalization).toBeUndefined();

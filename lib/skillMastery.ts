@@ -5,29 +5,10 @@
  */
 
 import type { GoalSession, TrackedGoal } from '@/lib/goalsEngine';
+import type { SkillCategoryId, SkillTypeConfig } from '@/types/clinical';
 import { getCriterionById, type DevelopmentalDomainId } from '@/types/taalof';
 
-export type SkillCategoryId =
-  | 'closed_cognitive'
-  | 'social'
-  | 'adaptive_self_help'
-  | 'self_regulation';
-
-export interface SkillTypeConfig {
-  skill_type_id: SkillCategoryId;
-  label_ar: string;
-  domains: string[];
-  mastery_threshold_pct: number | null;
-  consecutive_sessions_required: number;
-  min_interval_between_sessions_hours: number;
-  require_cold_probe_first_trial: boolean;
-  require_multiple_trainers: boolean;
-  min_distinct_trainers?: number;
-  require_multiple_settings: boolean;
-  min_distinct_settings?: number;
-  allow_natural_cue_as_independent?: boolean;
-  measurement_mode?: 'trial_based' | 'frequency_duration';
-}
+export type { SkillCategoryId, SkillTypeConfig };
 
 export type SessionPromptLevel =
   | 'Independent'
@@ -55,67 +36,72 @@ export interface MasterySessionRecord {
   met_frequency_criterion?: boolean;
 }
 
-export const SKILL_TYPE_CONFIGS: Record<SkillCategoryId, SkillTypeConfig> = {
+/** الإعدادات المركزية لأنواع المهارات */
+export const DEFAULT_SKILL_TYPE_CONFIGS: Record<SkillCategoryId, SkillTypeConfig> = {
   closed_cognitive: {
     skill_type_id: 'closed_cognitive',
-    label_ar: 'مهارات معرفية ولغوية مغلقة',
-    domains: [
-      'receptive_language',
-      'expressive_language',
-      'cognitive_pre_academic',
-      'gross_motor',
-      'fine_motor',
-    ],
+    label_ar: 'مهارات معرفية/أكاديمية مغلقة',
+    domains: ['المطابقة', 'التصنيف', 'ما قبل الأكاديمية'],
     mastery_threshold_pct: 100,
     consecutive_sessions_required: 3,
     min_interval_between_sessions_hours: 0,
     require_cold_probe_first_trial: true,
     require_multiple_trainers: false,
     require_multiple_settings: false,
-    measurement_mode: 'trial_based',
   },
   social: {
     skill_type_id: 'social',
-    label_ar: 'مهارات اجتماعية وتفاعلية',
-    domains: ['social_skills'],
+    label_ar: 'المهارات الاجتماعية',
+    domains: ['التواصل البصري التلقائي', 'المبادرة', 'اللعب التبادلي'],
     mastery_threshold_pct: 80,
-    consecutive_sessions_required: 3,
+    consecutive_sessions_required: 4,
     min_interval_between_sessions_hours: 24,
-    require_cold_probe_first_trial: false,
+    require_cold_probe_first_trial: true,
     require_multiple_trainers: true,
     min_distinct_trainers: 2,
-    require_multiple_settings: true,
-    min_distinct_settings: 2,
-    allow_natural_cue_as_independent: true,
-    measurement_mode: 'trial_based',
+    require_multiple_settings: false,
   },
   adaptive_self_help: {
     skill_type_id: 'adaptive_self_help',
-    label_ar: 'الرعاية الذاتية والاستقلالية',
-    domains: ['self_help'],
-    mastery_threshold_pct: 100,
+    label_ar: 'الاستقلالية الذاتية (ADL)',
+    domains: ['ارتداء الملابس', 'الأكل', 'النظافة الشخصية'],
+    mastery_threshold_pct: 90,
+    allow_natural_cue_as_independent: true,
     consecutive_sessions_required: 3,
     min_interval_between_sessions_hours: 24,
     require_cold_probe_first_trial: true,
     require_multiple_trainers: false,
     require_multiple_settings: true,
     min_distinct_settings: 2,
-    allow_natural_cue_as_independent: true,
-    measurement_mode: 'trial_based',
   },
   self_regulation: {
     skill_type_id: 'self_regulation',
-    label_ar: 'التنظيم الذاتي والسلوك التكيفي والحسي',
-    domains: ['adaptive_behavior', 'sensory_integration'],
+    label_ar: 'التنظيم الذاتي/السلوك',
+    domains: [],
+    measurement_mode: 'frequency_duration',
     mastery_threshold_pct: null,
-    consecutive_sessions_required: 3,
+    consecutive_sessions_required: 5,
     min_interval_between_sessions_hours: 24,
     require_cold_probe_first_trial: false,
-    require_multiple_trainers: false,
-    require_multiple_settings: true,
-    min_distinct_settings: 2,
-    measurement_mode: 'frequency_duration',
+    require_multiple_trainers: true,
+    min_distinct_trainers: 2,
+    require_multiple_settings: false,
   },
+};
+
+export const SKILL_TYPE_CONFIGS = DEFAULT_SKILL_TYPE_CONFIGS;
+
+/** توجيه المجالات التنموية التسعة إلى نوع المهارة */
+export const SKILL_CATEGORY_BY_DEVELOPMENTAL_DOMAIN: Record<DevelopmentalDomainId, SkillCategoryId> = {
+  receptive_language: 'closed_cognitive',
+  expressive_language: 'closed_cognitive',
+  cognitive_pre_academic: 'closed_cognitive',
+  gross_motor: 'closed_cognitive',
+  fine_motor: 'closed_cognitive',
+  social_skills: 'social',
+  self_help: 'adaptive_self_help',
+  adaptive_behavior: 'self_regulation',
+  sensory_integration: 'self_regulation',
 };
 
 /** النوع الافتراضي عند غياب المجال: أكثر الأنواع صرامة */
@@ -125,10 +111,10 @@ export function skillCategoryForDomain(
   domain: DevelopmentalDomainId | string | undefined
 ): SkillCategoryId {
   if (!domain) return DEFAULT_SKILL_CATEGORY;
-  const hit = (Object.keys(SKILL_TYPE_CONFIGS) as SkillCategoryId[]).find((id) =>
-    SKILL_TYPE_CONFIGS[id].domains.includes(domain)
+  return (
+    SKILL_CATEGORY_BY_DEVELOPMENTAL_DOMAIN[domain as DevelopmentalDomainId] ??
+    DEFAULT_SKILL_CATEGORY
   );
-  return hit ?? DEFAULT_SKILL_CATEGORY;
 }
 
 export function skillConfigForDomain(
