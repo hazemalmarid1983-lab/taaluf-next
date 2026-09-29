@@ -195,7 +195,7 @@ export default function ConsultantScientificReviewForm() {
           className="mt-4 rounded-2xl border border-amber-200/80 bg-amber-50/80 px-4 py-3 text-sm leading-relaxed text-amber-950"
         >
           هذه الصفحة مخصصة للمراجعة العلمية ولا تمثل اعتمادًا علميًا أو تشخيصيًا
-          للمنصة. أي ملاحظة أو قرار نهائي يبقى خاضعًا لمراجعة المستشار العلمي.
+          للمنصة. أي ملاحظة أو قرار نهائي يبقى خاضعًا لمراجعة الخبير التربوي.
         </div>
 
         <div
@@ -473,7 +473,7 @@ export default function ConsultantScientificReviewForm() {
                         ) : (
                           <div className="mt-5">
                             <p className="mb-3 text-sm text-slate-600">
-                              نقطة تحتاج تعليق المستشار
+                              نقطة تحتاج تعليق الخبير التربوي
                             </p>
                             <Button
                               type="button"

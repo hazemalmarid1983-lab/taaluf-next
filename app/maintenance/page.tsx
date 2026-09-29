@@ -20,7 +20,7 @@ export default function MaintenancePage() {
           شكراً لصبركم.
         </p>
         <p className="mt-6 text-xs text-slate-400">
-          إذا كنت من فريق الإدارة أو المستشار العلمي، سجّل الدخول من{' '}
+          إذا كنت من فريق الإدارة أو الخبير التربوي، سجّل الدخول من{' '}
           <Link href="/login" className="font-semibold text-[#2D8B5A] underline">
             صفحة الدخول
           </Link>{' '}

@@ -1,5 +1,5 @@
 /**
- * اعتماد التقرير السريري الرسمي — تخزين محلي (قابل للربط بـ API لاحقاً).
+ * اعتماد التقرير التربوي التأهيلي الرسمي — تخزين محلي (قابل للربط بـ API لاحقاً).
  */
 
 export const CLINICAL_REPORT_APPROVAL_KEY = 'taaluf.clinicalReportApproval.v1';

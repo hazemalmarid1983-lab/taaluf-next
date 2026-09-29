@@ -19,7 +19,7 @@ import {
   type AssessmentScore,
 } from '@/types/taalof';
 
-/** ملخصات تقييمات الطفل من السجل السريري على الخادم */
+/** ملخصات تقييمات الطفل من السجل التربوي على الخادم */
 export async function GET(req: Request) {
   const auth = await requireApiPermission(['view_child_progress']);
   if (!auth.ok) return auth.response;

@@ -94,7 +94,7 @@ export type DomainIllustrationCoverage = {
   criteria: number;
   illustrated: number;
   missing: string[];
-  /** فجوة سريرية معلنة: مجال بلا بنود تقييم بعد */
+  /** فجوة تقييمية معلنة: مجال بلا بنود تقييم بعد */
   declaredGap: boolean;
 };
 

@@ -1,5 +1,5 @@
 /**
- * نماذج العقود والاتفاقيات السريرية والمالية — تآلف.
+ * نماذج العقود والاتفاقيات التربوية والمالية — تآلف.
  */
 
 export type ContractType = 'parent' | 'provider';
@@ -29,8 +29,8 @@ export const CONTRACT_TEMPLATE_VERSION = '2026.1';
 export const PARENT_AGREEMENT: ContractTemplate = {
   type: 'parent',
   version: CONTRACT_TEMPLATE_VERSION,
-  titleAr: 'اتفاقية ولي الأمر — الخدمات السريرية والمالية',
-  titleEn: 'Parent Agreement — Clinical & Financial Services',
+  titleAr: 'اتفاقية ولي الأمر — الخدمات التربوية والمالية',
+  titleEn: 'Parent Agreement — Educational & Financial Services',
   preambleAr:
     'يُبرم هذا العقد بين مركز تآلف للتأهيل والدعم النمائي («المركز») وولي أمر الطفل المسجّل، ويُعدّ قبولاً إلكترونياً أو ورقياً ملزماً قانونياً وفق قوانين سلطنة عمان.',
   preambleEn:
@@ -41,9 +41,9 @@ export const PARENT_AGREEMENT: ContractTemplate = {
       titleAr: 'بنود الخدمة',
       titleEn: 'Service terms',
       bodyAr:
-        'يلتزم المركز بتقديم: (1) التقييم النمائي الشامل، (2) إعداد وتتبع خطة تعليمية فردية (IEP)، (3) الغرفة الصفية المنزلية المساندة، (4) الجناح الحسي الثماني، (5) التقارير السريرية الدورية. يلتزم ولي الأمر بالمشاركة الفاعلة في الجلسات المنزلية وتطبيق التوصيات.',
+        'يلتزم المركز بتقديم: (1) التقييم النمائي الشامل، (2) إعداد وتتبع خطة تعليمية فردية (IEP)، (3) الغرفة الصفية المنزلية المساندة، (4) الجناح الحسي الثماني، (5) التقارير التربوية التأهيلية الدورية. يلتزم ولي الأمر بالمشاركة الفاعلة في الجلسات المنزلية وتطبيق التوصيات.',
       bodyEn:
-        'The Center provides: (1) comprehensive developmental assessment, (2) IEP planning and tracking, (3) virtual home co-classroom, (4) eight sensory rooms, (5) periodic clinical reports. The parent commits to active participation in home sessions and implementing recommendations.',
+        'The Center provides: (1) comprehensive developmental assessment, (2) IEP planning and tracking, (3) virtual home co-classroom, (4) eight sensory rooms, (5) periodic educational reports. The parent commits to active participation in home sessions and implementing recommendations.',
     },
     {
       id: 'financial',
@@ -65,12 +65,12 @@ export const PARENT_AGREEMENT: ContractTemplate = {
     },
     {
       id: 'clinical_consent',
-      titleAr: 'الموافقة السريرية',
-      titleEn: 'Clinical consent',
+      titleAr: 'الموافقة التربوية',
+      titleEn: 'Educational services consent',
       bodyAr:
-        'أُقرّ بموافقتي على: جمع بيانات التقييم والملاحظات السلوكية، مشاركة الملخص السريري مع الأخصائي المعتمد، واستخدام الذكاء الاصطناعي المساعد في توليد التقارير (مع مراجعة بشرية). البيانات تُخزَّن وفق سياسة الخصوصية المعتمدة.',
+        'أُقرّ بموافقتي على: جمع بيانات التقييم والملاحظات السلوكية، مشاركة الملخص التشخيصي مع الأخصائي المعتمد، واستخدام الذكاء الاصطناعي المساعد في توليد التقارير (مع مراجعة بشرية). البيانات تُخزَّن وفق سياسة الخصوصية المعتمدة.',
       bodyEn:
-        'I consent to: collecting assessment and behavioral data, sharing clinical summaries with assigned specialists, and AI-assisted report generation (with human review). Data is stored per the approved privacy policy.',
+        'I consent to: collecting assessment and behavioral data, sharing assessment summaries with assigned specialists, and AI-assisted report generation (with human review). Data is stored per the approved privacy policy.',
     },
     {
       id: 'sensory_rooms',
@@ -94,23 +94,23 @@ export const PROVIDER_AGREEMENT: ContractTemplate = {
   titleAr: 'اتفاقية مقدم الخدمة — أخصائي / معلم / طبيب',
   titleEn: 'Provider Agreement — Specialist / Teacher / Physician',
   preambleAr:
-    'يُبرم هذا العقد بين مركز تآلف ومقدم الخدمة السريرية المعتمد، ويحدّد التزامات التقديم والتوثيق والسرية وآلية المستحقات.',
+    'يُبرم هذا العقد بين مركز تآلف ومقدم الخدمة التربوية المعتمد، ويحدّد التزامات التقديم والتوثيق والسرية وآلية المستحقات.',
   preambleEn:
-    'This agreement is between Taaluf Center and an approved clinical service provider, defining delivery, documentation, confidentiality, and compensation.',
+    'This agreement is between Taaluf Center and an approved educational service provider, defining delivery, documentation, confidentiality, and compensation.',
   clauses: [
     {
       id: 'delivery',
       titleAr: 'تقديم الجلسات',
       titleEn: 'Session delivery',
       bodyAr:
-        'يلتزم مقدم الخدمة بتقديم الجلسات وفق المعايير السريرية المعتمدة، تسجيل المحاولات والتلميحات، وتحديث خطة الطفل الفردية بعد كل دورة. يُحظر تقديم تشخيص طبي نهائي دون اعتماد مشرف.',
+        'يلتزم مقدم الخدمة بتقديم الجلسات وفق المعايير التربوية المعتمدة، تسجيل المحاولات والتلميحات، وتحديث خطة الطفل الفردية بعد كل دورة. يُحظر تقديم تشخيص طبي نهائي دون اعتماد مشرف.',
       bodyEn:
-        'The provider delivers sessions per approved clinical standards, records trials and prompts, and updates the child IEP after each cycle. Final medical diagnosis requires supervisor approval.',
+        'The provider delivers sessions per approved educational standards, records trials and prompts, and updates the child IEP after each cycle. Final medical diagnosis requires supervisor approval.',
     },
     {
       id: 'documentation',
-      titleAr: 'شرط التوثيق السريري',
-      titleEn: 'Clinical documentation requirement',
+      titleAr: 'شرط التوثيق التربوي',
+      titleEn: 'Educational documentation requirement',
       bodyAr:
         'لا تُعتمد المستحقات المالية إلا بعد: (1) إكمال سجل الجلسة في المنصة، (2) توثيق 80% على الأقل من المحاولات، (3) اعتماد التقرير الدوري من المشرف العام. التأخر في التوثيق يُعلّق الصرف.',
       bodyEn:
@@ -130,9 +130,9 @@ export const PROVIDER_AGREEMENT: ContractTemplate = {
       titleAr: 'آلية احتساب المستحقات',
       titleEn: 'Compensation mechanism',
       bodyAr:
-        'تُحسب المستحقات إما بنسبة مئوية من قيمة الجلسة (60–75% حسب التخصص) أو مبلغ مقطوع لكل جلسة معتمدة. تُصرف المبالغ خلال 15 يوم عمل من اعتماد التوثيق السريري. يُخصم 10% عند عدم إكمال التوثيق في 48 ساعة.',
+        'تُحسب المستحقات إما بنسبة مئوية من قيمة الجلسة (60–75% حسب التخصص) أو مبلغ مقطوع لكل جلسة معتمدة. تُصرف المبالغ خلال 15 يوم عمل من اعتماد التوثيق التربوي. يُخصم 10% عند عدم إكمال التوثيق في 48 ساعة.',
       bodyEn:
-        'Compensation is either a percentage of session value (60–75% by specialty) or a flat fee per approved session. Payout within 15 business days of clinical documentation approval. 10% deduction if documentation incomplete within 48 hours.',
+        'Compensation is either a percentage of session value (60–75% by specialty) or a flat fee per approved session. Payout within 15 business days of educational documentation approval. 10% deduction if documentation incomplete within 48 hours.',
     },
   ],
   footerAr:

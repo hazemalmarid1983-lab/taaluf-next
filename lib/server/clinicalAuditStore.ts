@@ -1,5 +1,5 @@
 /**
- * سجل تدقيق سريري إلحاقي لكل طفل — لا توجد عملية حذف أو تعديل.
+ * سجل تدقيق تربوي إلحاقي لكل طفل — لا توجد عملية حذف أو تعديل.
  */
 
 import type { AuditDraft, ClinicalAuditEntry } from '@/lib/clinicalAudit';

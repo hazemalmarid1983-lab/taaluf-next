@@ -7,7 +7,7 @@ export async function POST(req: Request) {
   if ('response' in gate) return gate.response;
 
   if (gate.actor.role !== 'scientific_advisor') {
-    return hubForbidden('مسار الترحيب محصور بالمستشار العلمي');
+    return hubForbidden('مسار الترحيب محصور بالخبير التربوي');
   }
 
   try {

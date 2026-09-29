@@ -106,7 +106,7 @@ export default function AdminPage() {
           className="mt-5 flex items-center justify-between gap-3 rounded-2xl border border-emerald-100 bg-[#F0F9F4] px-4 py-3 text-sm"
         >
           <span className="block font-bold text-[#0b1f14]">
-              مركز تآلف السريري والبحثي
+              مركز تآلف التربوي والبحثي
             </span>
           <span className="font-semibold text-[#2D8B5A]">فتح ↗</span>
         </Link>

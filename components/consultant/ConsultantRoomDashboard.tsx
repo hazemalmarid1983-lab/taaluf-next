@@ -18,7 +18,7 @@ export default function ConsultantRoomDashboard() {
         data-tour-id="intro-hero"
         className="rounded-3xl border border-slate-200/80 bg-white/80 p-6 shadow-sm backdrop-blur-xl sm:p-8"
       >
-        <p className="text-xs font-bold text-[#2E7D8E]">غرفة المستشار العلمي</p>
+        <p className="text-xs font-bold text-[#2E7D8E]">غرفة الخبير التربوي</p>
         <h1 className="mt-1 text-2xl font-black text-slate-900 sm:text-3xl">
           الدكتور سامر
         </h1>
@@ -26,7 +26,7 @@ export default function ConsultantRoomDashboard() {
           مساحة مخصصة لمراجعة وتطوير المنهج العلمي والتربوي لمنصة تآلف.
         </p>
         <p className="mt-4 text-xs text-slate-400">
-          رئيس المجلس الاستشاري والسريري العام · نقطة الدخول الرسمية للمراجعة
+          رئيس المجلس الاستشاري والتربوي العام · نقطة الدخول الرسمية للمراجعة
           العلمية
         </p>
       </div>

@@ -12,7 +12,7 @@ import {
 } from '@/lib/clinicalHub';
 
 export const metadata = {
-  title: 'مركز تآلف السريري والبحثي',
+  title: 'مركز تآلف التربوي والبحثي',
   robots: { index: false, follow: false },
 };
 

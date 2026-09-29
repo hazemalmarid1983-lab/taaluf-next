@@ -1,5 +1,5 @@
 /**
- * دليل تعريف المنصة للمستشار العلمي — محتوى أقسام + اعتماد تدريجي.
+ * دليل تعريف المنصة للخبير التربوي — محتوى أقسام + اعتماد تدريجي.
  */
 
 export const ADVISOR_GUIDE_VERSION = '2026.1-platform-overview';
@@ -31,9 +31,9 @@ export const ADVISOR_PLATFORM_SECTIONS: readonly AdvisorGuideSection[] = [
     summaryAr: 'رسالة المنصة، أهدافها، والفئة المستهدفة.',
     summaryEn: 'Platform mission, goals, and target population.',
     bodyAr:
-      '**تآلف** منصة تقييم **تربوي وتأهيلي رقمي** مخصّصة للأطفال (٣–١٢ سنة) ذوي **اضطرابات طيف التوحد** و**الإعاقات النمائية**، مقرها سلطنة عُمان. الهدف: تحويل الملاحظات السلوكية القابلة للرصد إلى **ملامح واضحة** و**استراتيجيات قابلة للتطبيق** في المنزل والمدرسة. أنت — بصفة **رئيس المجلس الاستشاري والسريري العام** — المرجع العلمي الأول لاعتماد أدوات التقييم، مقاييس النمو، وخطط التدخل الفردية (IEP) داخل المنصة.',
+      '**تآلف** منصة تقييم **تربوي وتأهيلي رقمي** مخصّصة للأطفال (٣–١٢ سنة) ذوي **اضطرابات طيف التوحد** و**الإعاقات النمائية**، مقرها سلطنة عُمان. الهدف: تحويل الملاحظات السلوكية القابلة للرصد إلى **ملامح واضحة** و**استراتيجيات قابلة للتطبيق** في المنزل والمدرسة. أنت — بصفة **رئيس المجلس الاستشاري والتربوي العام** — المرجع العلمي الأول لاعتماد أدوات التقييم، مقاييس النمو، وخطط التدخل الفردية (IEP) داخل المنصة.',
     bodyEn:
-      '**Taaluf** is a **digital educational and rehabilitative assessment platform** for children (3–12) with **autism spectrum conditions** and **developmental disabilities**, based in the Sultanate of Oman. The goal is to turn observable behavioral indicators into **clear profiles** and **actionable strategies** for home and school. As **Chief Advisory & Clinical Council Chair**, you are the primary scientific authority for approving assessment tools, developmental metrics, and Individualized Education Plans (IEPs) on the Platform.',
+      '**Taaluf** is a **digital educational and rehabilitative assessment platform** for children (3–12) with **autism spectrum conditions** and **developmental disabilities**, based in the Sultanate of Oman. The goal is to turn observable behavioral indicators into **clear profiles** and **actionable strategies** for home and school. As **Chief Advisory & Educational Council Chair**, you are the primary scientific authority for approving assessment tools, developmental metrics, and Individualized Education Plans (IEPs) on the Platform.',
     methodologyAr: [
       'الاجتماع الأول في غرفة الاجتماعات — اقرأ محتوى المنصة كاملاً',
       'استخدم الدردشة ومرشد تآلف (بتوجيه الإدارة) لأي استفسار',
@@ -58,9 +58,9 @@ export const ADVISOR_PLATFORM_SECTIONS: readonly AdvisorGuideSection[] = [
     summaryAr: 'ما تفعله المنصة وما لا تفعله — حدود قانونية وتربوية.',
     summaryEn: 'What the Platform does and does not do — legal and educational boundaries.',
     bodyAr:
-      'المنصة **أداة توجيهية تربوية** مبنية على **مؤشرات سلوكية قابلة للملاحظة** (Rubric 0–3). **لا تُعدّ** تشخيصاً طبيّاً أو نفسياً سريرياً مستقلاً، ولا تُغني عن التقييم المتخصص المباشر. اللغة المعتمدة: «ملامح»، «مؤشرات»، «استراتيجيات» — وليس «تشخيص» أو «إحالة طبية». دورك **استشاري–بحثي** لتعزيز جودة المؤشرات والتوصيات، لا لإصدار تشخيصات ملزمة.',
+      'المنصة **أداة توجيهية تربوية** مبنية على **مؤشرات سلوكية قابلة للملاحظة** (Rubric 0–3). **لا تُعدّ** تشخيصاً طبيّاً أو نفسياً مستقلاً، ولا تُغني عن التقييم المتخصص المباشر. اللغة المعتمدة: «ملامح»، «مؤشرات»، «استراتيجيات» — وليس «تشخيص» أو «إحالة طبية». دورك **استشاري–بحثي** لتعزيز جودة المؤشرات والتوصيات، لا لإصدار تشخيصات ملزمة.',
     bodyEn:
-      'The Platform is an **educational guidance instrument** based on **observable behavioral indicators** (0–3 Rubric). It is **not** a standalone clinical medical or psychological diagnosis and does not replace specialist face-to-face assessment. Approved language: "profiles," "indicators," "strategies" — not "diagnosis" or "medical referral." Your role is **advisory–research** to enhance metric and recommendation quality, not to issue binding diagnoses.',
+      'The Platform is an **educational guidance instrument** based on **observable behavioral indicators** (0–3 Rubric). It is **not** a standalone medical or psychological diagnosis and does not replace specialist face-to-face assessment. Approved language: "profiles," "indicators," "strategies" — not "diagnosis" or "medical referral." Your role is **advisory–research** to enhance metric and recommendation quality, not to issue binding diagnoses.',
     methodologyAr: [
       'كل تقرير يتضمن إخلاء مسؤولية تربوي ثابت',
       'مرشد تآلف (Merhid) يلتزم بعدم التشخيص القاطع',
@@ -84,16 +84,16 @@ export const ADVISOR_PLATFORM_SECTIONS: readonly AdvisorGuideSection[] = [
     id: 'roles',
     titleAr: 'الأدوار والمسارات داخل المنصة',
     titleEn: 'Roles & pathways on the Platform',
-    summaryAr: 'ولي الأمر، المختص، الإدارة، والمستشار — من يفعل ماذا.',
+    summaryAr: 'ولي الأمر، المختص، الإدارة، والخبير التربوي — من يفعل ماذا.',
     summaryEn: 'Parent, specialist, admin, and advisor — who does what.',
     bodyAr:
-      '**ولي الأمر:** فرز مجاني → استبيان (٢٠ بنداً) → ألعاب → تقرير ومتابعة منزلية. **المختص/المعلّم:** تسجيل الطفل → تقييم شامل (٣٦ معياراً) → تقرير → أهداف SMART → متابعة. **الإدارة (حازم):** اعتماد المقترحات، النشر الإنتاجي، RBAC، لوحة الإدارة. **المستشار (أنت):** مراجعة علمية، اقتراح، اختبار في بيئات غير إنتاجية — **دون** اعتماد نهائي أو تعديل هيكلي.',
+      '**ولي الأمر:** فرز مجاني → استبيان (٢٠ بنداً) → ألعاب → تقرير ومتابعة منزلية. **المختص/المعلّم:** تسجيل الطفل → تقييم شامل (٣٦ معياراً) → تقرير → أهداف SMART → متابعة. **الإدارة (حازم):** اعتماد المقترحات، النشر الإنتاجي، RBAC، لوحة الإدارة. **الخبير التربوي (أنت):** مراجعة علمية، اقتراح، اختبار في بيئات غير إنتاجية — **دون** اعتماد نهائي أو تعديل هيكلي.',
     bodyEn:
       '**Parent:** free screening → questionnaire (20 items) → games → report and home follow-up. **Specialist/teacher:** register child → comprehensive assessment (36 criteria) → report → SMART goals → follow-up. **Admin (Hazem):** proposal approval, production deploy, RBAC, admin panel. **Advisor (you):** scientific review, propose, test in non-production environments — **without** final approval or structural changes.',
     methodologyAr: [
       'كل دور له بوابة دخول منفصلة في /login',
       'Middleware يوجّه كل دور لمساره الافتراضي',
-      'المستشار يُوجّه تلقائياً إلى /hub',
+      'الخبير التربوي يُوجّه تلقائياً إلى /hub',
     ],
     methodologyEn: [
       'Each role has a separate login portal at /login',
@@ -129,9 +129,9 @@ export const ADVISOR_PLATFORM_SECTIONS: readonly AdvisorGuideSection[] = [
       'Elevated result opens the comprehensive assessment path',
     ],
     advisorRoleAr:
-      'راجع منطق العتبات والأسئلة — اقترح تحسينات عبر تصنيف «تقييم سريري» في غرفة الاجتماعات.',
+      'راجع منطق العتبات والأسئلة — اقترح تحسينات عبر تصنيف «تقييم تربوي» في غرفة الاجتماعات.',
     advisorRoleEn:
-      'Review threshold logic and questions — propose improvements via "Clinical evaluation" in the meeting room.',
+      'Review threshold logic and questions — propose improvements via "Educational evaluation" in the meeting room.',
     explore: [
       {
         href: '/dashboard/screening',
@@ -310,9 +310,9 @@ export const ADVISOR_PLATFORM_SECTIONS: readonly AdvisorGuideSection[] = [
     summaryAr: 'Hub، غرفة الاجتماعات، الاعتماد، والخطوات العملية.',
     summaryEn: 'Hub, meeting room, approval, and practical steps.',
     bodyAr:
-      '**سير عملك (Async Mode):** (١) أكمل الاطلاع على أقسام هذا الدليل. (٢) **غرفة الاجتماعات:** قدّم مقترحات (تقييم سريري · ملاحظة بحثية · مقاييس حسية · نقاش) — تبدأ «قيد المراجعة». (٣) **حازم** يعتمد أو يرفض — لا نشر دون موافقته. (٤) اختبر في `/sensory-rooms` و`/dashboard` (وضع اختبار). **لا** تعديل هيكلي · **لا** `/admin`.',
+      '**سير عملك (Async Mode):** (١) أكمل الاطلاع على أقسام هذا الدليل. (٢) **غرفة الاجتماعات:** قدّم مقترحات (تقييم تربوي · ملاحظة بحثية · مقاييس حسية · نقاش) — تبدأ «قيد المراجعة». (٣) **حازم** يعتمد أو يرفض — لا نشر دون موافقته. (٤) اختبر في `/sensory-rooms` و`/dashboard` (وضع اختبار). **لا** تعديل هيكلي · **لا** `/admin`.',
     bodyEn:
-      '**Your workflow (Async Mode):** (1) Review every guide section. (2) **Meeting room:** submit proposals (clinical evaluation · research note · sensory metrics · discussion) — they start as "Pending." (3) **Hazem** approves or rejects — no deploy without his consent. (4) Test in `/sensory-rooms` and `/dashboard` (test mode). **No** structural changes · **No** `/admin`.',
+      '**Your workflow (Async Mode):** (1) Review every guide section. (2) **Meeting room:** submit proposals (educational evaluation · research note · sensory metrics · discussion) — they start as "Pending." (3) **Hazem** approves or rejects — no deploy without his consent. (4) Test in `/sensory-rooms` and `/dashboard` (test mode). **No** structural changes · **No** `/admin`.',
     methodologyAr: [
       'اقتراح → pending → اعتماد حازم → approved → قرار نشر',
       'الردود غير المتزامنة داخل كل منشور',
@@ -385,7 +385,7 @@ export const DEFAULT_HUB_MERHID_DIRECTIVES_AR = `توجيهات الإدارة �
 • ساعد د. سامر على صياغة ملاحظاته واقتراحاته في الدردشة — لا تعدّل المنصة مباشرة.
 • لا تقترح تعديلات هيكلية أو نشر إنتاج — ذلك محصور بحازم (الإدارة).
 • ممنوع التشخيص الطبي القاطع — لغة تربوية وتأهيلية فقط.
-• عند السؤال عن آلية عمل قسم، اربط الإجابة بمسار المستخدم (ولي أمر / مختص / مستشار).`;
+• عند السؤال عن آلية عمل قسم، اربط الإجابة بمسار المستخدم (ولي أمر / مختص / خبير تربوي).`;
 
 export const DEFAULT_HUB_MERHID_DIRECTIVES_EN = `Admin directives for Merhid in the first meeting:
 • Explain platform sections (screening, Canon 36, fusion, IEP, sensory rooms, home classroom) with scientific clarity.

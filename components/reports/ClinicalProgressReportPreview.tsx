@@ -14,7 +14,7 @@ import { assertContractSigned } from '@/lib/contracts/contractGate';
 const PRINT_BODY_CLASS = 'printing-clinical-report';
 
 /**
- * معاينة سريعة + طباعة/تحميل PDF للتقرير السريري الشامل.
+ * معاينة سريعة + طباعة/تحميل PDF للتقرير التربوي الشامل.
  */
 export default function ClinicalProgressReportPreview({
   open,
@@ -56,7 +56,7 @@ export default function ClinicalProgressReportPreview({
       return;
     }
     const originalTitle = document.title;
-    document.title = `تقرير_سريري_${report.meta.childName}`;
+    document.title = `تقرير_تربوي_تأهيلي_${report.meta.childName}`;
     document.body.classList.add(PRINT_BODY_CLASS);
 
     let restored = false;
@@ -87,7 +87,7 @@ export default function ClinicalProgressReportPreview({
       <div className="flex shrink-0 flex-wrap items-center justify-between gap-3 border-b border-white/10 bg-slate-900 px-4 py-3 text-white">
         <div>
           <strong className="text-sm font-black">
-            {isAr ? 'معاينة التقرير السريري' : 'Clinical report preview'}
+            {isAr ? 'معاينة التقرير التربوي التأهيلي' : 'Educational report preview'}
           </strong>
           {approved && (
             <span className="ms-2 rounded-full bg-emerald-500/20 px-2 py-0.5 text-[10px] font-bold text-emerald-300">

@@ -1,4 +1,4 @@
-/** أنواع غرفة المستشار العلمي — قابلة للتوسع لاحقاً */
+/** أنواع غرفة الخبير التربوي — قابلة للتوسع لاحقاً */
 
 export type ConsultantSectionStatus = 'ready' | 'partial' | 'preparing';
 

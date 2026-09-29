@@ -132,7 +132,7 @@ function DoctorSummaryInner() {
             type="submit"
             className="w-full rounded-xl bg-[#2E7D8E] py-2.5 text-sm font-bold text-white"
           >
-            فتح الملخص السريري
+            فتح الملخص التشخيصي
           </button>
         </form>
       </div>

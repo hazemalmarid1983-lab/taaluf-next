@@ -196,7 +196,7 @@ export default function GoalsPage() {
     });
     if (res.ok) {
       applyServerGoal(res.goal);
-      setMsg('تم حفظ الجلسة في السجل السريري');
+      setMsg('تم حفظ الجلسة في السجل التربوي');
     } else if (res.status === 0) {
       // تُرفع الجلسة في المزامنة التالية (session_entry)
       saveLocalGoal(updated);
@@ -270,7 +270,7 @@ export default function GoalsPage() {
     if (res.ok) {
       applyServerGoal(res.goal);
       setFbaGoalId(null);
-      setMsg('تم حفظ خطة التقييم الوظيفي في السجل السريري');
+      setMsg('تم حفظ خطة التقييم الوظيفي في السجل التربوي');
       return null;
     }
     if (res.errors?.length) return res.errors as FbaPlanError[];

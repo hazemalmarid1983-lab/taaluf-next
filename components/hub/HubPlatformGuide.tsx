@@ -180,7 +180,7 @@ export default function HubPlatformGuide({
 
                   <div className="mt-4 rounded-2xl border border-emerald-100 bg-emerald-50/50 p-4">
                     <p className="text-xs font-black uppercase tracking-wide text-emerald-800">
-                      {isAr ? 'دورك كمستشار' : 'Your advisory role'}
+                      {isAr ? 'دورك كخبير تربوي' : 'Your advisory role'}
                     </p>
                     <p className="mt-2 text-sm leading-7 text-emerald-950">
                       {isAr ? section.advisorRoleAr : section.advisorRoleEn}
@@ -243,7 +243,7 @@ export default function HubPlatformGuide({
                     <p className="mt-4 text-xs text-slate-500">
                       {ack?.acknowledged
                         ? isAr
-                          ? `اعتمدها المستشار: ${ack.signerName}`
+                          ? `اعتمدها الخبير التربوي: ${ack.signerName}`
                           : `Acknowledged by advisor: ${ack.signerName}`
                         : isAr
                           ? 'بانتظار اعتماد د. سامر'

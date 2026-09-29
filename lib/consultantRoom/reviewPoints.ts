@@ -2,7 +2,7 @@ import { CONSULTANT_REVIEW_PATH } from '@/lib/consultantRoom/access';
 import type { ScientificReviewPoint } from '@/lib/consultantRoom/types';
 
 /**
- * نقاط مراجعة علمية — أسئلة للنقاش مع المستشار.
+ * نقاط مراجعة علمية — أسئلة للنقاش مع الخبير التربوي.
  * لا تتضمن قرارات علمية — فقط استفسارات مفتوحة.
  */
 export const SCIENTIFIC_REVIEW_POINTS: readonly ScientificReviewPoint[] = [
@@ -26,7 +26,7 @@ export const SCIENTIFIC_REVIEW_POINTS: readonly ScientificReviewPoint[] = [
     id: 'c35-c40-review-scope',
     domainAr: 'التقييم الشامل',
     questionAr:
-      'هل تُدرج C35–C40 كاملة في بنك مراجعة المستشار، أم تُراجع أولاً كحزمة متخصصة ضمن السلوك والتكيف والحياة اليومية قبل بناء منهجيتها التفصيلية؟',
+      'هل تُدرج C35–C40 كاملة في بنك مراجعة الخبير التربوي، أم تُراجع أولاً كحزمة متخصصة ضمن السلوك والتكيف والحياة اليومية قبل بناء منهجيتها التفصيلية؟',
     relatedSectionId: 'scientific-review-form',
     relatedHref: CONSULTANT_REVIEW_PATH,
   },
@@ -74,7 +74,7 @@ export const SCIENTIFIC_REVIEW_POINTS: readonly ScientificReviewPoint[] = [
     id: 'merhid-boundaries',
     domainAr: 'الذكاء الاصطناعي',
     questionAr:
-      'ما الحدود العلمية والأخلاقية المناسبة لدور مرشد تآلف (Merhid) في دعم المستشار والمختص؟',
+      'ما الحدود العلمية والأخلاقية المناسبة لدور مرشد تآلف (Merhid) في دعم الخبير التربوي والمختص؟',
     relatedSectionId: 'ai-role',
     relatedHref: '/hub',
   },

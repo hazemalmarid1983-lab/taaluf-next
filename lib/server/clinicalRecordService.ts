@@ -1,5 +1,5 @@
 /**
- * عمليات السجل السريري على الخادم: تفويض + تعديل + تدقيق في مكان واحد.
+ * عمليات السجل التربوي على الخادم: تفويض + تعديل + تدقيق في مكان واحد.
  */
 
 import {
@@ -306,9 +306,9 @@ export async function recordAssessmentSummary(
   return { ok: true };
 }
 
-/** تسجيل الملاحظ الثاني: الأخصائي المسند أو المشرف العام — لا ولي الأمر ولا المستشار (قراءة فقط) */
+/** تسجيل الملاحظ الثاني: الأخصائي المسند أو المشرف العام — لا ولي الأمر ولا الخبير التربوي (قراءة فقط) */
 export const IOA_RECORD_PERMISSIONS: Permission[] = ['record_session_trials'];
-/** مراجعة الاتفاق: الفريق المهني بما فيه المستشار العلمي */
+/** مراجعة الاتفاق: الفريق المهني بما فيه الخبير التربوي */
 export const IOA_REVIEW_PERMISSIONS: Permission[] = ['manage_all_cases', 'manage_assigned_cases', 'review_clinical_content'];
 
 export async function recordIoa(

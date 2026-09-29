@@ -69,7 +69,7 @@ export const REVIEW_QUESTION_BANK: readonly ReviewQuestionDefinition[] = [
     id: 'merhid-boundaries',
     sectionId: 'safety-scientific-boundaries',
     question:
-      'ما الحدود العلمية والأخلاقية المناسبة لدور مرشد تآلف (Merhid) في دعم المستشار والمختص؟',
+      'ما الحدود العلمية والأخلاقية المناسبة لدور مرشد تآلف (Merhid) في دعم الخبير التربوي والمختص؟',
     responseType: 'review_note',
   },
   {
@@ -83,7 +83,7 @@ export const REVIEW_QUESTION_BANK: readonly ReviewQuestionDefinition[] = [
     id: 'GENERAL-04',
     sectionId: 'general-principles',
     question:
-      'هل يُمنع تحويل autoGoal تلقائيًا إلى Mastery دون قرار علمي صريح من المستشار؟',
+      'هل يُمنع تحويل autoGoal تلقائيًا إلى Mastery دون قرار علمي صريح من الخبير التربوي؟',
     responseType: 'yes_no',
   },
   {
@@ -111,7 +111,7 @@ export const REVIEW_QUESTION_BANK: readonly ReviewQuestionDefinition[] = [
     id: 'SAFETY-04',
     sectionId: 'safety-scientific-boundaries',
     question:
-      'هل تُسجَّل حقول القياس السلوكي المقترحة كوصفية غير تشخيصية ولا تُستخدم كمعيار سريري؟',
+      'هل تُسجَّل حقول القياس السلوكي المقترحة كوصفية غير تشخيصية ولا تُستخدم كمعيار تشخيصي؟',
     responseType: 'yes_no',
   },
   {

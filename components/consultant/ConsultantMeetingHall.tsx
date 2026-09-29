@@ -18,7 +18,7 @@ const PLACEHOLDER_SECTIONS = [
   {
     id: 'notes',
     titleAr: 'ملاحظات الجلسة',
-    descriptionAr: 'ملاحظات المستشار والإدارة أثناء الاجتماع — قيد الإعداد.',
+    descriptionAr: 'ملاحظات الخبير التربوي والإدارة أثناء الاجتماع — قيد الإعداد.',
   },
   {
     id: 'tasks',
@@ -38,7 +38,7 @@ export default function ConsultantMeetingHall() {
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-slate-600">
           واجهة أولية مهيأة للاجتماعات ومحاضر الجلسات والملاحظات. لا يوجد
           حالياً نظام فيديو أو دردشة مدمج — التعاون الحالي يتم عبر المركز
-          السريري والبحثي.
+          التربوي والبحثي.
         </p>
         <Link
           href={`${HUB_PATH}?focus=meeting`}
@@ -75,7 +75,7 @@ export default function ConsultantMeetingHall() {
         </CardTitle>
         <CardDescription className="mt-2 leading-relaxed">
           هذه المساحة مصممة للتوسع لاحقاً بإضافة: جدولة اجتماعات، محاضر
-          موثّقة، ملاحظات المستشار، ومهام المتابعة — دون إعادة بناء الغرفة.
+          موثّقة، ملاحظات الخبير التربوي، ومهام المتابعة — دون إعادة بناء الغرفة.
         </CardDescription>
       </Card>
     </div>

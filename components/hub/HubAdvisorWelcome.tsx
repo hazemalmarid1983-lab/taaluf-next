@@ -33,8 +33,8 @@ export default function HubAdvisorWelcome({
         <div className="mt-6 space-y-4 text-sm leading-8 text-slate-700">
           <p>
             {isAr
-              ? 'يسعدنا انضمامك كرئيس المجلس الاستشاري والسريري العام لمنصة تآلف — مساحة تعاون خاصة بينك وبين الإدارة لبناء وتطوير البنية العلمية والبحثية للمنصة.'
-              : 'We are glad to welcome you as Chief Advisory & Clinical Council Chair of Taaluf — a private collaboration space between you and Admin to develop the platform’s scientific and research foundation.'}
+              ? 'يسعدنا انضمامك كرئيس المجلس الاستشاري والتربوي العام لمنصة تآلف — مساحة تعاون خاصة بينك وبين الإدارة لبناء وتطوير البنية العلمية والبحثية للمنصة.'
+              : 'We are glad to welcome you as Chief Advisory & Educational Council Chair of Taaluf — a private collaboration space between you and Admin to develop the platform’s scientific and research foundation.'}
           </p>
           <ol className="list-inside list-decimal space-y-2 rounded-2xl bg-emerald-50/80 p-4 text-emerald-950">
             <li>

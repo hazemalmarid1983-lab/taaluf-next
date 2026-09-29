@@ -57,7 +57,7 @@ function persistMappedAssessment(
 }
 
 /**
- * نقطة دخول واحدة: تثبيت الطفل النشط + hydrate سريري من Airtable (تقييم + أهداف عند الحاجة).
+ * نقطة دخول واحدة: تثبيت الطفل النشط + hydrate تربوي من Airtable (تقييم + أهداف عند الحاجة).
  * لا يمنع اختيار الطفل عند فشل الشبكة أو غياب التقييم.
  */
 export async function hydrateActiveChildClinicalSlice(

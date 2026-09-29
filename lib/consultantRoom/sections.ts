@@ -7,7 +7,7 @@ import {
 } from '@/lib/consultantRoom/access';
 import type { ConsultantSection } from '@/lib/consultantRoom/types';
 
-/** أقسام غرفة المستشار — تُحدَّث تدريجياً دون إعادة بناء الصفحة */
+/** أقسام غرفة الخبير التربوي — تُحدَّث تدريجياً دون إعادة بناء الصفحة */
 export function getConsultantSections(): readonly ConsultantSection[] {
   const ldEnabled = isLearningDifficultiesEnabled();
 
@@ -23,7 +23,7 @@ export function getConsultantSections(): readonly ConsultantSection[] {
         { href: '/legal', labelAr: 'الوثائق القانونية' },
         { href: `${HUB_PATH}?focus=guide`, labelAr: 'دليل المنصة التفصيلي' },
       ],
-      sourceNote: 'مستند من دليل المنصة للمستشار (قسم الترحيب)',
+      sourceNote: 'مستند من دليل المنصة للخبير التربوي (قسم الترحيب)',
     },
     {
       id: 'scientific-review-form',
@@ -33,7 +33,7 @@ export function getConsultantSections(): readonly ConsultantSection[] {
       status: 'ready',
       href: CONSULTANT_REVIEW_PATH,
       sourceNote:
-        'draft — مراجعة C1–C34 · إجابات محفوظة محلياً على جهاز المستشار',
+        'draft — مراجعة C1–C34 · إجابات محفوظة محلياً على جهاز الخبير التربوي',
     },
     {
       id: 'training-methodology',
@@ -102,9 +102,9 @@ export function getConsultantSections(): readonly ConsultantSection[] {
       id: 'ai-role',
       titleAr: 'الذكاء الاصطناعي ودوره',
       descriptionAr:
-        'مرشد تآلف (Merhid)، حدود الاستخدام، ونطاق المساعدة للمستشار.',
+        'مرشد تآلف (Merhid)، حدود الاستخدام، ونطاق المساعدة للخبير التربوي.',
       status: 'preparing',
-      explore: [{ href: HUB_PATH, labelAr: 'Merhid في المركز السريري' }],
+      explore: [{ href: HUB_PATH, labelAr: 'Merhid في المركز التربوي' }],
       sourceNote: 'قيد الإعداد — المرجع الحالي: Merhid في Hub',
     },
     {
@@ -122,11 +122,11 @@ export function getConsultantSections(): readonly ConsultantSection[] {
       descriptionAr:
         'أولويات التطوير العلمي والتربوي للمرحلة القادمة.',
       status: 'preparing',
-      sourceNote: 'قيد الإعداد — تُبنى بالتعاون مع المستشار',
+      sourceNote: 'قيد الإعداد — تُبنى بالتعاون مع الخبير التربوي',
     },
     {
       id: 'advisor-notes',
-      titleAr: 'ملاحظات المستشار',
+      titleAr: 'ملاحظات الخبير التربوي',
       descriptionAr:
         'مساحة لتوثيق الملاحظات والقرارات الاستشارية — قيد البناء.',
       status: 'preparing',
@@ -162,7 +162,7 @@ export function getConsultantSections(): readonly ConsultantSection[] {
   ];
 }
 
-/** للاختبارات — التأكد من عدم عرض اتفاقية الشراكة في واجهة غرفة المستشار. */
+/** للاختبارات — التأكد من عدم عرض اتفاقية الشراكة في واجهة غرفة الخبير التربوي. */
 export function consultantHomeSectionsIncludeAgreementUi(): boolean {
   const serialized = JSON.stringify(getConsultantSections());
   return (

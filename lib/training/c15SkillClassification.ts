@@ -4,7 +4,7 @@
  * Target Skills (ماذا يقلد الطفل؟) → assignment.skillIds / Plan Builder فقط.
  * Progression Dimensions (كيف يُدرَّب؟) → metadata في الفصل؛ لا تدخل skillIds الجديدة.
  *
- * S4/S5 ليسا protocol منفذًا سريريًا في المحرك بعد.
+ * S4/S5 ليسا protocol منفذًا تربويًا في المحرك بعد.
  */
 
 export const C15_TARGET_SKILL_IDS = [

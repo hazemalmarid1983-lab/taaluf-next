@@ -54,12 +54,12 @@ export const SUBSCRIPTION_TIERS: SubscriptionTier[] = [
   },
   {
     id: 'clinical',
-    name: 'باقة الإشراف السريري',
+    name: 'باقة الإشراف التربوي',
     badge: 'المتقدمة',
     sourcePlanId: clinicalPrice?.id || 'parent_annual',
     features: [
       'كل مميزات الباقة الأساسية',
-      'حجز المواعيد مع المختص السريري',
+      'حجز المواعيد مع المختص التربوي',
       'المتابعة المباشرة من المشرف',
       'سجل تقدم الجلسات داخل الغرفة',
     ],

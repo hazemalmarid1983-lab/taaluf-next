@@ -7,7 +7,7 @@ import { CONSULTANT_ROOM_PATH } from '@/lib/consultantRoom/access';
 export const TRAINING_DASHBOARD_PATH = '/dashboard/training';
 
 export const TRAINING_BACK_TO_CONSULTANT_LABEL =
-  'العودة إلى المركز السريري والبحثي';
+  'العودة إلى المركز التربوي والبحثي';
 
 export const TRAINING_BACK_TO_TRAINING_LABEL = 'العودة إلى التدريب';
 

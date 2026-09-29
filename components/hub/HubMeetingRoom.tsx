@@ -81,8 +81,8 @@ export default function HubMeetingRoom({
         </h2>
         <p className="mt-1 text-sm text-slate-500">
           {isAr
-            ? 'بعد الاجتماع الأول — قدّم تقييمات سريرية أو ملاحظات بحثية أو مقاييس حسية.'
-            : 'After the first meeting — submit clinical evaluations, research notes, or sensory metrics.'}
+            ? 'بعد الاجتماع الأول — قدّم تقييمات تربوية أو ملاحظات بحثية أو مقاييس حسية.'
+            : 'After the first meeting — submit educational evaluations, research notes, or sensory metrics.'}
         </p>
 
         <form onSubmit={submit} className="mt-5 space-y-3">

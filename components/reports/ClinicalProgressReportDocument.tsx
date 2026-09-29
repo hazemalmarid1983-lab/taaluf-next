@@ -12,7 +12,7 @@ function formatReportDate(iso: string, isAr: boolean) {
 }
 
 /**
- * وثيقة التقرير السريري التراكمي — A4 جاهزة للطباعة والتحميل PDF.
+ * وثيقة التقرير التربوي التأهيلي التراكمي — A4 جاهزة للطباعة والتحميل PDF.
  */
 export default function ClinicalProgressReportDocument({
   report,
@@ -42,11 +42,11 @@ export default function ClinicalProgressReportDocument({
             </p>
             <h1 className="mt-2 text-xl font-black text-[#0b1f14] sm:text-2xl">
               {isAr
-                ? 'التقرير السريري التراكمي الشامل'
-                : 'Comprehensive Clinical Progress Report'}
+                ? 'التقرير التربوي التأهيلي التراكمي الشامل'
+                : 'Comprehensive Educational Progress Report'}
             </h1>
             <p className="mt-1 text-[11px] text-slate-500">
-              {isAr ? 'Clinical Progress Report · Print/PDF Ready' : 'Clinical Progress Report · Print/PDF Ready'}
+              {isAr ? 'Educational Progress Report · Print/PDF Ready' : 'Educational Progress Report · Print/PDF Ready'}
             </p>
             {approved && (
               <p className="mt-2 inline-block rounded-full border border-emerald-400 bg-emerald-50 px-3 py-1 text-[10px] font-black text-emerald-800">
@@ -66,7 +66,7 @@ export default function ClinicalProgressReportDocument({
         <InfoRow label={isAr ? 'اسم الطفل' : 'Child name'} value={meta.childName} />
         <InfoRow label={isAr ? 'العمر' : 'Age'} value={meta.ageLabel} />
         <InfoRow label={isAr ? 'ولي الأمر' : 'Parent'} value={meta.parentName} />
-        <InfoRow label={isAr ? 'المشرف السريري' : 'Clinical supervisor'} value={meta.specialistName} />
+        <InfoRow label={isAr ? 'المشرف التربوي' : 'Educational supervisor'} value={meta.specialistName} />
         <InfoRow
           label={isAr ? 'تاريخ إصدار التقرير' : 'Report date'}
           value={formatReportDate(meta.issuedAt, isAr)}
@@ -239,7 +239,7 @@ export default function ClinicalProgressReportDocument({
           </div>
           <div>
             <p className="text-[10px] font-bold text-slate-500">
-              {isAr ? 'ختم الإشراف السريري' : 'Clinical supervision stamp'}
+              {isAr ? 'ختم الإشراف التربوي' : 'Educational supervision stamp'}
             </p>
             <div className="mt-4 flex h-16 w-16 items-center justify-center rounded-full border-2 border-dashed border-slate-400 text-[9px] text-slate-400">
               {isAr ? 'ختم' : 'STAMP'}
@@ -248,8 +248,8 @@ export default function ClinicalProgressReportDocument({
         </div>
         <p className="mt-6 text-[9px] leading-5 text-slate-400">
           {isAr
-            ? 'هذا التقرير أداة توجيهية تأهيلية وتربوية — ليس تشخيصاً طبياً ولا يغني عن التقييم السريري المتخصص.'
-            : 'This report is an educational rehabilitation guide — not a medical diagnosis and not a substitute for specialist clinical evaluation.'}
+            ? 'هذا التقرير أداة توجيهية تأهيلية وتربوية — ليس تشخيصاً طبياً ولا يغني عن التقييم التشخيصي المتخصص.'
+            : 'This report is an educational rehabilitation guide — not a medical diagnosis and not a substitute for specialist diagnostic evaluation.'}
         </p>
       </footer>
     </article>

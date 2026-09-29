@@ -188,7 +188,7 @@ export type SensoryRoomShellProps = {
 
 const CHROME_HIDE_MS = 4200;
 
-/** غلاف غامر ملء الشاشة — واجهة نظيفة، تحكم ولي مخفي، ومقاييس سريرية. */
+/** غلاف غامر ملء الشاشة — واجهة نظيفة، تحكم ولي مخفي، ومقاييس تربوية. */
 export default function SensoryRoomShell({
   titleAr,
   titleEn,

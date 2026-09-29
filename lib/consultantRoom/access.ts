@@ -1,5 +1,5 @@
 /**
- * صلاحية الوصول إلى غرفة المستشار العلمي.
+ * صلاحية الوصول إلى غرفة الخبير التربوي.
  * تستخدم دور scientific_advisor الموجود — دون إنشاء دور جديد.
  */
 
@@ -9,7 +9,7 @@ export const CONSULTANT_ROOM_PATH = '/dashboard/consultant';
 export const CONSULTANT_MEETINGS_PATH = '/dashboard/consultant/meetings';
 export const CONSULTANT_REVIEW_PATH = '/dashboard/consultant/review';
 
-/** وجهة «المركز السريري والبحثي» في شريط تنقل المستشار (dashboard shell). */
+/** وجهة «المركز التربوي والبحثي» في شريط تنقل الخبير التربوي (dashboard shell). */
 export function advisorClinicalNavHref(): '/dashboard/consultant' {
   return CONSULTANT_ROOM_PATH;
 }

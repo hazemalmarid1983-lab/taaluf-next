@@ -22,7 +22,7 @@ import type { TrainingProgress } from '@/lib/training/types';
 
 /**
  * مؤشر تقدم أولي (Progress indicator) — وليس:
- * - قرار إتقان سريري
+ * - قرار إتقان تربوي
  * - Adaptive Engine
  * - تشخيص أو تصنيف طبي
  *

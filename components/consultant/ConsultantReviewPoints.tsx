@@ -10,7 +10,7 @@ export default function ConsultantReviewPoints() {
       <div>
         <h2 className="text-lg font-bold text-slate-900">نقاط المراجعة العلمية</h2>
         <p className="mt-1 text-sm text-slate-500">
-          استفسارات مفتوحة للنقاش مع المستشار — دون قرارات علمية مسبقة.
+          استفسارات مفتوحة للنقاش مع الخبير التربوي — دون قرارات علمية مسبقة.
         </p>
       </div>
       <div className="grid gap-3 sm:grid-cols-2">

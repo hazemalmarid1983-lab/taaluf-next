@@ -144,7 +144,7 @@ export const DOMAINS: string[] = TAALOF_CRITERIA.domains;
 export const DEVELOPMENTAL_DOMAINS: DevelopmentalDomain[] =
   TAALOF_CRITERIA.developmentalDomains;
 
-/** مجالات نمائية بلا بنود تقييم بعد — فجوة سريرية معلنة تحتاج بنوداً جديدة */
+/** مجالات نمائية بلا بنود تقييم بعد — فجوة تقييمية معلنة تحتاج بنوداً جديدة */
 export const DEVELOPMENTAL_DOMAIN_GAPS: readonly DevelopmentalDomainId[] = [
   'fine_motor',
 ];

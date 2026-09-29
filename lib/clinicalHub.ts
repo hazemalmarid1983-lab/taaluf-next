@@ -1,14 +1,14 @@
 /**
- * مركز تآلف السريري والبحثي — مساحة تعاون خاصة بين حازم (الإدارة)
- * ود. سامر (المستشار العلمي). ليست بوابة عامة للأخصائيين أو الأهل.
+ * مركز تآلف التربوي والبحثي — مساحة تعاون خاصة بين حازم (الإدارة)
+ * ود. سامر (الخبير التربوي). ليست بوابة عامة للأخصائيين أو الأهل.
  */
 
 import type { AdvisorGuideState } from '@/lib/advisorPlatformGuide';
 import type { HubReadState } from '@/lib/hubUnread';
 
 export const HUB_PATH = '/hub';
-export const HUB_NAME_AR = 'مركز تآلف السريري والبحثي';
-export const HUB_NAME_EN = 'Taaluf Clinical & Research Hub';
+export const HUB_NAME_AR = 'مركز تآلف التربوي والبحثي';
+export const HUB_NAME_EN = 'Taaluf Educational & Research Hub';
 export const HUB_ONBOARDING_POST_ID = 'hub_onboarding_meeting';
 
 export type HubSessionRole = 'admin' | 'scientific_advisor';
@@ -51,8 +51,8 @@ export const HUB_MEMBERS: Record<HubMemberId, HubMember> = {
     emails: ['samer@taaluf.local', 'advisor@taaluf.local'],
     nameAr: 'د. سامر',
     nameEn: 'Dr. Samer',
-    titleAr: 'رئيس المجلس الاستشاري والسريري العام',
-    titleEn: 'Chief Advisory & Clinical Council Chair',
+    titleAr: 'رئيس المجلس الاستشاري والتربوي العام',
+    titleEn: 'Chief Advisory & Educational Council Chair',
   },
 };
 
@@ -61,8 +61,8 @@ export const HUB_POST_CATEGORIES: Record<
   { ar: string; en: string }
 > = {
   clinical_evaluation: {
-    ar: 'تقييم سريري',
-    en: 'Clinical evaluation',
+    ar: 'تقييم تربوي',
+    en: 'Educational evaluation',
   },
   research_note: {
     ar: 'ملاحظة بحثية',

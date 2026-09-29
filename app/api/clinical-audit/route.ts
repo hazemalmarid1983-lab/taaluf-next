@@ -4,7 +4,7 @@ import { loadClinicalAudit } from '@/lib/server/clinicalAuditStore';
 import { getChildRecordForActor } from '@/lib/server/clinicalRecordService';
 import { assertChildId } from '@/lib/server/clinicalRecordStore';
 
-/** سجل التدقيق السريري لطفل — للفريق المهني فقط (لا يشمل ولي الأمر) */
+/** سجل التدقيق التربوي لطفل — للفريق المهني فقط (لا يشمل ولي الأمر) */
 export async function GET(req: Request) {
   const auth = await requireApiPermission([
     'manage_all_cases',

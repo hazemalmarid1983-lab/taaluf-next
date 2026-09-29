@@ -25,7 +25,7 @@ export default function ConsultantTrackNav({ name }: { name?: string | null }) {
       tourId: 'intro-review',
     },
     { href: CONSULTANT_MEETINGS_PATH, label: 'قاعة الاجتماعات' },
-    { href: advisorClinicalNavHref(), label: 'المركز السريري' },
+    { href: advisorClinicalNavHref(), label: 'المركز التربوي' },
   ];
 
   return (
@@ -39,7 +39,7 @@ export default function ConsultantTrackNav({ name }: { name?: string | null }) {
         <TaalufLogo href={CONSULTANT_ROOM_PATH} size="md" showSubtitle={false} />
         <div className="hidden min-w-0 sm:block">
           <p className="truncate text-xs font-bold text-slate-700">
-            غرفة المستشار العلمي
+            غرفة الخبير التربوي
           </p>
           <p className="truncate text-[10px] text-slate-500">
             الدكتور سامر

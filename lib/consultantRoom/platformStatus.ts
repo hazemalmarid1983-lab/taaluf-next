@@ -24,7 +24,7 @@ export function getPlatformStatusItems(): readonly PlatformStatusItem[] {
       labelAr: 'C35–C40 — معايير تشغيلية بانتظار المنهجية والمراجعة',
       level: 'needs_review',
       noteAr:
-        'مُعرّفة ضمن التقييم التشغيلي الحالي، لكنها لم تدخل بعد في المنهجية التفصيلية أو بنك مراجعة المستشار. يحتاج نطاق مراجعتها إلى قرار علمي.',
+        'مُعرّفة ضمن التقييم التشغيلي الحالي، لكنها لم تدخل بعد في المنهجية التفصيلية أو بنك مراجعة الخبير التربوي. يحتاج نطاق مراجعتها إلى قرار علمي.',
     },
     {
       id: 'fusion',
@@ -85,13 +85,13 @@ export function getPlatformStatusItems(): readonly PlatformStatusItem[] {
     },
     {
       id: 'clinical-hub',
-      labelAr: 'المركز السريري والبحثي (Hub)',
+      labelAr: 'المركز التربوي والبحثي (Hub)',
       level: 'implemented',
-      noteAr: 'تعاون المستشار والإدارة — مقترحات واعتماد',
+      noteAr: 'تعاون الخبير التربوي والإدارة — مقترحات واعتماد',
     },
     {
       id: 'consultant-room',
-      labelAr: 'غرفة المستشار العلمي',
+      labelAr: 'غرفة الخبير التربوي',
       level: 'in_progress',
       noteAr: 'هذه الغرفة — MVP قابل للتوسع',
     },

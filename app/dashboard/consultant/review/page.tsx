@@ -1,7 +1,7 @@
 import ConsultantScientificReviewForm from '@/components/consultant/ConsultantScientificReviewForm';
 
 export const metadata = {
-  title: 'المراجعة العلمية — غرفة المستشار',
+  title: 'المراجعة العلمية — غرفة الخبير التربوي',
   robots: { index: false, follow: false },
 };
 

@@ -21,7 +21,7 @@ describe('parent subscription tiers', () => {
     expect(subscriptionTierById('clinical')?.cta).toBe(CHILD_ROOM_CTA);
     expect(subscriptionTierById('child_room')?.features.join(' ')).toMatch(/التقييمات الأربعة/);
     expect(subscriptionTierById('free_screening')?.features.join(' ')).toMatch(/12/);
-    expect(subscriptionTierById('clinical')?.features.join(' ')).toMatch(/المختص السريري/);
+    expect(subscriptionTierById('clinical')?.features.join(' ')).toMatch(/المختص التربوي/);
   });
 
   it('reserves clinical booking for the advanced plan', () => {

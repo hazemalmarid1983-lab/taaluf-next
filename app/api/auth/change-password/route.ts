@@ -36,7 +36,7 @@ export async function POST(req: Request) {
       return NextResponse.json(
         {
           error: 'NOT_ALLOWED',
-          message: 'تغيير كلمة المرور متاح للإدارة والمستشار فقط',
+          message: 'تغيير كلمة المرور متاح للإدارة والخبير التربوي فقط',
         },
         { status: 403 }
       );

@@ -58,7 +58,7 @@ export default function SubscriptionTierCards({
         <h1 className="mt-2 text-2xl font-bold text-[#0b1f14]">اختيار مسار الطفل</h1>
         <p className="mt-2 text-sm leading-7 text-slate-500">
           الفرز المجاني يعرض مؤشر الجاهزية والتقرير الأولي. غرفة الطفل تُفتح بعد
-          التسجيل والتقييمات الأربعة. حجز المختص السريري ضمن الباقة المتقدمة.
+          التسجيل والتقييمات الأربعة. حجز المختص التربوي ضمن الباقة المتقدمة.
         </p>
         {fromScreening ? (
           <p className="mt-3 text-sm font-semibold text-[#2E7D8E]">

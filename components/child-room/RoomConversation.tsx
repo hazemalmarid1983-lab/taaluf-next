@@ -8,7 +8,7 @@ const ROLE_LABEL: Record<string, string> = {
   parent: 'ولي الأمر',
   teacher: 'المدرس',
   specialist: 'الأخصائي',
-  scientific_advisor: 'المستشار',
+  scientific_advisor: 'الخبير التربوي',
   admin: 'الإدارة',
 };
 

@@ -323,7 +323,7 @@ export function computeEngagementIndex(metrics: {
   return Math.round(clamp(score, 0, 100));
 }
 
-/** يبني مقاييس الجلسة السريرية الموحّدة */
+/** يبني مقاييس الجلسة التربوية الموحّدة */
 export function buildSensorySessionMetrics(input: {
   roomId: SensoryRoomId;
   childId: string;

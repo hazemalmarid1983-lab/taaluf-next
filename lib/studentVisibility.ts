@@ -9,7 +9,7 @@ function field(record: StudentLike, key: 'parent_email' | 'specialist_email'): s
 
 /**
  * سجلات الطلاب المرئية للمستخدم: ولي الأمر يرى أطفاله فقط (بالبريد)،
- * والأخصائي يرى المسندين إليه أو غير المسندين، والإدارة والمستشار الكل.
+ * والأخصائي يرى المسندين إليه أو غير المسندين، والإدارة والخبير التربوي الكل.
  */
 export function filterStudentsForActor<T extends StudentLike>(records: T[], actor: ClinicalActor): T[] {
   const email = (actor.email || '').trim().toLowerCase();

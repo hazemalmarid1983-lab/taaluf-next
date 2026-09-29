@@ -67,7 +67,7 @@ export default function StimulusSupportPanel({
         <p className="mt-2 text-xs leading-5 text-slate-600">
           محاولات دعم المثير تُسجَّل منفصلة عن تلقين الاستجابة ولا تُحتسب مستقلة لأغراض الإتقان.
           {summary.pendingSignoff
-            ? ` تصنيف المساعدات على مستويات المصفوفة (${DIGITAL_STIMULUS_SUPPORT_SUMMARY_AR}) بانتظار اعتماد الاستشاري السريري.`
+            ? ` تصنيف المساعدات على مستويات المصفوفة (${DIGITAL_STIMULUS_SUPPORT_SUMMARY_AR}) بانتظار اعتماد الخبير التربوي.`
             : null}
         </p>
       ) : null}

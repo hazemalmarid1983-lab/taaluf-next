@@ -7,7 +7,7 @@ import { authOptions } from '@/lib/auth';
 import { canAccessConsultantRoom } from '@/lib/consultantRoom/access';
 
 export const metadata = {
-  title: 'غرفة المستشار العلمي — تآلف',
+  title: 'غرفة الخبير التربوي — تآلف',
   robots: { index: false, follow: false },
 };
 

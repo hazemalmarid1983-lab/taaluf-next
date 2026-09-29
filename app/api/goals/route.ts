@@ -3,7 +3,7 @@ import { requireApiPermission, storeErrorResponse } from '@/lib/server/apiAuth';
 import { getChildRecordForActor, importGoals } from '@/lib/server/clinicalRecordService';
 import { assertChildId } from '@/lib/server/clinicalRecordStore';
 
-/** أهداف الطفل ومجسات التعميم من السجل السريري على الخادم */
+/** أهداف الطفل ومجسات التعميم من السجل التربوي على الخادم */
 export async function GET(req: Request) {
   const auth = await requireApiPermission(['view_child_progress']);
   if (!auth.ok) return auth.response;

@@ -1,6 +1,6 @@
 /**
- * نظام إدارة الصلاحيات والأدوار السريرية (RBAC).
- * يربط أدوار الجلسة (NextAuth) بالمصفوفة الأمنية السريرية.
+ * نظام إدارة الصلاحيات والأدوار التربوية (RBAC).
+ * يربط أدوار الجلسة (NextAuth) بالمصفوفة الأمنية التربوية.
  */
 
 export type ClinicalRole =
@@ -70,8 +70,8 @@ export const ROLE_LABELS: Record<
     emoji: '🛡️',
   },
   SCIENTIFIC_ADVISOR: {
-    ar: 'المستشار العلمي',
-    en: 'Scientific advisor',
+    ar: 'الخبير التربوي',
+    en: 'Educational expert',
     emoji: '🔬',
   },
   SPECIALIST: {
@@ -143,7 +143,7 @@ export const ROLE_PERMISSIONS: Record<ClinicalRole, readonly Permission[]> = {
 
 export const RBAC_MOCK_STORAGE_KEY = 'taaluf.rbac.mockRole.v1';
 
-/** تحويل دور NextAuth إلى الدور السريري */
+/** تحويل دور NextAuth إلى الدور التربوي */
 export function mapSessionRoleToClinical(sessionRole?: string | null): ClinicalRole {
   switch (sessionRole) {
     case 'admin':

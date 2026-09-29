@@ -103,9 +103,9 @@ export default function ClinicalBookingButton({
   if (!clinical) {
     return (
       <div className="mx-auto mt-4 max-w-lg rounded-2xl border border-slate-200 bg-white p-4 text-right">
-        <p className="text-sm font-bold text-slate-900">حجز المختص السريري</p>
+        <p className="text-sm font-bold text-slate-900">حجز المختص التربوي</p>
         <p className="mt-1 text-xs leading-5 text-slate-500">
-          حجز الموعد والمتابعة المباشرة ضمن باقة الإشراف السريري.
+          حجز الموعد والمتابعة المباشرة ضمن باقة الإشراف التربوي.
         </p>
         <Link href={PRICING_PATH} className="mt-3 inline-block text-sm font-bold text-[#2E7D8E] underline">
           عرض الباقة المتقدمة
@@ -121,7 +121,7 @@ export default function ClinicalBookingButton({
         onClick={() => setOpen(true)}
         className="w-full rounded-2xl bg-[#2E7D8E] px-4 py-4 text-base font-bold text-white shadow-sm"
       >
-        حجز موعد مع المختص السريري
+        حجز موعد مع المختص التربوي
       </button>
       {open ? (
         <div className="fixed inset-0 z-[80] flex items-end justify-center bg-slate-900/40 p-4 sm:items-center">
@@ -132,7 +132,7 @@ export default function ClinicalBookingButton({
             <h2 className="text-lg font-bold text-slate-900">مراجعة التقدم</h2>
             <p className="mt-2 text-sm leading-6 text-slate-600">
               طلب موعد استشاري لمراجعة تقدم {childName || 'الطفل'}. الطلب يصل إلى
-              سجل المواعيد ولا يُعد تشخيصاً ولا تأكيداً سريرياً.
+              سجل المواعيد ولا يُعد تشخيصاً ولا تأكيداً تشخيصياً.
             </p>
             {bookings.length > 0 ? (
               <ul className="mt-3 space-y-1 text-sm text-emerald-800">

@@ -108,7 +108,7 @@ export default function HubOnboardingMeeting({
           </p>
           <p className="mt-1 text-xs text-amber-800/80">
             {isAr
-              ? 'يُلزم المساعد الذكي بهذه التوجيهات عند مساعدة المستشار.'
+              ? 'يُلزم المساعد الذكي بهذه التوجيهات عند مساعدة الخبير التربوي.'
               : 'The AI assistant must follow these directives when helping the advisor.'}
           </p>
           <textarea
@@ -286,7 +286,7 @@ export default function HubOnboardingMeeting({
                 onClick={() => onToggleStatus(post.id, 'approved')}
                 className="rounded-xl border border-emerald-200 px-4 py-2 text-sm font-semibold text-emerald-800"
               >
-                {isAr ? 'تأكيد اطلاع المستشار' : 'Confirm advisor briefing'}
+                {isAr ? 'تأكيد اطلاع الخبير التربوي' : 'Confirm advisor briefing'}
               </button>
             )}
           </div>

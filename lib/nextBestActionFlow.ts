@@ -305,16 +305,16 @@ export function resolveHubNextAction(input: {
       emoji: '🔬',
       titleAr: 'اقترح تقييماً أو اختبر الغرف الحسية',
       titleEn: 'Propose an evaluation or test sensory rooms',
-      bodyAr: 'شارك ملاحظة سريرية أو مقترح مقياس في غرفة الاجتماعات، ثم جرّب بيئة الاختبار.',
-      bodyEn: 'Share a clinical note or metrics proposal, then try the test environment.',
+      bodyAr: 'شارك ملاحظة تربوية أو مقترح مقياس في غرفة الاجتماعات، ثم جرّب بيئة الاختبار.',
+      bodyEn: 'Share an educational note or metrics proposal, then try the test environment.',
       href: '/hub?focus=meeting',
       ctaAr: 'افتح غرفة الاجتماعات',
       ctaEn: 'Open meeting room',
       secondaryHref: '/sensory-rooms',
       secondaryCtaAr: 'بيئات الاختبار',
       secondaryCtaEn: 'Test environments',
-      stepLabelAr: 'مركز تآلف السريري والبحثي',
-      stepLabelEn: 'Clinical & research hub',
+      stepLabelAr: 'مركز تآلف التربوي والبحثي',
+      stepLabelEn: 'Educational & research hub',
     };
   }
 
@@ -323,15 +323,15 @@ export function resolveHubNextAction(input: {
     stage: 'operational',
     priority: 'medium',
     emoji: '🛡️',
-    titleAr: 'راجع المركز السريري والبحثي',
-    titleEn: 'Review the clinical & research hub',
+    titleAr: 'راجع المركز التربوي والبحثي',
+    titleEn: 'Review the educational & research hub',
     bodyAr: 'تابع غرفة الاجتماعات والمقترحات قيد المراجعة.',
     bodyEn: 'Continue in the meeting room and review pending proposals.',
     href: '/hub?focus=meeting',
     ctaAr: 'افتح غرفة الاجتماعات',
     ctaEn: 'Open meeting room',
-    stepLabelAr: 'المركز السريري والبحثي',
-    stepLabelEn: 'Clinical & research hub',
+    stepLabelAr: 'المركز التربوي والبحثي',
+    stepLabelEn: 'Educational & research hub',
   };
 }
 
@@ -353,8 +353,8 @@ export function resolveAdminNextAction(input?: {
       href: '/hub?focus=meeting',
       ctaAr: 'راجع المقترحات',
       ctaEn: 'Review proposals',
-      stepLabelAr: 'المركز السريري والبحثي',
-      stepLabelEn: 'Clinical & research hub',
+      stepLabelAr: 'المركز التربوي والبحثي',
+      stepLabelEn: 'Educational & research hub',
     };
   }
 

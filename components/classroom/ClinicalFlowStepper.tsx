@@ -7,7 +7,7 @@ import {
 } from '@/lib/adaptiveClinicalFlow';
 
 /**
- * شريط مسار الجلسة السريرية المتدرّج.
+ * شريط مسار الجلسة التربوية المتدرّج.
  */
 export default function ClinicalFlowStepper({
   currentStep,
@@ -22,7 +22,7 @@ export default function ClinicalFlowStepper({
 
   return (
     <nav
-      aria-label={isAr ? 'مسار الجلسة السريرية' : 'Clinical session flow'}
+      aria-label={isAr ? 'مسار الجلسة التربوية' : 'Educational session flow'}
       className={`rounded-2xl border border-slate-200/80 bg-white/90 px-3 py-2.5 shadow-sm backdrop-blur-sm ${className || ''}`}
     >
       <ol className="flex items-center justify-between gap-1">

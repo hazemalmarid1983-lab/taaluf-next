@@ -349,8 +349,8 @@ export default function StudentDetailPage() {
               className="flex h-12 items-center justify-center rounded-2xl bg-[#2E7D8E] px-5 text-sm font-black text-white shadow-md transition hover:bg-[#236372]"
             >
               {lang === 'ar'
-                ? '📄 استخراج التقرير السريري الشامل (PDF/طباعة)'
-                : '📄 Export full clinical report (PDF/print)'}
+                ? '📄 استخراج التقرير التربوي التأهيلي الشامل (PDF/طباعة)'
+                : '📄 Export full educational report (PDF/print)'}
             </button>
           </PermissionGate>
           <PermissionGate permission="export_clinical_report">

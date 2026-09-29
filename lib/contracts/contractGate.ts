@@ -34,8 +34,8 @@ const BLOCK_MESSAGES: Record<
     en: 'Please sign the parent agreement before starting home classroom training sessions.',
   },
   clinical_report_export: {
-    ar: 'يُرجى توقيع اتفاقية ولي الأمر قبل تنزيل أو طباعة التقرير السريري النهائي.',
-    en: 'Please sign the parent agreement before downloading or printing the final clinical report.',
+    ar: 'يُرجى توقيع اتفاقية ولي الأمر قبل تنزيل أو طباعة التقرير التربوي التأهيلي النهائي.',
+    en: 'Please sign the parent agreement before downloading or printing the final educational report.',
   },
   sensory_room_session: {
     ar: 'يُرجى توقيع اتفاقية ولي الأمر قبل استخدام الغرف الحسية.',

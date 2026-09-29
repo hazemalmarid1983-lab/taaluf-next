@@ -39,7 +39,7 @@ export async function POST(req: Request) {
     }
 
     if (gate.actor.role !== 'scientific_advisor') {
-      return hubForbidden('اعتماد أقسام الدليل محصور بالمستشار العلمي');
+      return hubForbidden('اعتماد أقسام الدليل محصور بالخبير التربوي');
     }
 
     const sectionId = String(body.sectionId || '');
