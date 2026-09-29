@@ -1,13 +1,15 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   buildSensoryMatchingMetrics,
   buildSessionRounds,
   CATEGORY_EMOJI,
   CATEGORY_LABEL_AR,
   isCorrectChoice,
+  MATCH_DRAG_THRESHOLD_PX,
   persistSensoryMatchingResult,
+  resolveCardRelease,
   SENSORY_MATCHING_TOTAL_ROUNDS,
   type MatchItem,
   type MatchRound,
@@ -138,15 +140,23 @@ export default function SensoryMatchingGame({
   const audioRef = useRef(new RewardAudio());
   const dropRef = useRef<HTMLDivElement | null>(null);
   const roundStartedAt = useRef(Date.now());
+  const sessionStartedAt = useRef(new Date().toISOString());
+  const dragStartRef = useRef<{ id: string; x: number; y: number } | null>(null);
   const completeRef = useRef(onComplete);
   completeRef.current = onComplete;
 
-  const rounds = useMemo(() => buildSessionRounds(), []);
+  // الجولات عشوائية — تُبنى في المتصفح فقط لتجنّب اختلاف HTML الخادم عن العميل
+  const [rounds, setRounds] = useState<MatchRound[]>([]);
+  useEffect(() => {
+    setRounds(buildSessionRounds());
+  }, []);
   const [index, setIndex] = useState(0);
   const [locked, setLocked] = useState(false);
   const [feedback, setFeedback] = useState<'ok' | 'miss' | null>(null);
   const [wrongId, setWrongId] = useState<string | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
+  const [dragOffset, setDragOffset] = useState({ dx: 0, dy: 0 });
+  const [overTarget, setOverTarget] = useState(false);
   const [done, setDone] = useState(false);
   const [metrics, setMetrics] = useState<SensoryMatchingMetrics | null>(null);
   const [endReason, setEndReason] = useState<SensorySessionEndReason>('complete');
@@ -185,6 +195,7 @@ export default function SensoryMatchingGame({
       firstTryCorrect: stats.current.firstTryCorrect,
       responseTimesMs: stats.current.responseTimesMs,
       roundsCompleted: reason === 'complete' ? rounds.length : index,
+      sessionStartedAt: sessionStartedAt.current,
     });
     persistSensoryMatchingResult(built, childId);
     setMetrics(built);
@@ -210,6 +221,7 @@ export default function SensoryMatchingGame({
     };
     setLiveRate(0);
     roundStartedAt.current = Date.now();
+    sessionStartedAt.current = new Date().toISOString();
     onReplayReset?.();
   };
 
@@ -256,26 +268,56 @@ export default function SensoryMatchingGame({
     );
   };
 
+  const isOverTarget = (clientX: number, clientY: number) => {
+    const drop = dropRef.current?.getBoundingClientRect();
+    if (!drop) return false;
+    return (
+      clientX >= drop.left &&
+      clientX <= drop.right &&
+      clientY >= drop.top &&
+      clientY <= drop.bottom
+    );
+  };
+
+  const resetDrag = () => {
+    dragStartRef.current = null;
+    setDragId(null);
+    setDragOffset({ dx: 0, dy: 0 });
+    setOverTarget(false);
+  };
+
+  const onChoicePointerDown = (event: React.PointerEvent, choice: MatchItem) => {
+    if (locked || done) return;
+    try {
+      event.currentTarget.setPointerCapture(event.pointerId);
+    } catch {
+      /* بعض الأجهزة لا تدعم الالتقاط */
+    }
+    dragStartRef.current = { id: choice.id, x: event.clientX, y: event.clientY };
+    setDragId(choice.id);
+    setDragOffset({ dx: 0, dy: 0 });
+  };
+
+  const onChoicePointerMove = (event: React.PointerEvent, choice: MatchItem) => {
+    const start = dragStartRef.current;
+    if (!start || start.id !== choice.id) return;
+    setDragOffset({ dx: event.clientX - start.x, dy: event.clientY - start.y });
+    setOverTarget(isOverTarget(event.clientX, event.clientY));
+  };
+
   const onChoicePointerUp = (event: React.PointerEvent, choice: MatchItem) => {
-    if (round?.mode === 'category') {
-      tryChoice(choice);
+    const start = dragStartRef.current;
+    if (!start || start.id !== choice.id) {
+      resetDrag();
       return;
     }
-    const drop = dropRef.current?.getBoundingClientRect();
-    const dragged = dragId === choice.id;
-    setDragId(null);
-    if (dragged && drop) {
-      const over =
-        event.clientX >= drop.left &&
-        event.clientX <= drop.right &&
-        event.clientY >= drop.top &&
-        event.clientY <= drop.bottom;
-      if (over) {
-        tryChoice(choice);
-        return;
-      }
-    }
-    tryChoice(choice);
+    const outcome = resolveCardRelease({
+      dx: event.clientX - start.x,
+      dy: event.clientY - start.y,
+      overTarget: isOverTarget(event.clientX, event.clientY),
+    });
+    resetDrag();
+    if (outcome === 'attempt') tryChoice(choice);
   };
 
   if (done && metrics) {
@@ -311,7 +353,9 @@ export default function SensoryMatchingGame({
   const actionHint =
     round.mode === 'identical'
       ? 'اضغط البطاقة أو اسحبها إلى الصورة أعلاه'
-      : 'اضغط على البطاقة الصحيحة من نفس المجموعة';
+      : 'اضغط على البطاقة الصحيحة أو اسحبها إلى المربع أعلاه';
+  const isDragging =
+    dragId !== null && Math.hypot(dragOffset.dx, dragOffset.dy) >= MATCH_DRAG_THRESHOLD_PX;
 
   return (
     <div className="mx-auto max-w-3xl px-3 pb-8 pt-2 sm:px-4" dir="rtl">
@@ -338,11 +382,13 @@ export default function SensoryMatchingGame({
       <p className="mb-3 text-center text-sm font-bold text-slate-600">{promptHint}</p>
 
       <div
-        ref={round.mode === 'identical' ? dropRef : undefined}
-        className={`mx-auto mb-6 flex max-w-xs flex-col items-center rounded-[32px] border-4 border-dashed p-2 ${
-          round.mode === 'identical' && dragId
-            ? 'border-[#2E7D8E] bg-teal-50'
-            : 'border-teal-200 bg-white/70'
+        ref={dropRef}
+        className={`mx-auto mb-6 flex max-w-xs flex-col items-center rounded-[32px] border-4 border-dashed p-2 transition ${
+          isDragging && overTarget
+            ? 'scale-[1.03] border-[#2E7D8E] bg-teal-100'
+            : isDragging
+              ? 'border-[#2E7D8E] bg-teal-50'
+              : 'border-teal-200 bg-white/70'
         }`}
       >
         {round.mode === 'identical' ? (
@@ -375,26 +421,38 @@ export default function SensoryMatchingGame({
       )}
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        {round.choices.map((choice) => (
+        {round.choices.map((choice) => {
+          const active = dragId === choice.id;
+          return (
           <button
             key={choice.id}
             type="button"
             disabled={locked}
-            onPointerDown={(event) => {
-              setDragId(choice.id);
-              event.currentTarget.setPointerCapture(event.pointerId);
-            }}
+            onPointerDown={(event) => onChoicePointerDown(event, choice)}
+            onPointerMove={(event) => onChoicePointerMove(event, choice)}
             onPointerUp={(event) => onChoicePointerUp(event, choice)}
-            onPointerCancel={() => setDragId(null)}
-            className="touch-none rounded-[28px] focus:outline-none focus-visible:ring-4 focus-visible:ring-teal-300 disabled:pointer-events-none"
+            onPointerCancel={resetDrag}
+            style={
+              active && isDragging
+                ? {
+                    transform: `translate(${dragOffset.dx}px, ${dragOffset.dy}px) scale(1.05)`,
+                    zIndex: 20,
+                    position: 'relative',
+                  }
+                : undefined
+            }
+            className={`touch-none select-none rounded-[28px] focus:outline-none focus-visible:ring-4 focus-visible:ring-teal-300 disabled:pointer-events-none ${
+              active && isDragging ? 'cursor-grabbing shadow-2xl' : 'transition-transform duration-200'
+            }`}
           >
             <PictureCard
               item={choice}
               dimmed={wrongId === choice.id}
-              glow={dragId === choice.id}
+              glow={active}
             />
           </button>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

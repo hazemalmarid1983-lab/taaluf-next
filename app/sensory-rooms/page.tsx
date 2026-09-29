@@ -82,12 +82,6 @@ export default function SensoryRoomsHubPage() {
           >
             {isAr ? '← مركز الألعاب' : '← Games hub'}
           </Link>
-          <Link
-            href="/sensory-room"
-            className="rounded-2xl border border-white/15 px-4 py-2 text-xs font-bold text-slate-300 hover:bg-white/10"
-          >
-            {isAr ? 'الغرفة الحسية الكلاسيكية' : 'Classic sensory room'}
-          </Link>
         </div>
       </div>
     </div>

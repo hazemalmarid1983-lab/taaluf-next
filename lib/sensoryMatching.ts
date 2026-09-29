@@ -40,7 +40,26 @@ export type SensoryMatchingMetrics = {
   levelReached: MatchMode;
   linkedCriteria: string[];
   scoring: 'child_playable';
+  /** بداية الجلسة (ISO) لحساب المدة الفعلية عند الحفظ */
+  sessionStartedAt?: string;
 };
+
+/** أقل مسافة سحب (px) لاعتبار الحركة سحباً وليست ضغطة */
+export const MATCH_DRAG_THRESHOLD_PX = 12;
+
+/**
+ * تفسير إفلات البطاقة: ضغطة قصيرة = محاولة، سحب فوق الصورة المطلوبة = محاولة،
+ * سحب وإفلات بعيداً = إلغاء (تعود البطاقة لمكانها دون احتساب خطأ).
+ */
+export function resolveCardRelease(params: {
+  dx: number;
+  dy: number;
+  overTarget: boolean;
+}): 'attempt' | 'cancel' {
+  const moved = Math.hypot(params.dx, params.dy) >= MATCH_DRAG_THRESHOLD_PX;
+  if (!moved) return 'attempt';
+  return params.overTarget ? 'attempt' : 'cancel';
+}
 
 export const CATEGORY_LABEL_AR: Record<MatchCategory, string> = {
   animals: 'حيوانات',
@@ -188,6 +207,7 @@ export function buildSensoryMatchingMetrics(params: {
   firstTryCorrect: number;
   responseTimesMs: number[];
   roundsCompleted: number;
+  sessionStartedAt?: string;
 }): SensoryMatchingMetrics {
   const avgResponseMs =
     params.responseTimesMs.length === 0
@@ -212,6 +232,7 @@ export function buildSensoryMatchingMetrics(params: {
       params.roundsCompleted > IDENTICAL_ROUND_COUNT ? 'category' : 'identical',
     linkedCriteria: [...SENSORY_MATCHING_CRITERIA],
     scoring: 'child_playable',
+    ...(params.sessionStartedAt ? { sessionStartedAt: params.sessionStartedAt } : {}),
   };
 }
 
@@ -277,7 +298,7 @@ export function persistSensoryMatchingResult(
       levelReached: metrics.levelReached === 'category' ? 2 : 1,
       metrics,
       trials: [],
-      startedAt: completedAt,
+      startedAt: metrics.sessionStartedAt ?? completedAt,
       endedAt: completedAt,
     };
     localStorage.setItem(

@@ -186,7 +186,7 @@ export const translations = {
     merhidHello: 'مرحباً، أنا {name}. {hint}',
     gamesHubTitle: 'مركز الأنشطة',
     gamesHubIntro:
-      'نشاطان تفاعليان: الغرفة الحسية (بحيرة الأسماك وأنبوب الفقاعات)، وسلسلة مطابقة الصور مع النطق العربي.',
+      'نشاطان تفاعليان: الغرف الحسية (الفقاعات، التنفس، الرمل، أصوات الحيوانات، الموجة، المطر، بحيرة الأسماك وغيرها)، وسلسلة مطابقة الصور مع النطق العربي.',
     tabDevelopmental: 'المسار النمائي',
     tabAcademic: 'المسار الأكاديمي',
     loginTitle: 'دخول تآلف',
@@ -685,7 +685,7 @@ export const translations = {
     merhidHello: 'Hello, I am {name}. {hint}',
     gamesHubTitle: 'Activity hub',
     gamesHubIntro:
-      'Two interactive activities: the sensory room (fish pond and bubble tube), and the picture-matching series with Arabic voice.',
+      'Two interactive activities: the sensory rooms (bubbles, breathing, sand, animal sounds, waves, rain, fish pond and more), and the picture-matching series with Arabic voice.',
     tabDevelopmental: 'Developmental pathway',
     tabAcademic: 'Academic pathway',
     loginTitle: 'Sign in to Taaluf',

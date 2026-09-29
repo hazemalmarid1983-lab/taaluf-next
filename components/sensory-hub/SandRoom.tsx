@@ -109,12 +109,12 @@ export default function SandRoom() {
       lastSoundRef.current = now;
       session.audio.current?.sandFriction(session.settings, force);
     }
-    session.bumpInteraction();
   };
 
   const onPointerDown = (e: React.PointerEvent<HTMLCanvasElement>) => {
     e.currentTarget.setPointerCapture(e.pointerId);
     holdsRef.current.set(e.pointerId, Date.now());
+    session.bumpInteraction();
     pushSand(e.nativeEvent.offsetX, e.nativeEvent.offsetY, 0.6, false);
   };
 

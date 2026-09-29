@@ -1,11 +1,12 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import SensoryRoomShell from '@/components/sensory-hub/SensoryRoomShell';
 import { useSensoryRoomSession } from '@/components/sensory-hub/useSensoryRoomSession';
 import { useLanguage } from '@/components/LanguageProvider';
 import { ANIMAL_CARDS } from '@/lib/sensoryHubAnimals';
 import { speakText, stopSpeaking } from '@/lib/sensoryAudio';
+import { animalSoundUrl } from '@/lib/sensoryHubAudio';
 
 export default function AnimalsSoundGardenRoom() {
   const { lang } = useLanguage();
@@ -13,16 +14,26 @@ export default function AnimalsSoundGardenRoom() {
   const session = useSensoryRoomSession('animals');
   const [activeId, setActiveId] = useState<string | null>(null);
 
-  const pick = (id: string) => {
+  const pickSeqRef = useRef(0);
+
+  useEffect(() => {
+    session.audio.current?.preload(
+      ANIMAL_CARDS.map((c) => animalSoundUrl(c.id)).filter((u): u is string => Boolean(u))
+    );
+  }, [session.audio]);
+
+  const pick = async (id: string) => {
     const card = ANIMAL_CARDS.find((c) => c.id === id)!;
+    const seq = ++pickSeqRef.current;
     setActiveId(id);
     session.bumpInteraction();
     stopSpeaking();
-    session.audio.current?.playAnimalSound(session.settings, id);
+    const seconds = (await session.audio.current?.playAnimalSound(session.settings, id)) ?? 0;
     window.setTimeout(() => {
+      if (seq !== pickSeqRef.current) return;
       speakText(isAr ? card.nameAr : card.nameEn, { lang, rate: 0.78 });
-    }, 480);
-    window.setTimeout(() => setActiveId(null), 700);
+      setActiveId(null);
+    }, Math.round(seconds * 1000) + 150);
   };
 
   return (
@@ -53,7 +64,7 @@ export default function AnimalsSoundGardenRoom() {
             <button
               key={card.id}
               type="button"
-              onClick={() => pick(card.id)}
+              onClick={() => void pick(card.id)}
               className={`flex min-h-[120px] flex-col items-center justify-center rounded-3xl border-2 p-4 transition active:scale-95 ${
                 activeId === card.id
                   ? 'scale-105 border-amber-300 bg-amber-400/20 shadow-lg shadow-amber-400/20'

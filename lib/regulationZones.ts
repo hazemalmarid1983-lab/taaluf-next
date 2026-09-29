@@ -165,6 +165,20 @@ export const BREATHING_COMPLETE_CUE = {
 export const BREATH_RESTING_SCALE = 0.55;
 export const BREATHING_CYCLES = 4;
 
+/**
+ * حجم الدائرة في لحظة معيّنة من الطور: ينتقل بنعومة (sine ease) من حجم نهاية الطور السابق
+ * إلى حجم نهاية الطور الحالي، فيكبر الشهيق ويصغر الزفير تدريجياً على مدى الطور كله.
+ */
+export function breathScaleAt(phaseIndex: number, elapsedSec: number): number {
+  const count = BREATHING_PHASES.length;
+  const index = ((phaseIndex % count) + count) % count;
+  const phase = BREATHING_PHASES[index];
+  const from = BREATHING_PHASES[(index - 1 + count) % count].scale;
+  const t = Math.max(0, Math.min(1, elapsedSec / phase.seconds));
+  const eased = 0.5 - Math.cos(Math.PI * t) / 2;
+  return from + (phase.scale - from) * eased;
+}
+
 export function breathCycleSeconds() {
   return BREATHING_PHASES.reduce((total, phase) => total + phase.seconds, 0);
 }

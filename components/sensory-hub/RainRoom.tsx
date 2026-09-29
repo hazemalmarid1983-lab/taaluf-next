@@ -137,9 +137,9 @@ export default function RainRoom() {
       ripplesRef.current = ripplesRef.current.filter((r) => r.life > 0);
 
       const now = Date.now();
-      if (now - lastDropSoundRef.current > 180 && intensity > 0.3) {
+      if (now - lastDropSoundRef.current > 250) {
         lastDropSoundRef.current = now;
-        session.audio.current?.rainDrop(session.settings, intensity);
+        session.audio.current?.setAmbientIntensity(0.45 + intensity * 0.85);
       }
 
       requestAnimationFrame(draw);
@@ -151,13 +151,20 @@ export default function RainRoom() {
     };
   }, [session.settings, micOn]);
 
-  const addRipple = (x: number, y: number) => {
+  const lastRippleSoundRef = useRef(0);
+
+  const addRipple = (x: number, y: number, isNewTouch: boolean) => {
     ripplesRef.current.push({ x, y, r: 4, life: 1 });
-    touchIntensityRef.current = Math.min(1, touchIntensityRef.current + 0.08);
-    session.bumpInteraction();
+    touchIntensityRef.current = Math.min(1, touchIntensityRef.current + (isNewTouch ? 0.12 : 0.03));
+    if (isNewTouch) session.bumpInteraction();
+    const now = Date.now();
+    if (isNewTouch || now - lastRippleSoundRef.current > 160) {
+      lastRippleSoundRef.current = now;
+      session.audio.current?.droplet(session.settings);
+    }
     window.setTimeout(() => {
-      touchIntensityRef.current = Math.max(0.2, touchIntensityRef.current - 0.05);
-    }, 800);
+      touchIntensityRef.current = Math.max(0.2, touchIntensityRef.current - (isNewTouch ? 0.08 : 0.02));
+    }, 1500);
   };
 
   return (
@@ -186,9 +193,9 @@ export default function RainRoom() {
         ref={canvasRef}
         className="absolute inset-0 h-full w-full touch-none"
         style={{ touchAction: 'none' }}
-        onPointerDown={(e) => addRipple(e.nativeEvent.offsetX, e.nativeEvent.offsetY)}
+        onPointerDown={(e) => addRipple(e.nativeEvent.offsetX, e.nativeEvent.offsetY, true)}
         onPointerMove={(e) => {
-          if (e.buttons > 0) addRipple(e.nativeEvent.offsetX, e.nativeEvent.offsetY);
+          if (e.buttons > 0) addRipple(e.nativeEvent.offsetX, e.nativeEvent.offsetY, false);
         }}
       />
       <RainMicButton micOn={micOn} isAr={isAr} onToggle={() => void toggleMic()} />

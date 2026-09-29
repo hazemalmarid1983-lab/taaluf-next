@@ -8,6 +8,7 @@ import {
   SENSORY_FOCUS_EXIT_HOLD_MS,
 } from '@/lib/sensoryFocusMode';
 import type { SensorySessionEndReason } from '@/lib/sensorySessionEnd';
+import { burstVx, randomCruise, relaxVx } from '@/lib/sensoryFish';
 import {
   persistSensorySanctuaryResult,
   sensoryAccuracyRate,
@@ -49,6 +50,7 @@ interface Fish {
   y: number;
   vx: number;
   vy: number;
+  cruise: number;
   size: number;
   hue: number;
   phase: number;
@@ -365,11 +367,13 @@ export default function SensorySanctuary({
     const fishCount = reducedMotion ? 4 : 9;
     for (let i = 0; i < fishCount; i += 1) {
       const dir = Math.random() > 0.5 ? 1 : -1;
+      const cruise = randomCruise();
       fish.push({
         x: Math.random() * width,
         y: height * (0.25 + Math.random() * 0.55),
-        vx: dir * (0.55 + Math.random() * 0.9),
+        vx: dir * cruise,
         vy: 0,
+        cruise,
         size: 14 + Math.random() * 16,
         hue: 25 + Math.random() * 50,
         phase: Math.random() * Math.PI * 2,
@@ -502,10 +506,11 @@ export default function SensorySanctuary({
         f.dart -= 1;
         if (f.dart < 0 && !reducedMotion) {
           f.vy = -2.8 - Math.random() * 1.6;
-          f.vx *= 1.8;
+          f.vx = burstVx(f.vx, f.cruise);
           addRipple(f.x, f.y, 190);
           f.dart = 180 + Math.random() * 320;
         }
+        f.vx = relaxVx(f.vx, f.cruise);
         f.phase += 0.08;
         f.x += f.vx * (reducedMotion ? 0.45 : 1);
         f.y += f.vy + Math.sin(f.phase) * 0.35;
@@ -612,7 +617,7 @@ export default function SensorySanctuary({
             const dy = f.y - y;
             if (Math.hypot(dx, dy) < f.size * 1.8) {
               hit = true;
-              f.vx = (Math.random() > 0.5 ? 1 : -1) * (2.4 + Math.random());
+              f.vx = burstVx(f.vx, f.cruise, dx >= 0 ? 1 : -1);
               f.vy = -3.2;
               f.dart = 90 + Math.random() * 160;
               burstSparks(f.x, f.y, f.hue);

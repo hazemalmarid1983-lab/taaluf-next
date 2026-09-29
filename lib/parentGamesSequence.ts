@@ -21,8 +21,7 @@ export const PARENT_GAMES_SEQUENCE: ParentGameStep[] = [
     href: '/sensory-room',
     titleAr: 'الغرفة الحسية',
     titleEn: 'Sensory room',
-    durationSec: 90,
-    maxInteractions: 40,
+    durationSec: 180,
   },
   {
     id: 'sensory_matching',

@@ -20,7 +20,7 @@ type SensorySessionResultsPanelProps = {
   variant?: 'dark' | 'light';
 };
 
-/** شاشة نتائج الجلسة — إعادة اللعب أو الخروج النهائي */
+/** شاشة نتائج الجلسة — إعادة اللعب أو العودة إلى قائمة الأنشطة */
 export default function SensorySessionResultsPanel({
   isAr,
   titleAr,
@@ -61,8 +61,8 @@ export default function SensorySessionResultsPanel({
         </p>
         <p className={`mt-2 text-[11px] ${dark ? 'text-white/60' : 'text-slate-500'}`}>
           {isAr
-            ? 'حُفظت نتيجة هذه الجولة. اختر إعادة اللعب أو الخروج النهائي من المجموعة.'
-            : 'This round was saved. Replay or exit the full activity group.'}
+            ? 'حُفظت نتيجة هذه الجولة. اختر إعادة اللعب أو العودة إلى قائمة الأنشطة لاختيار نشاط آخر.'
+            : 'This round was saved. Play again or go back to the activities list to pick another one.'}
         </p>
 
         <div className="mt-5 grid grid-cols-2 gap-2 sm:grid-cols-3">
@@ -105,7 +105,7 @@ export default function SensorySessionResultsPanel({
                 : 'border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100'
             }`}
           >
-            {isAr ? 'الخروج النهائي' : 'Final exit'}
+            {isAr ? 'العودة إلى الأنشطة' : 'Back to activities'}
           </button>
         </div>
       </div>

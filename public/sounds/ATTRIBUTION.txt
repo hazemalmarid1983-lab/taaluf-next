@@ -1,0 +1,11 @@
+Audio sources (Wikimedia Commons). Files were trimmed, loudness-normalized and converted to MP3.
+
+animals/cat.mp3    "Meow of a pleading cat.oga" by Heismark — Public domain
+animals/dog.mp3    "Barking of a dog.ogg" by Amada44 — CC BY-SA 3.0 (https://creativecommons.org/licenses/by-sa/3.0/)
+animals/bird.mp3   "House Sparrows chirping.ogg" by QWerk — CC BY-SA 3.0 (https://creativecommons.org/licenses/by-sa/3.0/)
+animals/cow.mp3    "Cow in Vezo.ogg" by Gasybeaugosse2020 — CC0
+animals/sheep.mp3  "Sheep bleating.ogg" by earthcalling — Public domain
+animals/lion.mp3   "Lion raring-sound1TamilNadu178.ogg" by த*உழவன் — Public domain
+ambient/rain.mp3   "Listening to Raindrops (1035382 - heavy loop).mp3" by NASA — Public domain
+
+Source pages: https://commons.wikimedia.org/wiki/File:<original file name>

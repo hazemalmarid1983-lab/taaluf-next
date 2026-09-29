@@ -11,7 +11,10 @@ import {
   skipOptionalGames,
 } from '@/lib/parentJourney';
 import { SENSORY_MATCHING_PAGE } from '@/lib/sensoryMatching';
-import { startParentGamesSequenceAtHref } from '@/lib/parentGamesSequence';
+import {
+  clearParentGamesSequence,
+  startParentGamesSequenceAtHref,
+} from '@/lib/parentGamesSequence';
 
 export default function GamesHubPage() {
   const { t, dir } = useLanguage();
@@ -48,39 +51,23 @@ export default function GamesHubPage() {
       </div>
 
       <article className="overflow-hidden rounded-3xl border-2 border-indigo-400/80 bg-gradient-to-br from-indigo-950 via-slate-900 to-cyan-950 p-6 text-white shadow-lg">
-        <p className="text-xs font-semibold text-indigo-200">جديد · جناح حسي</p>
+        <p className="text-xs font-semibold text-indigo-200">جناح حسي</p>
         <h2 className="mt-1 text-2xl font-black">الغرف الحسية والتنظيم الانفعالي</h2>
-        <p className="mt-1 text-sm font-semibold text-indigo-100">
-          🫧 فقاعات · 🌌 نجوم وتنفس · ✨ رسم ضوئي
+        <p className="mt-1 text-sm font-semibold leading-7 text-indigo-100">
+          🫧 فقاعات · 🌌 نجوم وتنفس · ✨ رسم ضوئي · 🏖️ رمل · 🦁 أصوات الحيوانات ·
+          ⛵ موجة وقارب · 🌧️ مطر · 🪞 مرآة · 🐟 بحيرة الأسماك
         </p>
         <p className="mt-3 text-sm leading-7 text-white/85">
-          ثلاث غرف ملء الشاشة مع حماية حسية، مؤقت جلسة، وتسجيل مؤشر الهدوء
-          للربط بملف الطفل.
+          غرف ملء الشاشة مع حماية حسية ومؤقت جلسة وتسجيل مؤشر الهدوء للربط بملف
+          الطفل. بعد انتهاء أي نشاط يعود الطفل لقائمة الغرف ليختار نشاطاً آخر —
+          ليست علاجاً طبياً.
         </p>
         <Link
           href="/sensory-rooms"
+          onClick={() => clearParentGamesSequence()}
           className="mt-5 inline-block rounded-xl bg-white px-5 py-2.5 text-sm font-bold text-indigo-900"
         >
-          ادخل الجناح الحسي
-        </Link>
-      </article>
-
-      <article className="overflow-hidden rounded-3xl border-2 border-[#2E7D8E] bg-gradient-to-br from-[#042F2E] via-[#0E7490] to-[#164E63] p-6 text-white shadow-lg">
-        <p className="text-xs font-semibold text-teal-100">النشاط الحسي التفاعلي</p>
-        <h2 className="mt-1 text-2xl font-black">الغرفة الحسية</h2>
-        <p className="mt-1 text-sm font-semibold text-teal-100">
-          🐟 بحيرة الأسماك · 🫧 أنبوب الفقاعات
-        </p>
-        <p className="mt-3 text-sm leading-7 text-white/85">
-          لمس السمكة للصيد، وتموجات الماء في الفراغ. هدير ماء هادئ ومؤثرات بصرية
-          مهدئة — ليست علاجاً طبياً.
-        </p>
-        <Link
-          href="/sensory-room"
-          onClick={() => startParentGamesSequenceAtHref('/sensory-room')}
-          className="mt-5 inline-block rounded-xl bg-white px-5 py-2.5 text-sm font-bold text-[#0E7490]"
-        >
-          ادخل الغرفة الحسية
+          ادخل الغرف الحسية
         </Link>
       </article>
 

@@ -1,5 +1,7 @@
 /**
  * Web Audio API للجناح الحسي — أصوات نقية بحد أقصى آمن للصوت.
+ * أصوات الحيوانات والمطر تسجيلات حقيقية من public/sounds (المصادر في ATTRIBUTION.txt)،
+ * مع توليد صناعي احتياطي إذا تعذّر تحميل الملف.
  */
 
 import {
@@ -8,6 +10,25 @@ import {
   type SensoryRoomId,
 } from './sensoryHub';
 import { playNaturalAnimalSound } from './animalSoundSynth';
+
+export const ANIMAL_SOUND_IDS = ['cat', 'dog', 'bird', 'cow', 'sheep', 'lion'] as const;
+
+export function animalSoundUrl(animalId: string): string | null {
+  return (ANIMAL_SOUND_IDS as readonly string[]).includes(animalId)
+    ? `/sounds/animals/${animalId}.mp3`
+    : null;
+}
+
+const AMBIENT_SAMPLES: Partial<Record<SensoryRoomId, string>> = {
+  rain: '/sounds/ambient/rain.mp3',
+};
+
+/** مستوى الصوت المحيطي لكل غرفة نسبةً لمستوى الصوت العام */
+const AMBIENT_LEVEL: Partial<Record<SensoryRoomId, number>> = {
+  rain: 0.9,
+  waves: 0.7,
+};
+const DEFAULT_AMBIENT_LEVEL = 0.48;
 
 function audioContextClass() {
   if (typeof window === 'undefined') return null;
@@ -24,6 +45,10 @@ export class SensoryHubAudio {
   private ambientGain: GainNode | null = null;
   private ambientNodes: AudioScheduledSourceNode[] = [];
   private ambientRoom: SensoryRoomId | null = null;
+  private ambientIntensity = 1;
+  private volume = 0.5;
+  private samples = new Map<string, Promise<AudioBuffer | null>>();
+  private animalSrc: AudioBufferSourceNode | null = null;
 
   private ensure() {
     if (this.ctx) return;
@@ -44,13 +69,54 @@ export class SensoryHubAudio {
     return this.ctx;
   }
 
+  private loadSample(url: string): Promise<AudioBuffer | null> {
+    const cached = this.samples.get(url);
+    if (cached) return cached;
+    const pending = (async () => {
+      this.ensure();
+      if (!this.ctx) return null;
+      try {
+        const res = await fetch(url);
+        if (!res.ok) return null;
+        const data = await res.arrayBuffer();
+        return await this.ctx.decodeAudioData(data);
+      } catch {
+        return null;
+      }
+    })();
+    this.samples.set(url, pending);
+    return pending;
+  }
+
+  /** تحميل مسبق حتى يُسمع الصوت فور اللمس */
+  preload(urls: string[]) {
+    for (const url of urls) void this.loadSample(url);
+  }
+
+  private ambientTarget() {
+    const level = (this.ambientRoom && AMBIENT_LEVEL[this.ambientRoom]) ?? DEFAULT_AMBIENT_LEVEL;
+    return this.volume * level * this.ambientIntensity;
+  }
+
+  private applyAmbientGain(smooth = true) {
+    if (!this.ambientGain || !this.ctx) return;
+    const target = this.ambientTarget();
+    if (smooth) this.ambientGain.gain.setTargetAtTime(target, this.ctx.currentTime, 0.4);
+    else this.ambientGain.gain.value = target;
+  }
+
   setVolume(settings: SensoryHubSettings) {
     this.ensure();
     if (!this.master) return;
-    this.master.gain.value = effectiveVolume(settings);
-    if (this.ambientGain) {
-      this.ambientGain.gain.value = effectiveVolume(settings) * 0.48;
-    }
+    this.volume = effectiveVolume(settings);
+    this.master.gain.value = this.volume;
+    this.applyAmbientGain(false);
+  }
+
+  /** 0–1 — شدة الصوت المحيطي (مثلاً مطر أغزر مع اللمس) */
+  setAmbientIntensity(level: number) {
+    this.ambientIntensity = Math.max(0.15, Math.min(1.4, level));
+    this.applyAmbientGain(true);
   }
 
   stopAmbient() {
@@ -71,9 +137,9 @@ export class SensoryHubAudio {
     this.ambientRoom = null;
   }
 
-  /** صوت محيطي ناعم — مخصّص لكل غرفة */
+  /** صوت محيطي — تسجيل حقيقي متكرر إن توفّر، وإلا طبقات مولّدة */
   startAmbient(roomId: SensoryRoomId, settings: SensoryHubSettings) {
-    void this.resume().then(() => {
+    void this.resume().then(async () => {
       if (this.ambientRoom === roomId) {
         this.setVolume(settings);
         return;
@@ -82,12 +148,31 @@ export class SensoryHubAudio {
       this.ensure();
       if (!this.ctx || !this.master) return;
       this.ambientRoom = roomId;
-      this.ambientGain = this.ctx.createGain();
-      this.ambientGain.gain.value = effectiveVolume(settings) * 0.48;
-      this.ambientGain.connect(this.master);
+      this.volume = effectiveVolume(settings);
+      const gainNode = this.ctx.createGain();
+      this.ambientGain = gainNode;
+      this.applyAmbientGain(false);
+      gainNode.connect(this.master);
 
-      const profile = AMBIENT_PROFILES[roomId];
-      for (const layer of profile) {
+      const sampleUrl = AMBIENT_SAMPLES[roomId];
+      if (sampleUrl) {
+        const buffer = await this.loadSample(sampleUrl);
+        if (this.ambientGain !== gainNode || !this.ctx) return;
+        if (buffer) {
+          const src = this.ctx.createBufferSource();
+          src.buffer = buffer;
+          src.loop = true;
+          // حشوة ترميز MP3 في البداية والنهاية تُحدث فجوة عند التكرار
+          src.loopStart = Math.min(0.06, buffer.duration / 4);
+          src.loopEnd = Math.max(src.loopStart + 0.1, buffer.duration - 0.06);
+          src.connect(gainNode);
+          src.start(0, src.loopStart);
+          this.ambientNodes.push(src);
+          return;
+        }
+      }
+
+      for (const layer of AMBIENT_PROFILES[roomId]) {
         if (layer.kind === 'tone') {
           const osc = this.ctx.createOscillator();
           osc.type = layer.type ?? 'sine';
@@ -95,7 +180,7 @@ export class SensoryHubAudio {
           const gain = this.ctx.createGain();
           gain.gain.value = layer.gain;
           osc.connect(gain);
-          gain.connect(this.ambientGain);
+          gain.connect(gainNode);
           osc.start();
           this.ambientNodes.push(osc);
         } else {
@@ -110,7 +195,7 @@ export class SensoryHubAudio {
           gain.gain.value = layer.gain;
           src.connect(filter);
           filter.connect(gain);
-          gain.connect(this.ambientGain);
+          gain.connect(gainNode);
           src.start();
           this.ambientNodes.push(src);
         }
@@ -149,33 +234,13 @@ export class SensoryHubAudio {
   /** احتكاك رمل ناعم — ضجيج وردي منخفض */
   sandFriction(settings: SensoryHubSettings, intensity = 0.5) {
     void this.resume().then(() => {
-      try {
-        this.setVolume(settings);
-        if (!this.ctx || !this.master) return;
-        const now = this.ctx.currentTime;
-        const bufferSize = Math.floor(this.ctx.sampleRate * 0.12);
-        const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
-        const data = buffer.getChannelData(0);
-        for (let i = 0; i < bufferSize; i += 1) {
-          data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
-        }
-        const src = this.ctx.createBufferSource();
-        src.buffer = buffer;
-        const filter = this.ctx.createBiquadFilter();
-        filter.type = 'lowpass';
-        filter.frequency.value = 680;
-        const gain = this.ctx.createGain();
-        const peak = 0.04 * intensity * effectiveVolume(settings);
-        gain.gain.setValueAtTime(peak, now);
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.12);
-        src.connect(filter);
-        filter.connect(gain);
-        gain.connect(this.master);
-        src.start(now);
-        src.stop(now + 0.14);
-      } catch {
-        /* ignore */
-      }
+      this.noiseBurst(settings, {
+        seconds: 0.12,
+        peak: 0.04 * intensity,
+        filterType: 'lowpass',
+        freqFrom: 680,
+        freqTo: 680,
+      });
     });
   }
 
@@ -183,23 +248,113 @@ export class SensoryHubAudio {
     void this.resume().then(() => this.playPop(settings, freq, 0.09, 0.28));
   }
 
-  /** أصوات حيوانات — توليد طبيعي متعدد الطبقات */
-  playAnimalSound(settings: SensoryHubSettings, animalId: string) {
-    void this.resume().then(() => {
-      this.setVolume(settings);
-      if (!this.ctx || !this.master) return;
-      playNaturalAnimalSound(this.ctx, this.master, animalId, effectiveVolume(settings));
-    });
+  /** صوت الحيوان الحقيقي — يعيد مدته بالثواني ليُنطق الاسم بعده لا فوقه */
+  async playAnimalSound(settings: SensoryHubSettings, animalId: string): Promise<number> {
+    await this.resume();
+    this.setVolume(settings);
+    if (!this.ctx || !this.master) return 0;
+    const url = animalSoundUrl(animalId);
+    const buffer = url ? await this.loadSample(url) : null;
+    if (!this.ctx || !this.master) return 0;
+    try {
+      this.animalSrc?.stop();
+    } catch {
+      /* already ended */
+    }
+    this.animalSrc = null;
+    if (buffer) {
+      const src = this.ctx.createBufferSource();
+      src.buffer = buffer;
+      src.connect(this.master);
+      src.start();
+      this.animalSrc = src;
+      return buffer.duration;
+    }
+    playNaturalAnimalSound(this.ctx, this.master, animalId, this.volume);
+    return 1.2;
   }
 
   waveLap(settings: SensoryHubSettings) {
     void this.resume().then(() => this.playPop(settings, 220, 0.04, 0.5));
   }
 
+  /** رشّة موج عند لمس الماء — ضجيج يهبط ترشيحه مثل موجة تنكسر */
+  waveSplash(settings: SensoryHubSettings, strength = 0.6) {
+    void this.resume().then(() => {
+      this.noiseBurst(settings, {
+        seconds: 0.9 + strength * 0.5,
+        peak: 0.5 * strength,
+        filterType: 'lowpass',
+        freqFrom: 2200,
+        freqTo: 300,
+        attack: 0.08,
+      });
+    });
+  }
+
+  /** قطرة ماء عند اللمس — نغمة قصيرة تنزلق للأسفل */
+  droplet(settings: SensoryHubSettings) {
+    void this.resume().then(() => {
+      if (!this.ctx || !this.master) return;
+      this.setVolume(settings);
+      const now = this.ctx.currentTime;
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = 'sine';
+      const f = 900 + Math.random() * 500;
+      osc.frequency.setValueAtTime(f, now);
+      osc.frequency.exponentialRampToValueAtTime(f * 0.45, now + 0.09);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.25 * this.volume, now + 0.005);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.14);
+      osc.connect(gain);
+      gain.connect(this.master);
+      osc.start(now);
+      osc.stop(now + 0.16);
+    });
+  }
+
+  /** @deprecated المطر الآن تسجيل حقيقي متكرر؛ استخدم setAmbientIntensity */
   rainDrop(settings: SensoryHubSettings, intensity = 0.5) {
-    void this.resume().then(() =>
-      this.playPop(settings, 740, 0.025 * intensity, 0.08)
-    );
+    void settings;
+    this.setAmbientIntensity(0.5 + intensity * 0.7);
+  }
+
+  private noiseBurst(
+    settings: SensoryHubSettings,
+    opts: {
+      seconds: number;
+      peak: number;
+      filterType: BiquadFilterType;
+      freqFrom: number;
+      freqTo: number;
+      attack?: number;
+    }
+  ) {
+    try {
+      this.setVolume(settings);
+      if (!this.ctx || !this.master) return;
+      const now = this.ctx.currentTime;
+      const src = this.ctx.createBufferSource();
+      src.buffer = this.createNoiseBuffer(opts.seconds);
+      const filter = this.ctx.createBiquadFilter();
+      filter.type = opts.filterType;
+      filter.frequency.setValueAtTime(opts.freqFrom, now);
+      filter.frequency.exponentialRampToValueAtTime(Math.max(40, opts.freqTo), now + opts.seconds);
+      const gain = this.ctx.createGain();
+      const peak = Math.max(0.0002, opts.peak * this.volume);
+      const attack = opts.attack ?? 0.005;
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(peak, now + attack);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + opts.seconds);
+      src.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.master);
+      src.start(now);
+      src.stop(now + opts.seconds + 0.02);
+    } catch {
+      /* ignore */
+    }
   }
 
   private playPop(
@@ -218,7 +373,7 @@ export class SensoryHubAudio {
       osc.frequency.setValueAtTime(freq, now);
       osc.frequency.exponentialRampToValueAtTime(Math.max(180, freq * 0.5), now + seconds);
       gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.exponentialRampToValueAtTime(peak * effectiveVolume(settings), now + 0.015);
+      gain.gain.exponentialRampToValueAtTime(peak * this.volume, now + 0.015);
       gain.gain.exponentialRampToValueAtTime(0.0001, now + seconds);
       osc.connect(gain);
       gain.connect(this.master);
@@ -267,12 +422,12 @@ const AMBIENT_PROFILES: Record<SensoryRoomId, AmbientLayer[]> = {
     { kind: 'noise', gain: 0.022, filterFreq: 900, duration: 2.6 },
   ],
   waves: [
-    { kind: 'noise', gain: 0.065, filterFreq: 380, duration: 4 },
-    { kind: 'tone', freq: 146.83, gain: 0.034, type: 'sine' },
+    { kind: 'noise', gain: 0.09, filterFreq: 420, duration: 4 },
+    { kind: 'tone', freq: 146.83, gain: 0.03, type: 'sine' },
   ],
   rain: [
-    { kind: 'noise', gain: 0.072, filterFreq: 740, duration: 1.2 },
-    { kind: 'noise', gain: 0.034, filterFreq: 1200, duration: 0.6 },
+    { kind: 'noise', gain: 0.22, filterType: 'bandpass', filterFreq: 2400, duration: 1.2 },
+    { kind: 'noise', gain: 0.14, filterFreq: 900, duration: 0.6 },
   ],
   mirror: [
     { kind: 'tone', freq: 523.25, gain: 0.034, type: 'sine' },

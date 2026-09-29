@@ -35,7 +35,7 @@ export default function SensoryMatchingPage() {
         roundsCompleted: metrics.roundsCompleted,
       },
       trials: [],
-      startedAt: ended,
+      startedAt: metrics.sessionStartedAt ?? ended,
       endedAt: ended,
     }).catch(() => undefined);
   }, []);
