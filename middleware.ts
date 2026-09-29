@@ -8,6 +8,7 @@ import {
   homePathForRole,
   parseEntitlements,
 } from '@/lib/access';
+import { nextAuthSecret, sessionTokenCookieName } from '@/lib/authConfig';
 import { canAccessConsultantRoom } from '@/lib/consultantRoom/access';
 import { CONSENT_COOKIE } from '@/lib/consentConstants';
 import { ensureAuthUrl } from '@/lib/ensureAuthUrl';
@@ -23,7 +24,7 @@ import {
   roleBypassesMaintenance,
 } from '@/lib/platformEnvironment';
 
-ensureAuthUrl();
+const authUrl = ensureAuthUrl();
 
 export default withAuth(
   function middleware(req) {
@@ -202,7 +203,8 @@ export default withAuth(
     return NextResponse.next({ request: { headers: requestHeaders } });
   },
   {
-    secret: process.env.NEXTAUTH_SECRET,
+    secret: nextAuthSecret(),
+    cookies: { sessionToken: { name: sessionTokenCookieName(authUrl) } },
     callbacks: {
       authorized: ({ token, req }) => {
         const path = req.nextUrl.pathname;

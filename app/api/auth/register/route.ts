@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { findUserByEmail, isAirtableConfigured } from '@/lib/airtable';
 import { logAction } from '@/lib/auditLog';
+import { nextAuthSecret } from '@/lib/authConfig';
 import { normalizeEmail, registerUserAccount, type SignupError } from '@/lib/userAccounts';
 
 const WINDOW_MS = 15 * 60 * 1000;
@@ -27,6 +28,10 @@ const STATUS: Record<SignupError, number> = {
 };
 
 export async function POST(req: Request) {
+  // حساب بلا سر جلسة لا يمكنه الدخول — لا ننشئه
+  if (!nextAuthSecret()) {
+    return NextResponse.json({ error: 'AUTH_NOT_CONFIGURED' }, { status: 503 });
+  }
   const ip = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
   if (rateLimited(ip)) {
     return NextResponse.json({ error: 'TOO_MANY_ATTEMPTS' }, { status: 429 });
@@ -58,7 +63,13 @@ export async function POST(req: Request) {
       entityId: result.account.id,
     }).catch(() => undefined);
     return NextResponse.json({ ok: true, role: result.account.role });
-  } catch {
+  } catch (error) {
+    const message = error instanceof Error ? error.message : '';
+    if (message.startsWith('HUB_STORAGE_')) {
+      console.error('[register] durable storage unavailable:', message);
+      return NextResponse.json({ error: 'STORAGE_UNAVAILABLE' }, { status: 503 });
+    }
+    console.error('[register] failed:', error);
     return NextResponse.json({ error: 'REGISTRATION_FAILED' }, { status: 500 });
   }
 }

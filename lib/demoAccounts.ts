@@ -59,8 +59,4 @@ export function demoFallbackHash(
   return cachedHash(policy.mode === 'development' ? devPassword : policy.password);
 }
 
-export function nextAuthSecret(env: Env = process.env): string | undefined {
-  const secret = String(env.NEXTAUTH_SECRET || '').trim();
-  if (secret) return secret;
-  return isProduction(env) ? undefined : 'taaluf-dev-secret-change-me';
-}
+export { nextAuthSecret } from '@/lib/authConfig';

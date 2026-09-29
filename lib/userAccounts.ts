@@ -4,7 +4,7 @@
  * كلمة المرور تُخزَّن كبصمة bcrypt ولا تُعاد في أي استجابة.
  */
 
-import { readHubJsonFile, writeHubJsonFile } from '@/lib/hubPersistence';
+import { readHubJsonFile, writeHubJsonFileDurable } from '@/lib/hubPersistence';
 import { hashPassword, verifyPassword } from '@/lib/password';
 
 export const USER_ACCOUNTS_FILE = 'user-accounts.json';
@@ -125,7 +125,7 @@ export async function registerUserAccount(
     passwordHash: await hashPassword(password),
     createdAt: new Date().toISOString(),
   };
-  await writeHubJsonFile(
+  await writeHubJsonFileDurable(
     USER_ACCOUNTS_FILE,
     JSON.stringify({ accounts: [account, ...accounts].slice(0, MAX_ACCOUNTS) })
   );

@@ -7,10 +7,14 @@ import { ensureAuthUrl } from '@/lib/ensureAuthUrl';
 import { portalFromEmail, type PortalId } from '@/lib/loginPortal';
 import { authorizeTeacherAccount } from '@/lib/childRoom/teacherAccounts';
 import {
+  authUsesSecureCookies,
+  nextAuthSecret,
+  sessionTokenCookieName,
+} from '@/lib/authConfig';
+import {
   DEV_DEMO_PASSWORD,
   DEV_GUEST_SPECIALIST_PASSWORD,
   demoFallbackHash,
-  nextAuthSecret,
 } from '@/lib/demoAccounts';
 import { verifyPassword } from '@/lib/password';
 import { normalizeSessionRole } from '@/lib/permissions';
@@ -18,7 +22,8 @@ import { verifyPrivilegedLogin } from '@/lib/privilegedCredentials';
 import { parentStageForUser } from '@/lib/server/clinicalRecordService';
 import { authorizeUserAccount } from '@/lib/userAccounts';
 
-ensureAuthUrl();
+const authUrl = ensureAuthUrl();
+const secureCookies = authUsesSecureCookies(authUrl);
 
 export { homePathForRole };
 
@@ -71,9 +76,13 @@ const DEMO_USERS = [
 export const authOptions: NextAuthOptions = {
   // يساعد على Vercel عند اختلال بناء روابط الاستضافة
   ...( { trustHost: true } as Partial<NextAuthOptions> ),
-  useSecureCookies: String(process.env.NEXTAUTH_URL || '').startsWith(
-    'https://'
-  ),
+  useSecureCookies: secureCookies,
+  cookies: {
+    sessionToken: {
+      name: sessionTokenCookieName(authUrl),
+      options: { httpOnly: true, sameSite: 'lax', path: '/', secure: secureCookies },
+    },
+  },
   providers: [
     CredentialsProvider({
       name: 'Credentials',

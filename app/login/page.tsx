@@ -1,6 +1,6 @@
 'use client';
 
-import { FormEvent, Suspense, useMemo, useState } from 'react';
+import { FormEvent, Suspense, useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { signIn } from 'next-auth/react';
 import { useSearchParams } from 'next/navigation';
@@ -36,6 +36,11 @@ const SIGNUP_ERRORS_AR: Record<string, string> = {
   ROLE_NOT_ALLOWED: 'لا يمكن إنشاء حساب لهذه البوابة.',
   EMAIL_TAKEN: 'هذا البريد مسجّل مسبقاً — سجّل الدخول بدلاً من ذلك.',
   TOO_MANY_ATTEMPTS: 'محاولات كثيرة. انتظر قليلاً ثم أعد المحاولة.',
+  STORAGE_UNAVAILABLE:
+    'تعذّر حفظ الحساب: التخزين الدائم للمنصة غير متاح حالياً. لم يُنشأ الحساب — تواصل مع إدارة المنصة.',
+  AUTH_NOT_CONFIGURED:
+    'نظام الدخول غير مهيأ على الخادم (سر الجلسة مفقود). لم يُنشأ الحساب — تواصل مع إدارة المنصة.',
+  REGISTRATION_FAILED: 'حدث خطأ في الخادم أثناء إنشاء الحساب. أعد المحاولة بعد قليل.',
 };
 
 const SIGNUP_ERRORS_EN: Record<string, string> = {
@@ -47,7 +52,17 @@ const SIGNUP_ERRORS_EN: Record<string, string> = {
   ROLE_NOT_ALLOWED: 'Accounts cannot be created for this portal.',
   EMAIL_TAKEN: 'This email is already registered — sign in instead.',
   TOO_MANY_ATTEMPTS: 'Too many attempts. Please wait and try again.',
+  STORAGE_UNAVAILABLE:
+    'The account could not be saved: platform storage is unavailable. No account was created — contact the platform admin.',
+  AUTH_NOT_CONFIGURED:
+    'Sign-in is not configured on the server (session secret missing). No account was created — contact the platform admin.',
+  REGISTRATION_FAILED: 'A server error occurred while creating the account. Please try again shortly.',
 };
+
+const SESSION_REJECTED_AR =
+  'تم تسجيل دخولك، لكن الخادم لم يقبل الجلسة عند فتح الصفحة المطلوبة (إعدادات المصادقة غير متطابقة). تواصل مع إدارة المنصة.';
+const SESSION_REJECTED_EN =
+  'You are signed in, but the server rejected the session when opening the requested page (authentication settings mismatch). Contact the platform admin.';
 
 const PORTALS: {
   id: PortalId;
@@ -228,25 +243,50 @@ function LoginForm() {
       portal,
       redirect: false,
       callbackUrl: dest,
-    });
-    if (res?.error) {
+    }).catch(() => undefined);
+    if (!res || res.error) {
       setLoading(false);
-      setError(t('loginError'));
+      if (res?.error === 'Configuration') {
+        setError(isAr ? SIGNUP_ERRORS_AR.AUTH_NOT_CONFIGURED : SIGNUP_ERRORS_EN.AUTH_NOT_CONFIGURED);
+      } else if (mode === 'signup') {
+        setMode('login');
+        setError(
+          isAr
+            ? 'أُنشئ حسابك، لكن تعذّر الدخول التلقائي. سجّل الدخول ببريدك وكلمة مرورك.'
+            : 'Your account was created, but automatic sign-in failed. Sign in with your email and password.'
+        );
+      } else {
+        setError(!res ? (isAr ? 'تعذّر الاتصال بالخادم. تحقّق من الاتصال.' : 'Could not reach the server.') : t('loginError'));
+      }
       return;
     }
-    try {
-      const sessionRes = await fetch('/api/auth/session');
-      const session = (await sessionRes.json()) as {
-        user?: { role?: string };
-      };
-      const role = session?.user?.role || roleGuess;
-      window.location.assign(
-        resolvePostLoginDestination(role, params.get('callbackUrl'))
-      );
-    } catch {
-      window.location.assign(dest);
+    const session = (await fetch('/api/auth/session')
+      .then((r) => r.json())
+      .catch(() => null)) as { user?: { role?: string } } | null;
+    if (!session?.user) {
+      setLoading(false);
+      setError(isAr ? SESSION_REJECTED_AR : SESSION_REJECTED_EN);
+      return;
     }
+    window.location.assign(
+      resolvePostLoginDestination(session.user.role || roleGuess, params.get('callbackUrl'))
+    );
   };
+
+  // وصول لصفحة الدخول مع callbackUrl بينما الجلسة صالحة = الـ middleware رفضها؛ لا نعيد التوجيه كي لا تتكرر الحلقة
+  useEffect(() => {
+    if (!params.get('callbackUrl')) return;
+    let cancelled = false;
+    void fetch('/api/auth/session')
+      .then((r) => r.json())
+      .then((session: { user?: unknown } | null) => {
+        if (!cancelled && session?.user) setError(isAr ? SESSION_REJECTED_AR : SESSION_REJECTED_EN);
+      })
+      .catch(() => undefined);
+    return () => {
+      cancelled = true;
+    };
+  }, [params, isAr]);
 
   return (
     <main

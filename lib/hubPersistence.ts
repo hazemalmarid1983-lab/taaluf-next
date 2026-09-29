@@ -81,6 +81,20 @@ export async function writeHubJsonFile(
   await fs.writeFile(filePath, body, 'utf8');
 }
 
+/**
+ * لبيانات لا يجوز فقدانها (الحسابات): يرمي بدل الرجوع الصامت إلى /tmp المؤقت على Vercel.
+ */
+export async function writeHubJsonFileDurable(filename: string, body: string): Promise<void> {
+  if (hubBlobEnabled()) {
+    if (await writeToBlob(filename, body)) return;
+    throw new Error('HUB_STORAGE_WRITE_FAILED');
+  }
+  if (hubStorageIsEphemeral()) throw new Error('HUB_STORAGE_EPHEMERAL');
+  const filePath = localPath(filename);
+  await fs.mkdir(path.dirname(filePath), { recursive: true });
+  await fs.writeFile(filePath, body, 'utf8');
+}
+
 export function hubStorageMode(): 'blob' | 'filesystem' {
   return hubBlobEnabled() ? 'blob' : 'filesystem';
 }
