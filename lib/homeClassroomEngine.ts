@@ -66,10 +66,18 @@ export interface SortingBin {
   itemIds: string[];
 }
 
+/**
+ * digital: وسيلة شاشة تفاعلية (بطاقات/سلال).
+ * physical_observation: مهمة حركية بأدوات حقيقية — لا بطاقات اختيار، والأخصائي يرصد مستوى التلقين لكل محاولة.
+ */
+export type HomeActivityExecutionMode = 'digital' | 'physical_observation';
+
 export interface HomeClassroomGoal {
   id: string;
   /** من بنك الوسائل الجاهز أم مولّد من هدف خطة فردية */
   origin?: 'bank' | 'generated';
+  /** غائب = digital */
+  executionMode?: HomeActivityExecutionMode;
   /** معرّف هدف الخطة الفردية الذي وُلّدت منه الوسيلة */
   iepGoalId?: string;
   /** نص الهدف كما كتبه المعلم — يُحفظ في تقرير الجلسة */

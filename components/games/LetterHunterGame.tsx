@@ -99,7 +99,7 @@ export type VisualDiscriminationMetrics = {
   totalHits: number;
   totalMisses: number;
   averageSearchTimeMs: number;
-  linkedDomain: 'dyslexia';
+  linkedDomain: 'reading_decoding';
 };
 
 function emptyMetrics() {
@@ -162,7 +162,7 @@ export default function LetterHunterGame({
       totalHits: metricsRef.current.hits,
       totalMisses: metricsRef.current.misses,
       averageSearchTimeMs: avgTime,
-      linkedDomain: 'dyslexia',
+      linkedDomain: 'reading_decoding',
     });
   };
 

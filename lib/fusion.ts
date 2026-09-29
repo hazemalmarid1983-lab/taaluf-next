@@ -107,8 +107,41 @@ function flattenSourceLists(params: {
   return out;
 }
 
+export type ConsolidatedSourceScore = {
+  source: FusionSource;
+  /** متوسط كل صفوف هذا المصدر للمعيار (مثلاً P7 وP17 وP18 ← C31) */
+  score: number;
+  /** عدد الصفوف التي دُمجت — لا يؤثر على الوزن */
+  itemCount: number;
+  weight: number;
+};
+
 /**
- * محرك الدمج الموزون v3.0
+ * «الدمج ثم الترجيح»: صفوف المصدر الواحد لنفس المعيار تُختزل أولاً إلى متوسط واحد،
+ * ثم يدخل هذا المتوسط المعادلة بوزن المصدر مرة واحدة فقط.
+ * فلا يتجاوز وزن الأهل 1.0 لأي معيار مهما تعدّدت البنود المغذّية له،
+ * ويبقى الترتيب أخصائي 2.0 > ألعاب 1.5 > أهل 1.0 ثابتاً.
+ */
+export function consolidateSourceScores(
+  rows: ReadonlyArray<Pick<CriterionAssessment, 'source' | 'score'>>
+): ConsolidatedSourceScore[] {
+  const bySource = new Map<FusionSource, { sum: number; count: number }>();
+  for (const row of rows) {
+    const acc = bySource.get(row.source) ?? { sum: 0, count: 0 };
+    acc.sum += clampScore(row.score);
+    acc.count += 1;
+    bySource.set(row.source, acc);
+  }
+  return Array.from(bySource.entries()).map(([source, { sum, count }]) => ({
+    source,
+    score: sum / count,
+    itemCount: count,
+    weight: SOURCE_WEIGHTS[source] ?? 1,
+  }));
+}
+
+/**
+ * محرك الدمج الموزون v3.1 (الدمج ثم الترجيح)
  * - تقييم أسري مستقل: أهل ± ألعاب دون أخصائي (النسبة من البنود المُقيَّمة فقط)
  * - تقييم مدمج شامل: أخصائي + أهل + ألعاب
  */
@@ -148,12 +181,11 @@ export function calculateFusion({
     let weightSum = 0;
     const sourcesUsed: FusionSource[] = [];
 
-    for (const ass of rows) {
-      if (ass.source === 'specialist') hasSpecialist = true;
-      const weight = SOURCE_WEIGHTS[ass.source] ?? 1;
-      weightedSum += ass.score * weight;
-      weightSum += weight;
-      if (!sourcesUsed.includes(ass.source)) sourcesUsed.push(ass.source);
+    for (const consolidated of consolidateSourceScores(rows)) {
+      if (consolidated.source === 'specialist') hasSpecialist = true;
+      weightedSum += consolidated.score * consolidated.weight;
+      weightSum += consolidated.weight;
+      sourcesUsed.push(consolidated.source);
     }
 
     const fusedScore =

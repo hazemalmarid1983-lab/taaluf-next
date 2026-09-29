@@ -1,8 +1,10 @@
 import { getServerSession } from 'next-auth';
 import { NextResponse } from 'next/server';
 import {
+  ACTIVITY_GENERATION_MAX_TOKENS,
   activityGenerationPrompt,
   buildLocalActivity,
+  isPhysicalMotorGoal,
   normalizeGeneratedActivity,
   type GeneratedActivityPayload,
 } from '@/lib/activityGenerator';
@@ -48,12 +50,13 @@ export async function POST(req: Request) {
   }
 
   let generated = buildLocalActivity(goalText);
-  if (isOpenAIConfigured() && goalText.length >= 5) {
+  if (isOpenAIConfigured() && goalText.length >= 5 && !isPhysicalMotorGoal(goalText)) {
     try {
       const client = getOpenAI();
       const completion = await client.chat.completions.create({
         model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
         temperature: 0.5,
+        max_tokens: ACTIVITY_GENERATION_MAX_TOKENS,
         response_format: { type: 'json_object' },
         messages: [
           { role: 'system', content: activityGenerationPrompt() },

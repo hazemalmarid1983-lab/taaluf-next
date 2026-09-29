@@ -95,6 +95,7 @@ schema:
   const completion = await client.chat.completions.create({
     model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
     temperature: 0.4,
+    max_tokens: 2500,
     response_format: { type: 'json_object' },
     messages: [
       { role: 'system', content: system },

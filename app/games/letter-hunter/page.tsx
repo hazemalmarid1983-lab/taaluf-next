@@ -17,7 +17,7 @@ function persistLetterHunterResult(metrics: VisualDiscriminationMetrics) {
     gameId: LETTER_HUNTER_GAME_CODE,
     childId: child?.id || 'child_local',
     domain: 'التمييز البصري وسرعة المعالجة القرائية',
-    academicDomain: 'dyslexia',
+    academicDomain: 'reading_decoding',
     metrics,
     completedAt: new Date().toISOString(),
   };

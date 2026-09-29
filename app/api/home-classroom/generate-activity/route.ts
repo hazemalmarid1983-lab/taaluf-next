@@ -2,7 +2,9 @@ import { getServerSession } from 'next-auth';
 import { NextResponse } from 'next/server';
 import {
   activityGenerationPrompt,
+  ACTIVITY_GENERATION_MAX_TOKENS,
   buildLocalActivity,
+  isPhysicalMotorGoal,
   normalizeGeneratedActivity,
   type GeneratedActivityPayload,
 } from '@/lib/activityGenerator';
@@ -23,6 +25,11 @@ export async function POST(req: Request) {
     const goalText = String(body.goalText || '').trim();
     const iepGoalId = body.iepGoalId ? String(body.iepGoalId) : undefined;
     const childAge = body.childAge != null ? Number(body.childAge) : null;
+    const context = {
+      developmentalDomain: body.developmentalDomain
+        ? String(body.developmentalDomain)
+        : undefined,
+    };
 
     if (goalText.length < MIN_GOAL_LENGTH) {
       return NextResponse.json({ error: 'GOAL_TEXT_REQUIRED' }, { status: 400 });
@@ -31,10 +38,18 @@ export async function POST(req: Request) {
       return NextResponse.json({ error: 'GOAL_TEXT_TOO_LONG' }, { status: 413 });
     }
 
+    if (isPhysicalMotorGoal(goalText, context.developmentalDomain)) {
+      return NextResponse.json({
+        ok: true,
+        activity: buildLocalActivity(goalText, iepGoalId, context),
+        source: 'physical-observation',
+      });
+    }
+
     if (!isOpenAIConfigured()) {
       return NextResponse.json({
         ok: true,
-        activity: buildLocalActivity(goalText, iepGoalId),
+        activity: buildLocalActivity(goalText, iepGoalId, context),
         source: 'local',
         message:
           'تم توليد الوسيلة من بنك المفردات المدمج (لا يوجد OPENAI_API_KEY).',
@@ -46,6 +61,7 @@ export async function POST(req: Request) {
       const completion = await client.chat.completions.create({
         model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
         temperature: 0.5,
+        max_tokens: ACTIVITY_GENERATION_MAX_TOKENS,
         response_format: { type: 'json_object' },
         messages: [
           { role: 'system', content: activityGenerationPrompt() },
@@ -63,13 +79,13 @@ export async function POST(req: Request) {
 
       const raw = completion.choices[0]?.message?.content || '{}';
       const parsed = JSON.parse(raw) as GeneratedActivityPayload;
-      const activity = normalizeGeneratedActivity(parsed, goalText, iepGoalId);
+      const activity = normalizeGeneratedActivity(parsed, goalText, iepGoalId, context);
 
       return NextResponse.json({ ok: true, activity, source: 'openai' });
     } catch {
       return NextResponse.json({
         ok: true,
-        activity: buildLocalActivity(goalText, iepGoalId),
+        activity: buildLocalActivity(goalText, iepGoalId, context),
         source: 'local-fallback',
         message: 'تعذر الاتصال بمزوّد الذكاء الاصطناعي — وُلّدت وسيلة محلية.',
       });

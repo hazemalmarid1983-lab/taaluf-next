@@ -19,18 +19,18 @@ import {
 import type { TrainingPromptLevel } from '@/lib/training/types';
 import {
   CLINICAL_PROMPT_LABELS_AR,
-  digitalPromptMappingLabelAr,
+  digitalStimulusSupportLabelAr,
   isDigitalAssistanceCue,
   resolveSessionPromptEvidence,
-  sessionPromptLabelAr,
+  stimulusSupportLabelAr,
 } from '@/lib/skillMastery';
 import {
   DIGITAL_ASSISTANCE_CUES,
-  DIGITAL_PROMPT_MAPPING,
-  DIGITAL_PROMPT_MAPPING_STATUS,
-  type ClinicalPromptLevel,
+  DIGITAL_STIMULUS_SUPPORT,
+  STIMULUS_ARRAY_LABELS_AR,
+  STIMULUS_SUPPORT_STATUS,
   type DigitalAssistanceCue,
-  type PromptSource,
+  type StimulusArrayLevel,
 } from '@/types/clinical';
 
 export const TRAINING_SESSION_ID_IN_NOTES = 'trainingSessionId=';
@@ -123,48 +123,60 @@ export function formatResponseTimeMs(ms: number | undefined | null): string {
 }
 
 export function promptLevelLabelAr(level: TrainingPromptLevel): string {
-  if (isDigitalAssistanceCue(level)) return digitalPromptMappingLabelAr(level);
+  if (isDigitalAssistanceCue(level)) return digitalStimulusSupportLabelAr(level);
   const human = promptOptionByLevel(level as PromptHierarchyLevel);
   return human?.labelAr ?? level;
 }
 
-export type DigitalPromptMappingRow = {
+export type StimulusSupportRow = {
   cue: DigitalAssistanceCue;
   cueLabelAr: string;
   onScreenAr: string;
-  clinicalLevel: ClinicalPromptLevel;
-  clinicalLabelAr: string;
+  arrayLevel: StimulusArrayLevel;
+  arrayLabelAr: string;
+  targetHighlighted: boolean;
   count: number;
 };
 
-export type DigitalPromptMappingSummary = {
-  rows: DigitalPromptMappingRow[];
-  sessionPromptLabelAr?: string;
-  promptSource?: PromptSource;
+export type StimulusSupportSummary = {
+  rows: StimulusSupportRow[];
+  /** بُعد الاستجابة للجلسة (تلقين بشري) */
+  responsePromptLabelAr?: string;
+  /** بُعد المثير للجلسة */
+  stimulusSupportLabelAr?: string;
+  /** محاولات مستقلة على مصفوفة كاملة غير معدّلة — وحدها صالحة للإتقان */
+  validIndependentTrials: number;
+  /** محاولات مستقلة الاستجابة لكن على مصفوفة معدّلة — تُسجَّل تحت دعم المثير */
+  stimulusSupportedTrials: number;
+  totalTrials: number;
   pendingSignoff: boolean;
 };
 
-/** ما سجّلته اللعبة من مساعدات رقمية وما يقابلها على المقياس السريري */
-export function summarizeDigitalPromptMapping(
+/** ما سجّلته اللعبة على البُعدين: تلقين الاستجابة ودعم مصفوفة المثيرات */
+export function summarizeStimulusSupport(
   trials: ReadonlyArray<{ promptLevel: TrainingPromptLevel }>
-): DigitalPromptMappingSummary {
+): StimulusSupportSummary {
   const rows = DIGITAL_ASSISTANCE_CUES.map((cue) => {
-    const rule = DIGITAL_PROMPT_MAPPING[cue];
+    const rule = DIGITAL_STIMULUS_SUPPORT[cue];
     return {
       cue,
       cueLabelAr: rule.cue_label_ar,
       onScreenAr: rule.on_screen_ar,
-      clinicalLevel: rule.clinical_level,
-      clinicalLabelAr: CLINICAL_PROMPT_LABELS_AR[rule.clinical_level],
+      arrayLevel: rule.array_level,
+      arrayLabelAr: STIMULUS_ARRAY_LABELS_AR[rule.array_level],
+      targetHighlighted: rule.target_highlighted,
       count: trials.filter((t) => t.promptLevel === cue).length,
     };
   }).filter((row) => row.count > 0);
   const evidence = resolveSessionPromptEvidence(trials.map((t) => t.promptLevel));
   return {
     rows,
-    sessionPromptLabelAr: sessionPromptLabelAr(evidence),
-    promptSource: evidence.promptSource,
-    pendingSignoff: DIGITAL_PROMPT_MAPPING_STATUS !== 'approved',
+    responsePromptLabelAr: evidence.promptLevel ? CLINICAL_PROMPT_LABELS_AR[evidence.promptLevel] : undefined,
+    stimulusSupportLabelAr: trials.length ? stimulusSupportLabelAr(evidence.stimulusSupport) : undefined,
+    validIndependentTrials: trials.filter((t) => t.promptLevel === 'independent').length,
+    stimulusSupportedTrials: rows.reduce((sum, r) => sum + r.count, 0),
+    totalTrials: trials.length,
+    pendingSignoff: STIMULUS_SUPPORT_STATUS !== 'approved',
   };
 }
 

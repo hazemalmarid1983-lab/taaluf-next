@@ -6,7 +6,9 @@
 import type { FrequencyTarget, GoalSession, TrackedGoal } from '@/lib/goalsEngine';
 import {
   isDigitalAssistanceCue,
+  isValidIndependentTrial,
   mostIntrusivePromptLevel,
+  mostIntrusiveStimulusSupport,
   skillConfigForGoal,
   toClinicalPromptLevel,
   type ClinicalPromptLevel,
@@ -15,7 +17,6 @@ import {
   type SkillTypeConfig,
 } from '@/lib/skillMastery';
 import { FBA_PLAN_ERRORS_AR, validateAbcIncidents, type AbcValidationError } from '@/lib/fba';
-import { DIGITAL_PROMPT_MAPPING } from '@/types/clinical';
 
 export type GoalSessionFormInput = {
   mood?: string;
@@ -25,9 +26,10 @@ export type GoalSessionFormInput = {
   independencePct?: number | string;
   firstTrialIndependent?: boolean;
   naturalCueOnly?: boolean;
+  /** بُعد الاستجابة: أعلى تلقين بشري */
   promptLevel?: ClinicalPromptLevel | '';
-  /** أعلى مساعدة جاءت من أداة/لعبة رقمية — يُشتق منها promptLevel */
-  digitalPromptCue?: DigitalAssistanceCue | '';
+  /** بُعد المثير: أكثر تعديل رقمي للمصفوفة — مستقل عن promptLevel */
+  stimulusSupport?: DigitalAssistanceCue | '';
   trainerName?: string;
   setting?: SessionSetting | '';
   behaviorValue?: number | string;
@@ -35,8 +37,10 @@ export type GoalSessionFormInput = {
   /** حوادث ABC — أهداف التكرار/المدة فقط */
   abcIncidents?: unknown[];
   replacementBehaviorCount?: number | string;
-  /** مستوى المساعدة لكل محاولة (اختياري) — يتيح اتفاق الملاحظين محاولةً بمحاولة */
+  /** بُعد الاستجابة لكل محاولة (اختياري) — يتيح اتفاق الملاحظين محاولةً بمحاولة */
   trialScores?: unknown[];
+  /** بُعد المثير لكل محاولة بطول trialScores: مساعدة رقمية أو null للمصفوفة الكاملة */
+  trialStimulus?: unknown[];
 };
 
 export type GoalSessionFormError =
@@ -46,18 +50,35 @@ export type GoalSessionFormError =
   | 'FREQUENCY_TARGET_REQUIRED'
   | 'BEHAVIOR_VALUE_REQUIRED'
   | 'PROMPT_LEVEL_CONFLICT'
-  | 'DIGITAL_PROMPT_MAPPING_CONFLICT'
+  | 'STIMULUS_SUPPORT_NOT_A_RESPONSE_PROMPT'
+  | 'STIMULUS_SUPPORT_CONFLICT'
   | AbcValidationError
   | 'INVALID_TRIAL_SCORES'
+  | 'INVALID_TRIAL_STIMULUS'
   | 'TRIAL_SCORES_MISMATCH';
 
 export const MAX_TRIAL_SCORES = 100;
 
-/** مستويات المحاولات بالترتيب — null إذا كان أي مستوى غير معروف */
+/** مستويات الاستجابة للمحاولات بالترتيب — null إذا كان أي مستوى غير معروف أو مساعدة رقمية */
 export function parseTrialScores(raw: unknown): ClinicalPromptLevel[] | null {
   if (!Array.isArray(raw) || raw.length > MAX_TRIAL_SCORES) return null;
   const levels = raw.map((v) => toClinicalPromptLevel(typeof v === 'string' ? v : undefined));
   return levels.every(Boolean) ? (levels as ClinicalPromptLevel[]) : null;
+}
+
+/** دعم المثير لكل محاولة بطول expectedLength — null إذا كانت قيمة غير معروفة أو الطول مختلفاً */
+export function parseTrialStimulus(
+  raw: unknown,
+  expectedLength: number
+): Array<DigitalAssistanceCue | null> | null {
+  if (!Array.isArray(raw) || raw.length !== expectedLength) return null;
+  const out: Array<DigitalAssistanceCue | null> = [];
+  for (const v of raw) {
+    if (v === null || v === undefined || v === '' || v === 'full_array') out.push(null);
+    else if (isDigitalAssistanceCue(v)) out.push(v);
+    else return null;
+  }
+  return out;
 }
 
 export const GOAL_SESSION_FORM_ERRORS_AR: Record<GoalSessionFormError, string> = {
@@ -66,15 +87,19 @@ export const GOAL_SESSION_FORM_ERRORS_AR: Record<GoalSessionFormError, string> =
   SETTING_REQUIRED: 'اختر بيئة الجلسة — يلزم تنوّع البيئات لإتقان هذا الهدف',
   FREQUENCY_TARGET_REQUIRED: 'حدّد معيار الهدف (المقياس والاتجاه والقيمة) مرة واحدة',
   BEHAVIOR_VALUE_REQUIRED: 'أدخل عدد مرات السلوك أو مدته في هذه الجلسة',
-  PROMPT_LEVEL_CONFLICT: 'مستوى المساعدة لا يطابق النسبة: «مستقل» يعني 100% والعكس',
-  DIGITAL_PROMPT_MAPPING_CONFLICT:
-    'المساعدة الرقمية تحدد المستوى تلقائياً: التلميح البصري وتقليل الخيارات = إشارة، والمساعدة البصرية المباشرة = نموذج',
+  PROMPT_LEVEL_CONFLICT:
+    'مستوى التلقين لا يطابق النسبة: 100% تعني «مستقل» على مصفوفة كاملة، و«مستقل» على مصفوفة كاملة يعني 100%',
+  STIMULUS_SUPPORT_NOT_A_RESPONSE_PROMPT:
+    'المساعدة الرقمية (إبراز أو تقليل الخيارات) تُسجَّل في «دعم مصفوفة المثيرات» لا كمستوى تلقين استجابة',
+  STIMULUS_SUPPORT_CONFLICT:
+    'لا تكون الاستقلالية 100% مع مصفوفة مخفّضة أو مُبرزة — محاولات دعم المثير لا تُحتسب مستقلة للإتقان',
   INVALID_ABC_INCIDENT: FBA_PLAN_ERRORS_AR.INVALID_ABC_INCIDENT,
   ABC_EXCEEDS_BEHAVIOR_COUNT: FBA_PLAN_ERRORS_AR.ABC_EXCEEDS_BEHAVIOR_COUNT,
   ABC_EXCEEDS_DURATION: FBA_PLAN_ERRORS_AR.ABC_EXCEEDS_DURATION,
-  INVALID_TRIAL_SCORES: 'سجل المحاولات يحتوي مستوى مساعدة غير معروف',
+  INVALID_TRIAL_SCORES: 'سجل المحاولات يحتوي مستوى تلقين غير معروف',
+  INVALID_TRIAL_STIMULUS: 'سجل دعم المثير يجب أن يغطي كل المحاولات بقيم معروفة',
   TRIAL_SCORES_MISMATCH:
-    'نسبة الاستقلالية أو أعلى مستوى مساعدة لا يطابق سجل المحاولات (المستقلة ÷ عدد المحاولات، وأعلى مساعدة بين المحاولات)',
+    'النسبة أو أعلى تلقين أو أعلى دعم للمثير لا يطابق سجل المحاولات (المستقلة على مصفوفة كاملة ÷ عدد المحاولات)',
 };
 
 export type GoalSessionFormFields = {
@@ -177,55 +202,79 @@ export function buildGoalSessionFromForm(
       replacementBehaviorCount: replacement !== undefined && replacement >= 0 ? Math.round(replacement) : undefined,
     };
   } else {
+    if (isDigitalAssistanceCue(input.promptLevel)) {
+      return { ok: false, errors: ['STIMULUS_SUPPORT_NOT_A_RESPONSE_PROMPT'] };
+    }
     let trialScores: ClinicalPromptLevel[] | undefined;
+    let trialStimulus: Array<DigitalAssistanceCue | null> | undefined;
     if (Array.isArray(input.trialScores) && input.trialScores.length) {
       const parsed = parseTrialScores(input.trialScores);
-      if (!parsed) return { ok: false, errors: ['INVALID_TRIAL_SCORES'] };
+      if (!parsed) {
+        return {
+          ok: false,
+          errors: [
+            input.trialScores.some(isDigitalAssistanceCue)
+              ? 'STIMULUS_SUPPORT_NOT_A_RESPONSE_PROMPT'
+              : 'INVALID_TRIAL_SCORES',
+          ],
+        };
+      }
       trialScores = parsed;
+      if (Array.isArray(input.trialStimulus)) {
+        const stimulus = parseTrialStimulus(input.trialStimulus, parsed.length);
+        if (!stimulus) return { ok: false, errors: ['INVALID_TRIAL_STIMULUS'] };
+        trialStimulus = stimulus.some(Boolean) ? stimulus : undefined;
+      }
+    } else if (Array.isArray(input.trialStimulus) && input.trialStimulus.length) {
+      return { ok: false, errors: ['INVALID_TRIAL_STIMULUS'] };
     }
     const derivedPct = trialScores
-      ? Math.round((trialScores.filter((l) => l === 'Independent').length / trialScores.length) * 100)
+      ? Math.round(
+          (trialScores.filter((l, i) => isValidIndependentTrial(l, trialStimulus?.[i])).length /
+            trialScores.length) *
+            100
+        )
       : undefined;
     const pct = toNumber(input.independencePct) ?? derivedPct;
     if (pct === undefined || pct < 0 || pct > 100) errors.push('INDEPENDENCE_REQUIRED');
-    const digitalPromptCue = isDigitalAssistanceCue(input.digitalPromptCue) ? input.digitalPromptCue : undefined;
     const enteredLevel = toClinicalPromptLevel(input.promptLevel || undefined);
-    const mappedLevel = digitalPromptCue ? DIGITAL_PROMPT_MAPPING[digitalPromptCue].clinical_level : undefined;
-    if (mappedLevel && enteredLevel && enteredLevel !== mappedLevel) {
-      errors.push('DIGITAL_PROMPT_MAPPING_CONFLICT');
-    }
+    const enteredStimulus = isDigitalAssistanceCue(input.stimulusSupport) ? input.stimulusSupport : undefined;
     const trialsLevel = trialScores ? mostIntrusivePromptLevel(trialScores) : undefined;
+    const trialsStimulus = trialStimulus ? mostIntrusiveStimulusSupport(trialStimulus) : undefined;
     if (
       trialScores &&
       ((pct !== undefined && Math.round(pct) !== derivedPct) ||
-        ((mappedLevel ?? enteredLevel) !== undefined && (mappedLevel ?? enteredLevel) !== trialsLevel))
+        (enteredLevel !== undefined && enteredLevel !== trialsLevel) ||
+        (enteredStimulus !== undefined && enteredStimulus !== trialsStimulus))
     ) {
       errors.push('TRIAL_SCORES_MISMATCH');
     }
-    const promptLevel = mappedLevel ?? enteredLevel ?? trialsLevel ?? (pct === 100 ? 'Independent' : undefined);
-    if (pct !== undefined && promptLevel && (promptLevel === 'Independent') !== (pct === 100)) {
+    const stimulusSupport = enteredStimulus ?? trialsStimulus;
+    const promptLevel = enteredLevel ?? trialsLevel ?? (pct === 100 ? 'Independent' : undefined);
+    if (pct === 100 && stimulusSupport) {
+      errors.push('STIMULUS_SUPPORT_CONFLICT');
+    } else if (
+      pct !== undefined &&
+      promptLevel &&
+      isValidIndependentTrial(promptLevel, stimulusSupport) !== (pct === 100)
+    ) {
       errors.push('PROMPT_LEVEL_CONFLICT');
     }
     if (errors.length) return { ok: false, errors };
-    const promptSource: GoalSession['promptSource'] = digitalPromptCue
-      ? 'digital_assistance'
-      : enteredLevel && enteredLevel !== 'Independent' && enteredLevel !== 'No Response'
-        ? 'human'
-        : undefined;
     session = {
       ...base,
       independencePct: Math.round(pct!),
       fullyIndependent: pct === 100,
       promptLevel,
-      promptSource,
-      digitalPromptCue,
+      stimulusSupport,
       firstTrialIndependent: fields.askFirstTrial
         ? trialScores
-          ? trialScores[0] === 'Independent'
+          ? isValidIndependentTrial(trialScores[0], trialStimulus?.[0])
           : input.firstTrialIndependent === true
         : undefined,
       naturalCueOnly: fields.askNaturalCue ? input.naturalCueOnly === true : undefined,
       trialScores,
+      trialStimulus,
     };
   }
 

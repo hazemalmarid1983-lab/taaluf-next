@@ -9,8 +9,9 @@ export type SkillCategoryId =
   | 'self_regulation';
 
 /**
+ * البُعد الأول — مستوى تلقين الاستجابة (بشري/سلوكي):
  * تسلسل المساعدة الموحّد (8 مستويات) من الأقل إلى الأكثر تدخلاً —
- * يطابق PromptHierarchyLevel في نماذج الجلسات.
+ * يطابق PromptHierarchyLevel في نماذج الجلسات. لا تُسجَّل فيه أي مساعدة رقمية.
  */
 export type ClinicalPromptLevel =
   | 'Independent'
@@ -24,45 +25,65 @@ export type ClinicalPromptLevel =
 
 /**
  * مساعدات المحرك الرقمي كما تظهر على الشاشة، من الأقل إلى الأكثر تدخلاً.
- * تُسجَّل في TrainingTrial.promptLevel وتُطابَق مع ClinicalPromptLevel عبر DIGITAL_PROMPT_MAPPING.
+ * تُسجَّل في TrainingTrial.promptLevel لكنها تعديلات على مصفوفة المثيرات (Stimulus prompts)
+ * لا تلقين استجابة — تُقرأ عبر DIGITAL_STIMULUS_SUPPORT ولا تُطابَق مع ClinicalPromptLevel.
  */
 export type DigitalAssistanceCue = 'visual_hint' | 'reduced_choices' | 'direct_visual_assistance';
 
-/** مصدر أعلى مساعدة في الجلسة: مدرّب بشري أو أداة/لعبة رقمية */
-export type PromptSource = 'human' | 'digital_assistance';
+/** البُعد الثاني — مستوى دعم مصفوفة المثيرات (رقمي/بيئي) */
+export type StimulusArrayLevel = 'full_array' | 'partially_reduced' | 'highly_reduced';
 
-export type DigitalPromptMappingStatus = 'pending_scientific_signoff' | 'approved';
+export const STIMULUS_ARRAY_LEVELS: readonly StimulusArrayLevel[] = [
+  'full_array',
+  'partially_reduced',
+  'highly_reduced',
+];
 
-/** المستويات السريرية المسموح أن تطابقها مساعدة رقمية — لا مساعدة رقمية جسدية أو لفظية */
-export type DigitalMappedClinicalLevel = Extract<ClinicalPromptLevel, 'Gestural' | 'Model'>;
+export const STIMULUS_ARRAY_LABELS_AR: Readonly<Record<StimulusArrayLevel, string>> = {
+  full_array: 'كاملة',
+  partially_reduced: 'مخفّضة جزئياً',
+  highly_reduced: 'مخفّضة بشدة',
+};
 
-export interface DigitalPromptMappingRule {
+export const STIMULUS_ARRAY_LABELS_EN: Readonly<Record<StimulusArrayLevel, string>> = {
+  full_array: 'Full array',
+  partially_reduced: 'Partially reduced',
+  highly_reduced: 'Highly reduced',
+};
+
+export type StimulusSupportStatus = 'pending_scientific_signoff' | 'approved';
+
+export interface DigitalStimulusSupportRule {
   cue: DigitalAssistanceCue;
-  clinical_level: DigitalMappedClinicalLevel;
+  array_level: StimulusArrayLevel;
+  /** الهدف مُبرز بصرياً داخل المصفوفة */
+  target_highlighted: boolean;
   cue_label_ar: string;
   cue_label_en: string;
   /** ما يراه الطفل على الشاشة */
   on_screen_ar: string;
-  /** سبب المطابقة مع المستوى السريري */
+  /** سبب التصنيف على بُعد دعم المثير */
   rationale_ar: string;
 }
 
 /**
- * قاعدة مطابقة المساعدات الرقمية مع مقياس المساعدة الموحّد (8 مستويات):
+ * فصل تعديل مصفوفة المثيرات عن تلقين الاستجابة (بُعدان مستقلان):
  *
- * 1. كل محاولة تُطابَق منفردة: التلميح البصري وتقليل الخيارات = Gestural،
- *    والمساعدة البصرية المباشرة (عرض الهدف وتوجيهه) = Model.
- * 2. أي مساعدة رقمية تجعل المحاولة غير مستقلة؛ لا تُطابَق مساعدة رقمية مع Independent أبداً،
- *    ولا تتجاوز Model (لا توجد مساعدة رقمية لفظية أو جسدية).
- * 3. مستوى الجلسة = أكثر مستوى تدخلاً بين محاولاتها (بشرية أو رقمية).
- *    إذا بلغته مساعدة رقمية فقط يُسجَّل promptSource = 'digital_assistance' مع digitalPromptCue
- *    (عند التعادل تُختار المساعدة الرقمية الأعلى رتبة). إذا بلغه تلقين بشري يُسجَّل 'human'.
- * 4. الخادم يعيد اشتقاق promptLevel من digitalPromptCue ولا يقبل مستوى يخالف المطابقة.
- * 5. الزمن وحده لا يحدد المستوى — يُسجَّل أقوى مساعدة ظهرت فعلاً قبل الاستجابة.
+ * 1. مستوى تلقين الاستجابة (ClinicalPromptLevel) بشري فقط: مستقل، إشارة، نموذج، جسدي…
+ *    لا تُطابَق أي مساعدة رقمية (مصفوفة مخفّضة أو إبراز بصري) مع «إشارة» أو «نموذج».
+ * 2. دعم مصفوفة المثيرات (StimulusArrayLevel) رقمي/بيئي: كاملة، مخفّضة جزئياً، مخفّضة بشدة،
+ *    مع علامة إبراز الهدف. المحاولة التي تلقّت دعماً رقمياً فقط تُسجَّل «مستقل» على بُعد الاستجابة
+ *    و«مدعومة» على بُعد المثير.
+ * 3. المحاولة المستقلة الصالحة للإتقان = استجابة مستقلة + مصفوفة كاملة غير معدّلة (بلا تقليل ولا إبراز).
+ *    محاولات المصفوفة المخفّضة تُسجَّل تحت دعم المثير ولا تُحتسب في نسبة الاستقلالية.
+ * 4. إتقان المجس البارد (100%): استقلالية استجابة 100% ومصفوفة كاملة غير معدّلة في كل جلسة
+ *    من الجلسات المتتالية المطلوبة.
+ * 5. مستوى الجلسة على كل بُعد = الأكثر تدخلاً بين محاولاتها. الزمن وحده لا يحدد المستوى —
+ *    يُسجَّل أقوى دعم ظهر فعلاً قبل الاستجابة.
  *
- * الحالة: اجتهاد برمجي بانتظار اعتماد الاستشاري السريري.
+ * الحالة: الفصل مطبّق بطلب المدقق السريري؛ تصنيف كل مساعدة على مستويات المصفوفة بانتظار الاعتماد.
  */
-export const DIGITAL_PROMPT_MAPPING_STATUS: DigitalPromptMappingStatus = 'pending_scientific_signoff';
+export const STIMULUS_SUPPORT_STATUS: StimulusSupportStatus = 'pending_scientific_signoff';
 
 export const DIGITAL_ASSISTANCE_CUES: readonly DigitalAssistanceCue[] = [
   'visual_hint',
@@ -70,30 +91,33 @@ export const DIGITAL_ASSISTANCE_CUES: readonly DigitalAssistanceCue[] = [
   'direct_visual_assistance',
 ];
 
-export const DIGITAL_PROMPT_MAPPING: Readonly<Record<DigitalAssistanceCue, DigitalPromptMappingRule>> = {
+export const DIGITAL_STIMULUS_SUPPORT: Readonly<Record<DigitalAssistanceCue, DigitalStimulusSupportRule>> = {
   visual_hint: {
     cue: 'visual_hint',
-    clinical_level: 'Gestural',
+    array_level: 'full_array',
+    target_highlighted: true,
     cue_label_ar: 'تلميح بصري',
     cue_label_en: 'Visual hint',
     on_screen_ar: 'إبراز منطقة الهدف مع بقاء كل الخيارات',
-    rationale_ar: 'يوجّه الانتباه نحو الهدف دون أداء الاستجابة عن الطفل — يعادل الإشارة أو النظرة',
+    rationale_ar: 'المصفوفة كاملة لكن الهدف مُبرز — تعديل داخل المثير (within-stimulus prompt) لا تلقين استجابة',
   },
   reduced_choices: {
     cue: 'reduced_choices',
-    clinical_level: 'Gestural',
+    array_level: 'partially_reduced',
+    target_highlighted: false,
     cue_label_ar: 'تقليل الخيارات',
     cue_label_en: 'Reduced choices',
     on_screen_ar: 'حذف المشتت الأبعد شبهاً مع بقاء الهدف والمشتتات الأقرب',
-    rationale_ar: 'يضيّق مجال الاختيار دون عرض الاستجابة الصحيحة — يعادل الإشارة نحو مجموعة الخيارات',
+    rationale_ar: 'يقلّص عدد المشتتات في المصفوفة — تعديل للمثير (stimulus prompt) لا إشارة من المدرّب',
   },
   direct_visual_assistance: {
     cue: 'direct_visual_assistance',
-    clinical_level: 'Model',
+    array_level: 'highly_reduced',
+    target_highlighted: true,
     cue_label_ar: 'مساعدة بصرية مباشرة',
     cue_label_en: 'Direct visual guidance',
     on_screen_ar: 'الهدف مع مشتت واحد فقط، والهدف مُبرز ومُوجَّه إليه',
-    rationale_ar: 'تعرض الاستجابة الصحيحة نفسها أمام الطفل قبل أدائها — يعادل النمذجة (Demonstration)',
+    rationale_ar: 'مصفوفة من خيارين مع إبراز الهدف — أقصى تعديل للمثير، ولا يُعدّ نمذجة للاستجابة',
   },
 };
 

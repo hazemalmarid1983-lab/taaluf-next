@@ -2,10 +2,15 @@ import {
   buildLocalActivity,
   detectToolType,
   extractExplicitItems,
+  isPhysicalMotorGoal,
+  isPhysicalObservationActivity,
   normalizeGeneratedActivity,
+  PHYSICAL_OBSERVATION_MEDIA_ID,
   sanitizeGlyph,
   toInternalToolType,
+  trainingMediaForGoal,
 } from '../lib/activityGenerator';
+import { parseCustomActivities } from '../lib/childRoom/customActivityStore';
 import { buildTrialChoices } from '../lib/homeClassroomEngine';
 
 describe('activity generator — skill detection', () => {
@@ -182,6 +187,89 @@ describe('activity generator — normalising AI output', () => {
     expect(activity.sourceGoalText).toBe(goalText);
     expect(activity.iepGoalId).toBe('tg_123');
     expect(activity.titleAr).toBe(goalText);
+  });
+});
+
+describe('physical / motor goals route to live observation, never choice cards', () => {
+  const beads = 'أن يلضم الطفل 5 خرزات في خيط';
+  const balls = 'أن ينقل الطفل الكرات من سلة إلى أخرى';
+
+  it('detects fine and gross motor goals by wording or developmental domain', () => {
+    expect(isPhysicalMotorGoal(beads)).toBe(true);
+    expect(isPhysicalMotorGoal('لضم الخرز')).toBe(true);
+    expect(isPhysicalMotorGoal(balls)).toBe(true);
+    expect(isPhysicalMotorGoal('نقل الكرات')).toBe(true);
+    expect(isPhysicalMotorGoal('The child strings 5 beads')).toBe(true);
+    expect(isPhysicalMotorGoal('هدف عام للطفل', 'gross_motor')).toBe(true);
+    expect(isPhysicalMotorGoal('هدف عام للطفل', 'fine_motor')).toBe(true);
+  });
+
+  it('does not misread visual goals as motor on partial-word matches', () => {
+    expect(isPhysicalMotorGoal('أن يتعرف الطفل على وسائل النقل')).toBe(false);
+    expect(isPhysicalMotorGoal('تنمية الذاكرة البصرية')).toBe(false);
+    expect(isPhysicalMotorGoal('أن يطابق اللون الأزرق')).toBe(false);
+    expect(isPhysicalMotorGoal('أن يستمع الطفل إلى قصة')).toBe(false);
+    expect(isPhysicalMotorGoal('أن يطابق الطالب بين الحيوانات الأليفة', 'receptive_language')).toBe(false);
+  });
+
+  it.each([beads, balls, 'لضم الخرز', 'نقل الكرات'])('builds a card-free tracker for «%s»', (text) => {
+    const activity = buildLocalActivity(text, 'iep_1');
+    expect(activity.executionMode).toBe('physical_observation');
+    expect(isPhysicalObservationActivity(activity)).toBe(true);
+    expect(activity.iepGoalId).toBe('iep_1');
+    expect(activity.distractors).toBeUndefined();
+    expect(activity.sortingBins).toBeUndefined();
+    expect(activity.sampleItems).toHaveLength(1);
+    expect(activity.sampleItems.map((item) => item.id)).not.toContain('bus');
+    expect(buildTrialChoices(activity, 0).choices).toHaveLength(1);
+  });
+
+  it('routes by developmental domain even when the text reads like a vocabulary goal', () => {
+    const activity = buildLocalActivity('أن يتعرف الطفل على وسائل النقل', undefined, {
+      developmentalDomain: 'fine_motor',
+    });
+    expect(activity.executionMode).toBe('physical_observation');
+  });
+
+  it('ignores an AI payload that tries to turn a motor goal into picture cards', () => {
+    const activity = normalizeGeneratedActivity(
+      {
+        activityType: 'receptive-id',
+        items: [
+          { nameAr: 'حافلة', nameEn: 'Bus', emoji: '🚌' },
+          { nameAr: 'سمكة', nameEn: 'Fish', emoji: '🐟' },
+          { nameAr: 'قطة', nameEn: 'Cat', emoji: '🐱' },
+        ],
+      },
+      balls
+    );
+    expect(activity.executionMode).toBe('physical_observation');
+    expect(activity.sampleItems).toHaveLength(1);
+  });
+
+  it('never assigns a digital choice game as the room media', () => {
+    expect(trainingMediaForGoal(beads)).toBe(PHYSICAL_OBSERVATION_MEDIA_ID);
+    expect(trainingMediaForGoal(balls)).toBe(PHYSICAL_OBSERVATION_MEDIA_ID);
+    expect(trainingMediaForGoal('أن يتعرف الطفل على وسائل النقل')).toBe('find-the-target');
+  });
+
+  it('keeps digital goals on the interactive card path', () => {
+    const activity = buildLocalActivity('أن يتعرف الطفل على وسائل النقل');
+    expect(activity.executionMode).toBeUndefined();
+    expect(isPhysicalObservationActivity(activity)).toBe(false);
+  });
+
+  it('rebuilds legacy stored motor activities that were saved as picture cards', () => {
+    const legacyCards = buildLocalActivity('أن يتعرف الطفل على وسائل النقل');
+    const [row] = parseCustomActivities(
+      JSON.stringify({
+        activities: [
+          { id: 'old', childId: 'c', goalText: balls, mediaId: 'find-the-target', activity: legacyCards },
+        ],
+      })
+    );
+    expect(row.activity.executionMode).toBe('physical_observation');
+    expect(row.mediaId).toBe(PHYSICAL_OBSERVATION_MEDIA_ID);
   });
 });
 

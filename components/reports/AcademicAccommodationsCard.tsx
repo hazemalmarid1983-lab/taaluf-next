@@ -1,5 +1,6 @@
 'use client';
 
+import FunctionalIndicatorDisclaimer from '@/components/reports/FunctionalIndicatorDisclaimer';
 import PdfExportButton from '@/components/reports/PdfExportButton';
 import { DISCLAIMER_AR } from '@/lib/content';
 import { LEGAL_DISCLAIMERS } from '@/lib/legalContent';
@@ -68,6 +69,8 @@ export default function AcademicAccommodationsCard({
             </div>
           </div>
         </div>
+
+        <FunctionalIndicatorDisclaimer />
 
         <div className="grid grid-cols-2 gap-4 rounded-2xl border border-slate-200/60 bg-slate-50 p-4 text-xs sm:grid-cols-4">
           <div>

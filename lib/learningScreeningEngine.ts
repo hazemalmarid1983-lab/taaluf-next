@@ -2,6 +2,12 @@ import {
   LEARNING_SCREENING_QUESTIONS,
   type LearningScreeningDomain,
 } from '@/lib/learningScreeningQuestions';
+import {
+  FUNCTIONAL_INDICATOR_DISCLAIMER_AR,
+  FUNCTIONAL_INDICATOR_DISCLAIMER_EN,
+  FUNCTIONAL_INDICATOR_LABELS,
+  normalizeDomainKeyedRecord,
+} from '@/lib/functionalIndicators';
 
 export type AcademicDomain = LearningScreeningDomain;
 export type LearningNeedLevel = 'low' | 'moderate' | 'high';
@@ -9,6 +15,9 @@ export type LearningNeedLevel = 'low' | 'moderate' | 'high';
 export type DomainResult = {
   domain: AcademicDomain;
   label: string;
+  /** الوصف الوظيفي للمؤشر (بدل التسمية التشخيصية) */
+  indicatorLabelAr: string;
+  indicatorLabelEn: string;
   score: number;
   maxScore: number;
   level: LearningNeedLevel;
@@ -26,7 +35,9 @@ export type LearningScreeningResult = {
   classroomAccommodations: string[];
   recommendFullAssessment: boolean;
   completedAt: string;
-  screeningType: 'academic_sld';
+  screeningType: 'academic_functional_indicators';
+  disclaimerAr: string;
+  disclaimerEn: string;
 };
 
 export const LEARNING_DOMAIN_MAX = 6;
@@ -39,10 +50,10 @@ export const LEARNING_SCREENING_THRESHOLDS = {
 } as const;
 
 const DOMAIN_ORDER: AcademicDomain[] = [
-  'dyslexia',
-  'dysgraphia',
-  'dyscalculia',
-  'executive_adhd',
+  'reading_decoding',
+  'written_expression',
+  'numeracy_processing',
+  'attention_focus',
 ];
 
 const DOMAIN_METADATA: Record<
@@ -56,7 +67,7 @@ const DOMAIN_METADATA: Record<
     accommodations: Record<Exclude<LearningNeedLevel, 'low'>, string[]>;
   }
 > = {
-  dyslexia: {
+  reading_decoding: {
     label: 'القراءة وفك الرموز',
     lowDesc: 'الأداء القرائي وفك الرموز ضمن المعدل المتوقع لعمره الصفي.',
     modDesc:
@@ -86,7 +97,7 @@ const DOMAIN_METADATA: Record<
       ],
     },
   },
-  dysgraphia: {
+  written_expression: {
     label: 'الكتابة والتعبير الكتابي',
     lowDesc: 'التآزر البصري الحركي والرسم الكتابي متناسق ومقروء.',
     modDesc: 'إجهاد سريع عند الكتابة مع تفاوت في حجم الحروف وأخطاء إملائية متكررة.',
@@ -114,7 +125,7 @@ const DOMAIN_METADATA: Record<
       ],
     },
   },
-  dyscalculia: {
+  numeracy_processing: {
     label: 'الحساب والمفاهيم الرقمية',
     lowDesc: 'الإدراك العددي والحقائق الرياضية التلقائية مستقرة ومناسبة لمستواه.',
     modDesc: 'بطء في استحضار العمليات البسيطة مع اعتماد متزايد على العد الحسي المباشر.',
@@ -142,7 +153,7 @@ const DOMAIN_METADATA: Record<
       ],
     },
   },
-  executive_adhd: {
+  attention_focus: {
     label: 'الانتباه والتنظيم الصفي',
     lowDesc: 'القدرة على الاستمرارية وإكمال المهام وضبط الحركة جيدة ومستقرة.',
     modDesc: 'تشتت وانشغال بالمشتتات البيئية مع تململ حركي يحتاج لتذكير وتوجيه.',
@@ -208,10 +219,10 @@ export function evaluateLearningScreening(
   answers: Record<string, number>
 ): LearningScreeningResult {
   const domainScores: Record<AcademicDomain, number> = {
-    dyslexia: 0,
-    dysgraphia: 0,
-    dyscalculia: 0,
-    executive_adhd: 0,
+    reading_decoding: 0,
+    written_expression: 0,
+    numeracy_processing: 0,
+    attention_focus: 0,
   };
 
   for (const question of LEARNING_SCREENING_QUESTIONS) {
@@ -234,6 +245,8 @@ export function evaluateLearningScreening(
     domainResults[domain] = {
       domain,
       label: meta.label,
+      indicatorLabelAr: FUNCTIONAL_INDICATOR_LABELS[domain].ar,
+      indicatorLabelEn: FUNCTIONAL_INDICATOR_LABELS[domain].en,
       score,
       maxScore: LEARNING_DOMAIN_MAX,
       level,
@@ -279,7 +292,30 @@ export function evaluateLearningScreening(
     classroomAccommodations: collectClassroomAccommodations(domainResults),
     recommendFullAssessment: overallRiskLevel === 'high',
     completedAt: new Date().toISOString(),
-    screeningType: 'academic_sld',
+    screeningType: 'academic_functional_indicators',
+    disclaimerAr: FUNCTIONAL_INDICATOR_DISCLAIMER_AR,
+    disclaimerEn: FUNCTIONAL_INDICATOR_DISCLAIMER_EN,
+  };
+}
+
+/** نتيجة محفوظة قبل إعادة التسمية الوظيفية: مفاتيح المحاور ونوع الفرز والتنبيه */
+export function normalizeLearningScreeningResult(raw: unknown): LearningScreeningResult | null {
+  const result = raw as Partial<LearningScreeningResult> | null;
+  if (!result || typeof result !== 'object' || !result.domainResults) return null;
+  const domainResults = normalizeDomainKeyedRecord(result.domainResults) as Record<AcademicDomain, DomainResult>;
+  for (const d of Object.values(domainResults)) {
+    const labels = FUNCTIONAL_INDICATOR_LABELS[d.domain];
+    if (labels) {
+      d.indicatorLabelAr = labels.ar;
+      d.indicatorLabelEn = labels.en;
+    }
+  }
+  return {
+    ...(result as LearningScreeningResult),
+    domainResults,
+    screeningType: 'academic_functional_indicators',
+    disclaimerAr: FUNCTIONAL_INDICATOR_DISCLAIMER_AR,
+    disclaimerEn: FUNCTIONAL_INDICATOR_DISCLAIMER_EN,
   };
 }
 

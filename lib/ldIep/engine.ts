@@ -3,6 +3,7 @@
  */
 
 import type { ComprehensiveAssessmentReport } from '@/lib/academicAssessmentEngine';
+import { normalizeFunctionalDomainKey } from '@/lib/functionalIndicators';
 import type { LdAcademicDomain } from '@/lib/tracks/types';
 import {
   DEFAULT_ACCOMMODATIONS,
@@ -13,15 +14,15 @@ import {
 } from './types';
 
 const DOMAIN_MAP: Record<string, LdAcademicDomain> = {
-  dyslexia: 'dyslexia',
-  dysgraphia: 'dysgraphia',
-  dyscalculia: 'dyscalculia',
-  executive_adhd: 'executive_functions',
+  reading_decoding: 'reading_decoding',
+  written_expression: 'written_expression',
+  numeracy_processing: 'numeracy_processing',
+  attention_focus: 'executive_functions',
   cognitive_processing: 'cognitive_processing',
 };
 
 function mapDomain(key: string): LdAcademicDomain {
-  return DOMAIN_MAP[key] ?? 'cognitive_processing';
+  return DOMAIN_MAP[normalizeFunctionalDomainKey(key)] ?? 'cognitive_processing';
 }
 
 function goalId(): string {
@@ -55,9 +56,9 @@ export function buildSmartGoalAr(
   weeks: number
 ): string {
   const domainLabels: Record<LdAcademicDomain, string> = {
-    dyslexia: 'القراءة والوعي الفونيمي',
-    dysgraphia: 'الكتابة والتعبير التحريري',
-    dyscalculia: 'الحساب والمفاهيم الرياضية',
+    reading_decoding: 'القراءة والوعي الفونيمي',
+    written_expression: 'الكتابة والتعبير التحريري',
+    numeracy_processing: 'الحساب والمفاهيم الرياضية',
     cognitive_processing: 'المعالجة الإدراكية',
     executive_functions: 'الانتباه والوظائف التنفيذية',
   };
@@ -72,9 +73,9 @@ export function buildSmartGoalEn(
   weeks: number
 ): string {
   const domainLabels: Record<LdAcademicDomain, string> = {
-    dyslexia: 'reading and phonemic awareness',
-    dysgraphia: 'writing and written expression',
-    dyscalculia: 'numeracy and mathematical concepts',
+    reading_decoding: 'reading and phonemic awareness',
+    written_expression: 'writing and written expression',
+    numeracy_processing: 'numeracy and mathematical concepts',
     cognitive_processing: 'cognitive processing',
     executive_functions: 'attention and executive functions',
   };
@@ -166,7 +167,7 @@ export function buildIepFromAssessment(
     createdAt: now,
     updatedAt: now,
     reviewDate: review.toISOString().slice(0, 10),
-    priorityDomains: priorityDomains.length > 0 ? priorityDomains : ['dyslexia'],
+    priorityDomains: priorityDomains.length > 0 ? priorityDomains : ['reading_decoding'],
     goals,
     accommodations,
     schoolIntegration: {
@@ -175,9 +176,9 @@ export function buildIepFromAssessment(
       mainClassSubjects: ['اللغة العربية', 'الرياضيات', 'العلوم'],
       supportSubjects: priorityDomains.map((d) => {
         const labels: Record<LdAcademicDomain, string> = {
-          dyslexia: 'دعم قرائي',
-          dysgraphia: 'دعم كتابة',
-          dyscalculia: 'دعم حسابي',
+          reading_decoding: 'دعم قرائي',
+          written_expression: 'دعم كتابة',
+          numeracy_processing: 'دعم حسابي',
           cognitive_processing: 'مهارات إدراكية',
           executive_functions: 'وظائف تنفيذية',
         };

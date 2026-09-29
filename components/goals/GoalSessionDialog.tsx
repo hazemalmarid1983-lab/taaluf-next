@@ -13,15 +13,13 @@ import {
 import {
   CLINICAL_PROMPT_LABELS_AR,
   CLINICAL_PROMPT_LEVELS,
-  DIGITAL_PROMPT_MAPPING_SUMMARY_AR,
   SESSION_SETTING_LABELS_AR,
-  digitalPromptMappingLabelAr,
+  digitalStimulusSupportLabelAr,
   type ClinicalPromptLevel,
   type DigitalAssistanceCue,
-  type PromptSource,
   type SessionSetting,
 } from '@/lib/skillMastery';
-import { DIGITAL_ASSISTANCE_CUES, DIGITAL_PROMPT_MAPPING } from '@/types/clinical';
+import { DIGITAL_ASSISTANCE_CUES, DIGITAL_STIMULUS_SUPPORT } from '@/types/clinical';
 import AbcIncidentLogger, { abcDraftsToInput, type AbcDraft } from '@/components/goals/AbcIncidentLogger';
 import TrialScoreInput from '@/components/goals/TrialScoreInput';
 
@@ -49,8 +47,7 @@ export default function GoalSessionDialog({
   const [firstTrialIndependent, setFirstTrialIndependent] = useState(false);
   const [naturalCueOnly, setNaturalCueOnly] = useState(false);
   const [promptLevel, setPromptLevel] = useState<ClinicalPromptLevel | ''>('');
-  const [promptSource, setPromptSource] = useState<PromptSource>('human');
-  const [digitalPromptCue, setDigitalPromptCue] = useState<DigitalAssistanceCue | ''>('');
+  const [stimulusSupport, setStimulusSupport] = useState<DigitalAssistanceCue | ''>('');
   const [trainerName, setTrainerName] = useState(defaultTrainerName ?? '');
   const [setting, setSetting] = useState<SessionSetting | ''>('');
   const [behaviorValue, setBehaviorValue] = useState('');
@@ -83,8 +80,8 @@ export default function GoalSessionDialog({
       independencePct: usingTrialScores ? '' : independencePct,
       firstTrialIndependent,
       naturalCueOnly,
-      promptLevel: promptSource === 'human' && !usingTrialScores ? promptLevel : '',
-      digitalPromptCue: promptSource === 'digital_assistance' ? digitalPromptCue : '',
+      promptLevel: usingTrialScores ? '' : promptLevel,
+      stimulusSupport: usingTrialScores ? '' : stimulusSupport,
       trainerName,
       setting,
       behaviorValue,
@@ -213,68 +210,50 @@ export default function GoalSessionDialog({
                 />
               </label>
             )}
-            <label className="block text-sm font-semibold">
-              من قدّم أعلى مساعدة؟
-              <select
-                className={`${inputClass} mt-1`}
-                value={promptSource}
-                onChange={(e) => {
-                  setPromptSource(e.target.value as PromptSource);
-                  setDigitalPromptCue('');
-                }}
-              >
-                <option value="human">المدرّب / ولي الأمر</option>
-                <option value="digital_assistance">أداة أو لعبة رقمية</option>
-              </select>
-            </label>
-            {promptSource === 'digital_assistance' ? (
-              <div className="space-y-1">
+            {usingTrialScores ? (
+              <p className="rounded-xl bg-slate-50 px-3 py-2 text-xs leading-5 text-slate-600">
+                تسجيل كل محاولة يفترض مصفوفة مثيرات كاملة غير معدّلة. إذا عُدّلت المصفوفة رقمياً في أي محاولة
+                فأدخل النسبة وأعلى دعم للمثير بدلاً من ذلك.
+              </p>
+            ) : (
+              <>
                 <label className="block text-sm font-semibold">
-                  المساعدة الرقمية الأعلى
+                  تلقين الاستجابة — أعلى تلقين بشري
                   <select
                     className={`${inputClass} mt-1`}
-                    value={digitalPromptCue}
-                    onChange={(e) => setDigitalPromptCue(e.target.value as DigitalAssistanceCue | '')}
+                    value={promptLevel}
+                    onChange={(e) => setPromptLevel(e.target.value as ClinicalPromptLevel | '')}
                   >
                     <option value="">—</option>
-                    {DIGITAL_ASSISTANCE_CUES.map((cue) => (
-                      <option key={cue} value={cue}>
-                        {digitalPromptMappingLabelAr(cue)}
+                    {CLINICAL_PROMPT_LEVELS.map((p) => (
+                      <option key={p} value={p}>
+                        {CLINICAL_PROMPT_LABELS_AR[p]}
                       </option>
                     ))}
                   </select>
                 </label>
-                <p className="rounded-xl bg-blue-50/70 px-3 py-2 text-xs leading-5 text-slate-700">
-                  {digitalPromptCue ? (
-                    <>
-                      يُسجَّل المستوى السريري تلقائياً:{' '}
-                      <strong>
-                        {CLINICAL_PROMPT_LABELS_AR[DIGITAL_PROMPT_MAPPING[digitalPromptCue].clinical_level]}
-                      </strong>{' '}
-                      — {DIGITAL_PROMPT_MAPPING[digitalPromptCue].on_screen_ar}.
-                    </>
-                  ) : (
-                    DIGITAL_PROMPT_MAPPING_SUMMARY_AR
-                  )}{' '}
-                  (مطابقة بانتظار الاعتماد العلمي)
-                </p>
-              </div>
-            ) : usingTrialScores ? null : (
-              <label className="block text-sm font-semibold">
-                أعلى مستوى مساعدة استُخدم
-                <select
-                  className={`${inputClass} mt-1`}
-                  value={promptLevel}
-                  onChange={(e) => setPromptLevel(e.target.value as ClinicalPromptLevel | '')}
-                >
-                  <option value="">—</option>
-                  {CLINICAL_PROMPT_LEVELS.map((p) => (
-                    <option key={p} value={p}>
-                      {CLINICAL_PROMPT_LABELS_AR[p]}
-                    </option>
-                  ))}
-                </select>
-              </label>
+                <div className="space-y-1">
+                  <label className="block text-sm font-semibold">
+                    دعم مصفوفة المثيرات — أعلى تعديل رقمي
+                    <select
+                      className={`${inputClass} mt-1`}
+                      value={stimulusSupport}
+                      onChange={(e) => setStimulusSupport(e.target.value as DigitalAssistanceCue | '')}
+                    >
+                      <option value="">مصفوفة كاملة غير معدّلة</option>
+                      {DIGITAL_ASSISTANCE_CUES.map((cue) => (
+                        <option key={cue} value={cue}>
+                          {digitalStimulusSupportLabelAr(cue)}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <p className="rounded-xl bg-blue-50/70 px-3 py-2 text-xs leading-5 text-slate-700">
+                    {stimulusSupport ? `${DIGITAL_STIMULUS_SUPPORT[stimulusSupport].on_screen_ar}. ` : null}
+                    بُعد مستقل عن تلقين الاستجابة: محاولات المصفوفة المخفّضة أو المُبرزة لا تُحتسب مستقلة للإتقان.
+                  </p>
+                </div>
+              </>
             )}
             {fields.askFirstTrial && !usingTrialScores ? (
               <label className="flex items-center gap-2 text-sm">
@@ -283,7 +262,7 @@ export default function GoalSessionDialog({
                   checked={firstTrialIndependent}
                   onChange={(e) => setFirstTrialIndependent(e.target.checked)}
                 />
-                المحاولة الأولى في الجلسة أُدّيت باستقلال (دون تلقين)
+                المحاولة الأولى أُدّيت باستقلال وعلى مصفوفة كاملة غير معدّلة (دون تلقين أو دعم للمثير)
               </label>
             ) : null}
             {fields.askNaturalCue ? (

@@ -4,7 +4,10 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import LdMinistryReportDocument from '@/components/reports/LdMinistryReportDocument';
 import { useLanguage } from '@/components/LanguageProvider';
-import type { ComprehensiveAssessmentReport } from '@/lib/academicAssessmentEngine';
+import {
+  normalizeComprehensiveReport,
+  type ComprehensiveAssessmentReport,
+} from '@/lib/academicAssessmentEngine';
 import {
   buildMoeIepReport,
   buildMoeIntegrationReport,
@@ -55,7 +58,7 @@ export default function LdReportsPage() {
       const raw =
         localStorage.getItem(LD_STORAGE.assessmentReport) ||
         localStorage.getItem('taaluf_comprehensive_academic_report');
-      if (raw) assessment = JSON.parse(raw);
+      if (raw) assessment = normalizeComprehensiveReport(JSON.parse(raw));
     } catch {
       /* ignore */
     }

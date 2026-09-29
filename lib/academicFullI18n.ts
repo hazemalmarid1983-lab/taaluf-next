@@ -8,19 +8,19 @@ export const ACADEMIC_DOMAIN_LABEL: Record<
   AcademicFullDomain,
   { ar: string; en: string }
 > = {
-  dyslexia: {
+  reading_decoding: {
     ar: 'القراءة والوعي الفونيمي',
     en: 'Reading and phonemic awareness',
   },
-  dysgraphia: {
+  written_expression: {
     ar: 'الكتابة والتعبير التحريري',
     en: 'Writing and written expression',
   },
-  dyscalculia: {
+  numeracy_processing: {
     ar: 'الحساب والمفاهيم الرياضية',
     en: 'Numeracy and mathematical concepts',
   },
-  executive_adhd: {
+  attention_focus: {
     ar: 'الانتباه والوظائف التنفيذية',
     en: 'Attention and executive functions',
   },

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import AcademicAccommodationsCard from '@/components/reports/AcademicAccommodationsCard';
 import {
   evaluateLearningScreening,
+  normalizeLearningScreeningResult,
   type LearningScreeningResult,
 } from '@/lib/learningScreeningEngine';
 import { PARENT_ROUTES, readActiveChild } from '@/lib/parentJourney';
@@ -23,7 +24,8 @@ function readStoredResult(): LearningScreeningResult | null {
     const raw = localStorage.getItem(STORE_KEY);
     if (raw) {
       const payload = JSON.parse(raw) as StoredPayload;
-      if (payload?.result?.domainResults) return payload.result;
+      const stored = normalizeLearningScreeningResult(payload?.result);
+      if (stored) return stored;
       if (payload?.answers) return evaluateLearningScreening(payload.answers);
     }
     const alias = localStorage.getItem(STORE_KEY_ALIAS);

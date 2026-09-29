@@ -28,7 +28,7 @@ import {
 
   resolveSessionMetrics,
 
-  summarizeDigitalPromptMapping,
+  summarizeStimulusSupport,
 
 } from '@/lib/training/trainingResultsPresentation';
 
@@ -138,7 +138,11 @@ export default function TrainingSessionResultsList() {
 
             const goalTitles = resolveGoalTitles(session.goalIds, goals);
 
-            const promptLabel = summarizeDigitalPromptMapping(session.trials).sessionPromptLabelAr;
+            const support = summarizeStimulusSupport(session.trials);
+
+            const promptLabel = [support.responsePromptLabelAr, support.stimulusSupportLabelAr]
+              .filter(Boolean)
+              .join(' · ');
 
 
 
@@ -190,7 +194,7 @@ export default function TrainingSessionResultsList() {
 
                     <p className="mt-1 text-xs text-slate-600">
 
-                      أعلى مساعدة: {promptLabel}
+                      تلقين الاستجابة · دعم المثير: {promptLabel}
 
                     </p>
 

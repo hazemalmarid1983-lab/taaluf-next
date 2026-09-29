@@ -2,6 +2,7 @@
  * ملف طالب مستقل لمسار صعوبات التعلم — وزارة التربية والتعليم
  */
 
+import { normalizeFunctionalDomainKey } from '@/lib/functionalIndicators';
 import type { LdAcademicDomain } from './types';
 import { LD_STORAGE } from './storageKeys';
 
@@ -67,7 +68,15 @@ function readProfiles(): LdStudentProfile[] {
   try {
     if (typeof localStorage === 'undefined') return [];
     const raw = localStorage.getItem(LD_STORAGE.studentProfiles);
-    return raw ? (JSON.parse(raw) as LdStudentProfile[]) : [];
+    return raw
+      ? (JSON.parse(raw) as LdStudentProfile[]).map((p) => ({
+          ...p,
+          evaluationMetrics: (p.evaluationMetrics || []).map((m) => ({
+            ...m,
+            domain: normalizeFunctionalDomainKey(m.domain) as LdAcademicDomain,
+          })),
+        }))
+      : [];
   } catch {
     return [];
   }

@@ -2,6 +2,8 @@
  * مسارات تربوية مستقلة — وزارة التربية والتعليم vs وزارة التنمية الاجتماعية
  */
 
+import { FUNCTIONAL_INDICATOR_LABELS } from '@/lib/functionalIndicators';
+
 /** المسار النمائي: التوحد والإعاقات النمائية (وزارة التنمية الاجتماعية) */
 export type DevelopmentalTrack = 'developmental';
 
@@ -76,9 +78,9 @@ export function isDevelopmentalTrack(
 
 /** مجالات تقييم صعوبات التعلم — أكاديمية لا حسية/سلوكية */
 export type LdAcademicDomain =
-  | 'dyslexia'
-  | 'dysgraphia'
-  | 'dyscalculia'
+  | 'reading_decoding'
+  | 'written_expression'
+  | 'numeracy_processing'
   | 'cognitive_processing'
   | 'executive_functions';
 
@@ -87,9 +89,21 @@ export const LD_ACADEMIC_DOMAINS: Array<{
   labelAr: string;
   labelEn: string;
 }> = [
-  { id: 'dyslexia', labelAr: 'عسر القراءة', labelEn: 'Dyslexia' },
-  { id: 'dysgraphia', labelAr: 'عسر الكتابة', labelEn: 'Dysgraphia' },
-  { id: 'dyscalculia', labelAr: 'عسر الحساب', labelEn: 'Dyscalculia' },
+  {
+    id: 'reading_decoding',
+    labelAr: FUNCTIONAL_INDICATOR_LABELS.reading_decoding.ar,
+    labelEn: FUNCTIONAL_INDICATOR_LABELS.reading_decoding.en,
+  },
+  {
+    id: 'written_expression',
+    labelAr: FUNCTIONAL_INDICATOR_LABELS.written_expression.ar,
+    labelEn: FUNCTIONAL_INDICATOR_LABELS.written_expression.en,
+  },
+  {
+    id: 'numeracy_processing',
+    labelAr: FUNCTIONAL_INDICATOR_LABELS.numeracy_processing.ar,
+    labelEn: FUNCTIONAL_INDICATOR_LABELS.numeracy_processing.en,
+  },
   {
     id: 'cognitive_processing',
     labelAr: 'المعالجة الإدراكية',

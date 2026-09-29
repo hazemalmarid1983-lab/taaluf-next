@@ -3,6 +3,10 @@
  */
 
 import type { ComprehensiveAssessmentReport } from '@/lib/academicAssessmentEngine';
+import {
+  FUNCTIONAL_INDICATOR_DISCLAIMER_AR,
+  FUNCTIONAL_INDICATOR_DISCLAIMER_EN,
+} from '@/lib/functionalIndicators';
 import { iepCompletionRate } from '@/lib/ldIep/engine';
 import type { LdIndividualEducationPlan } from '@/lib/ldIep/types';
 import {
@@ -25,6 +29,11 @@ export type LdMinistryReport = {
     schoolName?: string;
   };
   summary: {
+    ar: string;
+    en: string;
+  };
+  /** تقارير تحمل نتائج تقييم أكاديمي: «مؤشرات وظيفية وليست تشخيصاً» */
+  disclaimer?: {
     ar: string;
     en: string;
   };
@@ -277,8 +286,12 @@ export function buildMoeProgressReport(
       schoolName: profile.schoolIntegration.schoolName,
     },
     summary: {
-      ar: assessment?.primaryDiagnosisAr ?? `تقرير متابعة تقدم أكاديمي — ${profile.name}`,
-      en: assessment?.primaryDiagnosisEn ?? `Academic progress report — ${profile.name}`,
+      ar: assessment?.primaryIndicatorSummaryAr || `تقرير متابعة تقدم أكاديمي — ${profile.name}`,
+      en: assessment?.primaryIndicatorSummaryEn || `Academic progress report — ${profile.name}`,
+    },
+    disclaimer: {
+      ar: FUNCTIONAL_INDICATOR_DISCLAIMER_AR,
+      en: FUNCTIONAL_INDICATOR_DISCLAIMER_EN,
     },
     sections: [
       {
@@ -287,8 +300,8 @@ export function buildMoeProgressReport(
         titleEn: 'Academic Assessment Results',
         items: assessment
           ? Object.values(assessment.domains).map((d) => ({
-              labelAr: d.label,
-              labelEn: d.labelEn,
+              labelAr: d.indicatorLabelAr ?? d.label,
+              labelEn: d.indicatorLabelEn ?? d.labelEn,
               value: `${d.score}/${d.maxScore} · ${d.severityLabelAr}`,
             }))
           : [{ labelAr: '—', labelEn: '—', value: 'لا يوجد تقييم محفوظ' }],

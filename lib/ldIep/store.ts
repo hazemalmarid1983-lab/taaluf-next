@@ -2,14 +2,27 @@
  * تخزين الخطة التربوية الفردية (IEP) — مسار صعوبات التعلم
  */
 
+import { normalizeFunctionalDomainKey } from '@/lib/functionalIndicators';
 import { LD_STORAGE } from '@/lib/tracks/storageKeys';
+import type { LdAcademicDomain } from '@/lib/tracks/types';
 import type { LdIndividualEducationPlan } from './types';
+
+const toDomain = (d: string) => normalizeFunctionalDomainKey(d) as LdAcademicDomain;
+
+/** خطط محفوظة بمفاتيح المحاور القديمة */
+function normalizePlan(plan: LdIndividualEducationPlan): LdIndividualEducationPlan {
+  return {
+    ...plan,
+    priorityDomains: (plan.priorityDomains || []).map(toDomain),
+    goals: (plan.goals || []).map((g) => ({ ...g, domain: toDomain(g.domain) })),
+  };
+}
 
 function readAll(): LdIndividualEducationPlan[] {
   try {
     if (typeof localStorage === 'undefined') return [];
     const raw = localStorage.getItem(LD_STORAGE.iep);
-    return raw ? (JSON.parse(raw) as LdIndividualEducationPlan[]) : [];
+    return raw ? (JSON.parse(raw) as LdIndividualEducationPlan[]).map(normalizePlan) : [];
   } catch {
     return [];
   }

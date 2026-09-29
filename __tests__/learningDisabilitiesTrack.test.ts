@@ -41,7 +41,7 @@ describe('Learning Disabilities track', () => {
     const answers = Object.fromEntries(
       ACADEMIC_FULL_QUESTIONS.map((q) => [
         q.id,
-        q.domain === 'dyslexia' ? 3 : 0,
+        q.domain === 'reading_decoding' ? 3 : 0,
       ])
     );
     const report = evaluateComprehensiveAssessment(answers, 'Test Student');
@@ -65,7 +65,7 @@ describe('Learning Disabilities track', () => {
       startTime: slot.startTime,
       endTime: slot.endTime,
       sessionType: slot.sessionType,
-      targetDomain: 'dyslexia',
+      targetDomain: 'reading_decoding',
     });
     expect(session.status).toBe('scheduled');
 
@@ -78,7 +78,7 @@ describe('Learning Disabilities track', () => {
         startTime: slot.startTime,
         endTime: slot.endTime,
         sessionType: slot.sessionType,
-        targetDomain: 'dyslexia',
+        targetDomain: 'reading_decoding',
       })
     );
     expect(isSlotAvailable(slot, date, full)).toBe(false);
@@ -93,7 +93,7 @@ describe('Learning Disabilities track', () => {
         startTime: '08:00',
         endTime: '08:45',
         sessionType: 'reading_intervention',
-        targetDomain: 'dyslexia',
+        targetDomain: 'reading_decoding',
       }),
     ];
     sessions[0].status = 'completed';

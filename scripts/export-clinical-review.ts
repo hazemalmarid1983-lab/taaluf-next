@@ -35,10 +35,23 @@ import {
 import {
   CLINICAL_PROMPT_LABELS_AR,
   CLINICAL_PROMPT_LEVELS,
+  DEFAULT_SKILL_TYPE_CONFIGS,
   isDigitalAssistanceCue,
-  toClinicalPromptLevel,
+  stimulusSupportLabelAr,
+  trialResponsePromptLevel,
+  trialStimulusSupport,
 } from '@/lib/skillMastery';
-import { DIGITAL_PROMPT_MAPPING, DIGITAL_PROMPT_MAPPING_STATUS } from '@/types/clinical';
+import {
+  DIGITAL_STIMULUS_SUPPORT,
+  STIMULUS_ARRAY_LABELS_AR,
+  STIMULUS_ARRAY_LEVELS,
+  STIMULUS_SUPPORT_STATUS,
+} from '@/types/clinical';
+import {
+  FUNCTIONAL_INDICATOR_DISCLAIMER_AR,
+  FUNCTIONAL_INDICATOR_LABELS,
+  type FunctionalIndicatorDomain,
+} from '@/lib/functionalIndicators';
 import {
   TRAINING_DIGITAL_PROMPT_LEVELS,
   TRAINING_PROMPT_LEVELS,
@@ -108,11 +121,39 @@ table(
     ['4', 'فرز صعوبات التعلم', LEARNING_SCREENING_QUESTIONS.length, '0–2', '—', 'lib/learningScreeningQuestions.ts · lib/learningScreeningEngine.ts'],
     ['5', 'التقييم الأكاديمي الشامل', ACADEMIC_FULL_QUESTIONS.length, '0–3', '—', 'lib/academicFullQuestions.ts · lib/academicAssessmentEngine.ts'],
     ['6', 'دمج المصادر المتعددة', '—', 'متوسط موزون 0–3', 'Canon 4.0-unified', 'lib/fusion.ts'],
-    ['7', 'مطابقة المساعدات الرقمية', TRAINING_DIGITAL_PROMPT_LEVELS.length, '8 مستويات', '—', 'lib/skillMastery.ts · lib/training/engine/promptLevels.ts'],
+    ['7', 'تلقين الاستجابة ودعم مصفوفة المثيرات', TRAINING_DIGITAL_PROMPT_LEVELS.length, `بُعدان: ${CLINICAL_PROMPT_LEVELS.length} مستويات تلقين + ${STIMULUS_ARRAY_LEVELS.length} مستويات مصفوفة`, '—', 'types/clinical.ts · lib/skillMastery.ts · lib/goalSessionForm.ts'],
   ]
 );
 w('في كل الأدوات: **الدرجة الأعلى = حاجة دعم أكبر** (لا توجد بنود معكوسة الترميز في الحساب).');
 w();
+w('### التعديلات الإلزامية بناءً على ملاحظات المدقق السريري');
+w();
+table(
+  ['#', 'الملاحظة', 'ما طُبّق', 'القسم', 'الاختبارات'],
+  [
+    [
+      '1',
+      'تعدد بنود الأهل للمعيار الواحد يضاعف وزن الأهل',
+      `«الدمج ثم الترجيح»: متوسط بنود المصدر الواحد للمعيار أولاً، ثم يدخل المعادلة مرة واحدة بوزن ${SOURCE_WEIGHTS.parent.toFixed(1)} (consolidateSourceScores)`,
+      '3 · 6.1',
+      '__tests__/fusion.test.ts',
+    ],
+    [
+      '2',
+      'خلط تعديل مصفوفة المثيرات بتلقين الاستجابة',
+      'بُعدان مستقلان: تلقين الاستجابة (بشري) ودعم مصفوفة المثيرات (رقمي). الإتقان بالمجس البارد يشترط استقلالية 100% ومصفوفة كاملة غير معدّلة',
+      '7',
+      '__tests__/stimulusSupport.test.ts',
+    ],
+    [
+      '3',
+      'تسميات تشخيصية طبية في مخرجات الفرز والتقييم الأكاديمي',
+      'معرّفات ووصف وظيفي محايد بدل التسميات التشخيصية، مع تنبيه ثابت على كل المخرجات',
+      '4 · 5 · 5.2',
+      '__tests__/functionalIndicators.test.ts',
+    ],
+  ]
+);
 w('---');
 w();
 
@@ -167,6 +208,7 @@ table(
   ]
 );
 w('- النتيجة تعرض تنبيه «ليس تشخيصاً»، ولا تحويل تلقائي لصفحة الباقات.');
+w(`- النتيجة (الشاشة واستجابة الخادم) تحمل التنبيه الثابت: «${FUNCTIONAL_INDICATOR_DISCLAIMER_AR}»`);
 w('- يشترط الخادم إجابة صحيحة (عدد صحيح 0–3) لكل البنود الاثني عشر.');
 w();
 signOff('الفرز المجاني');
@@ -236,7 +278,7 @@ signOff('معايير تقييم الأخصائي');
 w(`## 3. استبيان ولي الأمر (${PARENT_ITEMS.length} سؤالاً)`);
 w();
 table(['القيمة', 'التسمية'], PARENT_SCALE.map((l) => [l.value, l.label]));
-w('كل سؤال مربوط بمعيار أخصائي واحد، وتدخل الدرجة (0–3) كما هي في محرك الدمج بوزن ولي الأمر.');
+w('كل سؤال مربوط بمعيار أخصائي واحد. بنود الأهل المربوطة بالمعيار نفسه تُختزل أولاً إلى متوسط واحد، ثم يدخل هذا المتوسط محرك الدمج بوزن ولي الأمر مرة واحدة (القسم 6.1).');
 w();
 table(
   ['البند', 'المجال', 'المعيار المقابل'],
@@ -265,16 +307,20 @@ for (const item of PARENT_ITEMS) {
 }
 const multiMapped = Array.from(parentRowsByCriterion.entries()).filter(([, ids]) => ids.length > 1);
 if (multiMapped.length) {
-  w('> **للمراجعة — وزن ولي الأمر الفعلي:** محرك الدمج يضيف صفاً بوزن ولي الأمر لكل بند، فالمعيار المربوط بعدة بنود يحصل على وزن أهل مضاعف:');
-  w('>');
-  multiMapped.forEach(([cid, ids]) => {
-    const effective = ids.length * SOURCE_WEIGHTS.parent;
-    w(
-      `> - ${cid} (${critById.get(cid)?.name}): ${ids.join('، ')} ← وزن الأهل الفعلي ${effective.toFixed(1)}${effective >= SOURCE_WEIGHTS.specialist ? ` **(يساوي أو يتجاوز وزن الأخصائي ${SOURCE_WEIGHTS.specialist.toFixed(1)})**` : ''}`
-    );
-  });
-  w('>');
-  w('> القرار المطلوب: هل تُدمج بنود الأهل المتعددة للمعيار الواحد في متوسط واحد بوزن 1.0، أم يبقى الوزن تراكمياً؟');
+  w('**معايير تتلقى أكثر من بند أهل — تُطبَّق عليها قاعدة «الدمج ثم الترجيح»:**');
+  w();
+  table(
+    ['المعيار', 'البنود المغذّية', 'درجة الأهل الموحّدة', 'وزن الأهل في الدمج'],
+    multiMapped.map(([cid, ids]) => [
+      `${cid} — ${critById.get(cid)?.name}`,
+      ids.join('، '),
+      `متوسط (${ids.join(' + ')}) ÷ ${ids.length}`,
+      SOURCE_WEIGHTS.parent.toFixed(1),
+    ])
+  );
+  w(
+    `وزن الأهل لا يتجاوز ${SOURCE_WEIGHTS.parent.toFixed(1)} لأي معيار مهما تعدّدت البنود، فيبقى الترتيب أخصائي ${SOURCE_WEIGHTS.specialist.toFixed(1)} > ألعاب ${SOURCE_WEIGHTS.game.toFixed(1)} > أهل ${SOURCE_WEIGHTS.parent.toFixed(1)} ثابتاً.`
+  );
   w();
 }
 w('- بعد الإرسال يُقفل الاستبيان للطفل مدة تحددها الباقة (lib/assessmentCooldown.ts).');
@@ -283,12 +329,18 @@ signOff('استبيان ولي الأمر');
 
 /* -------------------------------------------------------------- LD screen */
 
-w(`## 4. فرز صعوبات التعلم (${LEARNING_SCREENING_QUESTIONS.length} بنداً)`);
+const indicatorLabel = (id: string) => FUNCTIONAL_INDICATOR_LABELS[id as FunctionalIndicatorDomain]?.ar ?? id;
+
+w(`## 4. فرز المؤشرات الأكاديمية الوظيفية (${LEARNING_SCREENING_QUESTIONS.length} بنداً)`);
 w();
 w('مقياس ثلاثي: **0** طبيعي · **1** صعوبة متوسطة · **2** صعوبة واضحة.');
 w();
+w(`> كل مخرجات هذه الأداة تعرض: «${FUNCTIONAL_INDICATOR_DISCLAIMER_AR}»`);
+w();
 for (const d of LEARNING_SCREENING_DOMAINS) {
   w(`#### محور: ${d.label_ar} (\`${d.id}\`)`);
+  w();
+  w(`- **الوصف الظاهر في النتائج:** ${indicatorLabel(d.id)}`);
   w();
   for (const q of LEARNING_SCREENING_QUESTIONS.filter((x) => x.domain === d.id)) {
     w(`**${q.id}** — ${q.domainLabel}: ${q.question}`);
@@ -311,7 +363,7 @@ w(`- **الخطر العام مرتفع** إذا بلغ المجموع (0–${LE
 w(`- **الخطر العام متوسط** إذا بلغ المجموع ${LEARNING_SCREENING_THRESHOLDS.overallModerate} أو أكثر، أو كان أي محور متوسطاً.`);
 w('- يوصى بالتقييم الأكاديمي الشامل عند الخطر العام المرتفع فقط.');
 w();
-signOff('فرز صعوبات التعلم');
+signOff('فرز المؤشرات الأكاديمية الوظيفية');
 
 /* --------------------------------------------------------------- academic */
 
@@ -323,6 +375,8 @@ w();
 for (const d of academicDomains) {
   const list = ACADEMIC_FULL_QUESTIONS.filter((q) => q.domain === d);
   w(`#### محور: ${list[0].domainLabel} (\`${d}\`، ${list.length} بنود)`);
+  w();
+  w(`- **الوصف الظاهر في النتائج:** ${indicatorLabel(d)}`);
   w();
   for (const q of list) {
     w(`**${q.id}** — ${q.skillName}: ${q.question}`);
@@ -346,6 +400,21 @@ w('- كل بند درجته ≥ 2 يُسجَّل «نقطة ضعف» باسم ا
 w('- **الخلاصة العامة:** «مؤشرات مرتفعة» إذا وُجد محور مكثف أو محوران متوسطان فأكثر؛ «احتياج مساندة» إذا وُجد محور متوسط واحد أو أي محور خفيف؛ وإلا «ملف متوازن».');
 w('- محور الأولوية = الأعلى مجموعاً، وتُقترح أهدافه الثلاثة؛ تُجمع تسهيلات الاختبار من المحاور المتوسطة والمكثفة.');
 w();
+w('### 5.2 إزالة التسميات التشخيصية (الأقسام 1 و4 و5 وكل الواجهات)');
+w();
+table(
+  ['المعرّف القديم (يُحوَّل تلقائياً في السجلات المحفوظة)', 'المعرّف الحالي', 'الوصف الوظيفي الظاهر'],
+  [
+    ['dyslexia', 'reading_decoding', indicatorLabel('reading_decoding')],
+    ['dysgraphia', 'written_expression', indicatorLabel('written_expression')],
+    ['dyscalculia', 'numeracy_processing', indicatorLabel('numeracy_processing')],
+    ['executive_adhd', 'attention_focus', indicatorLabel('attention_focus')],
+  ]
+);
+w('- الخلاصة العامة حقل «خلاصة المؤشرات» (primaryIndicatorSummary) بدل «التشخيص الأساسي»؛ يُحوَّل الحقل القديم عند قراءة تقرير محفوظ.');
+w('- لا يظهر أي مصطلح تشخيصي (عسر القراءة/الكتابة/الحساب، فرط الحركة وتشتت الانتباه) في بنود الأداتين ولا في مخرجاتهما — يتحقق منه اختبار آلي.');
+w(`- التنبيه الثابت «${FUNCTIONAL_INDICATOR_DISCLAIMER_AR}» يُرفق بكل نتيجة (الفرز النمائي، فرز المؤشرات الأكاديمية، التقييم الأكاديمي الشامل) ويُعرض في شاشات النتائج وبطاقة التسهيلات وتقرير الخطة الفردية وتقرير الوزارة.`);
+w();
 signOff('التقييم الأكاديمي الشامل');
 
 /* ------------------------------------------------------------------ fusion */
@@ -358,16 +427,23 @@ table(
 );
 w('### 6.1 المعادلة');
 w();
-w('1. لكل معيار: **الدرجة المدمجة** = Σ(درجة المصدر × وزن المصدر) ÷ Σ(أوزان المصادر المتوفرة لهذا المعيار)، مقرّبة لمنزلتين. كل درجة محصورة في 0–3.');
-w('2. المعيار الذي لم يُقيّمه أي مصدر **لا يدخل** في النسبة الكلية (حتى لا يُخفَّف التقييم الأسري).');
-w('3. **نسبة الاحتياج الكلية** = Σ(الدرجة المدمجة × وزن المعيار) ÷ Σ(3 × وزن المعيار) للمعايير المُقيَّمة × 100.');
-w('4. التصنيف الكلي من جدول التصنيفات في القسم 2.3.');
-w('5. **الوضع:** «شامل» إذا وُجدت درجة أخصائي، وإلا «أسري» (أهل ± ألعاب).');
+w('1. **الدمج أولاً:** لكل معيار ولكل مصدر، تُختزل كل صفوف ذلك المصدر إلى **درجة موحّدة واحدة** = متوسطها. كل درجة محصورة في 0–3.');
+w('2. **ثم الترجيح:** **الدرجة المدمجة** = Σ(الدرجة الموحّدة للمصدر × وزن المصدر) ÷ Σ(أوزان المصادر المتوفرة لهذا المعيار)، مقرّبة لمنزلتين. كل مصدر يُحتسب مرة واحدة بوزنه — عدد البنود لا يغيّر الوزن.');
+w('3. المعيار الذي لم يُقيّمه أي مصدر **لا يدخل** في النسبة الكلية (حتى لا يُخفَّف التقييم الأسري).');
+w('4. **نسبة الاحتياج الكلية** = Σ(الدرجة المدمجة × وزن المعيار) ÷ Σ(3 × وزن المعيار) للمعايير المُقيَّمة × 100.');
+w('5. التصنيف الكلي من جدول التصنيفات في القسم 2.3.');
+w('6. **الوضع:** «شامل» إذا وُجدت درجة أخصائي، وإلا «أسري» (أهل ± ألعاب).');
 w();
 w('**مثال:** أخصائي 2، أهل 1، ألعاب 3 ← (2×2 + 1×1 + 3×1.5) ÷ (2 + 1 + 1.5) = 9.5 ÷ 4.5 = **2.11**.');
 w();
 if (multiMapped.length) {
-  w(`> **للمراجعة:** الأوزان أعلاه لكل صف لا لكل مصدر. ${multiMapped.length} معايير تتلقى أكثر من بند من استبيان الأهل (انظر القسم 3)، فيتجاوز فيها وزن الأهل الفعلي 1.0.`);
+  const [cid, ids] = multiMapped.find(([, list]) => list.length >= 3) ?? multiMapped[0];
+  const n = ids.length;
+  const before = Math.round(((n * 3) / (SOURCE_WEIGHTS.specialist + n * SOURCE_WEIGHTS.parent)) * 100) / 100;
+  const after = Math.round((3 / (SOURCE_WEIGHTS.specialist + SOURCE_WEIGHTS.parent)) * 100) / 100;
+  w(
+    `**مثال تعدد بنود الأهل (${cid}):** أخصائي 0، و${ids.join(' و')} كلها 3 ← الدرجة الموحّدة للأهل = 3 ← (0×${SOURCE_WEIGHTS.specialist} + 3×${SOURCE_WEIGHTS.parent}) ÷ (${SOURCE_WEIGHTS.specialist} + ${SOURCE_WEIGHTS.parent}) = **${after}**. (الحساب التراكمي السابق كان يعطي ${before} لأن وزن الأهل الفعلي بلغ ${(n * SOURCE_WEIGHTS.parent).toFixed(1)}.)`
+  );
   w();
 }
 w('### 6.2 مستوى الاحتياج لكل معيار (من الدرجة المدمجة)');
@@ -404,45 +480,63 @@ signOff('دمج المصادر');
 
 /* ------------------------------------------------------------------ prompts */
 
-w('## 7. مقياس المساعدة ومطابقة المساعدات الرقمية');
+w('## 7. تلقين الاستجابة ودعم مصفوفة المثيرات (بُعدان مستقلان)');
 w();
-w('### 7.1 المقياس الموحّد (من الأقل إلى الأكثر تدخلاً)');
+w('كل محاولة تُسجَّل على بُعدين لا يُطابَق أحدهما مع الآخر:');
+w();
+w('- **البُعد الأول — مستوى تلقين الاستجابة (بشري/سلوكي):** ما قدّمه المدرّب قبل الاستجابة.');
+w('- **البُعد الثاني — مستوى دعم مصفوفة المثيرات (رقمي/بيئي):** ما عدّلته الشاشة في المثيرات المعروضة.');
+w();
+w('### 7.1 البُعد الأول: تلقين الاستجابة (من الأقل إلى الأكثر تدخلاً)');
 w();
 table(
   ['الترتيب', 'المستوى', 'بالعربية'],
   CLINICAL_PROMPT_LEVELS.map((l, i) => [i + 1, l, CLINICAL_PROMPT_LABELS_AR[l]])
 );
-w('### 7.2 مطابقة كل مستوى يسجله محرك التدريب');
+w('### 7.2 البُعد الثاني: دعم مصفوفة المثيرات');
+w();
+table(
+  ['الترتيب', 'المستوى', 'بالعربية'],
+  STIMULUS_ARRAY_LEVELS.map((l, i) => [i + 1, l, STIMULUS_ARRAY_LABELS_AR[l]])
+);
+w('### 7.3 تسجيل كل مستوى يسجله محرك التدريب على البُعدين');
 w();
 const digital = new Set<string>(TRAINING_DIGITAL_PROMPT_LEVELS);
 table(
-  ['قيمة المحرك', 'رقمي؟', 'ما يحدث على الشاشة', 'المستوى السريري المطابق', 'سبب المطابقة'],
+  ['قيمة المحرك', 'رقمي؟', 'ما يحدث على الشاشة', 'بُعد تلقين الاستجابة', 'بُعد مصفوفة المثيرات', 'صالحة للإتقان؟', 'سبب التصنيف'],
   TRAINING_PROMPT_LEVELS.map((l) => {
-    const c = toClinicalPromptLevel(l);
-    const rule = isDigitalAssistanceCue(l) ? DIGITAL_PROMPT_MAPPING[l] : undefined;
+    const response = trialResponsePromptLevel(l);
+    const cue = trialStimulusSupport(l);
+    const rule = isDigitalAssistanceCue(l) ? DIGITAL_STIMULUS_SUPPORT[l] : undefined;
     return [
       l,
       digital.has(l) ? 'نعم' : 'لا',
       rule?.on_screen_ar ?? '—',
-      c ? `${c} — ${CLINICAL_PROMPT_LABELS_AR[c]}` : 'غير مطابق',
+      response ? `${response} — ${CLINICAL_PROMPT_LABELS_AR[response]}` : 'غير معروف',
+      stimulusSupportLabelAr(cue),
+      response === 'Independent' && !cue ? 'نعم' : 'لا',
       rule?.rationale_ar ?? '—',
     ];
   })
 );
-w(`حالة المطابقة: **${DIGITAL_PROMPT_MAPPING_STATUS === 'approved' ? 'معتمدة' : 'بانتظار اعتماد الاستشاري السريري'}** (\`DIGITAL_PROMPT_MAPPING\` في types/clinical.ts).`);
+w(`حالة تصنيف المساعدات على مستويات المصفوفة: **${STIMULUS_SUPPORT_STATUS === 'approved' ? 'معتمدة' : 'بانتظار اعتماد الاستشاري السريري'}** (\`DIGITAL_STIMULUS_SUPPORT\` في types/clinical.ts). الفصل بين البُعدين نفسه مطبّق بطلب المدقق.`);
 w();
-w('### 7.3 القواعد المطبّقة');
+const coldProbe = DEFAULT_SKILL_TYPE_CONFIGS.closed_cognitive;
+w('### 7.4 القواعد المطبّقة');
 w();
-w('- الجلسة تسجّل **أكثر مستوى تدخلاً** بين محاولاتها.');
-w('- المحاولة المستقلة فقط تُحتسب في نسبة الاستقلالية؛ أي مساعدة رقمية = محاولة غير مستقلة.');
-w('- «مستقل» مقبول في نموذج الجلسة فقط عند استقلالية 100%.');
-w('- لا تُطابَق مساعدة رقمية مع «مستقل» ولا تتجاوز «نموذج».');
-w('- إذا بلغت مساعدة رقمية فقط أعلى مستوى في الجلسة تُسجَّل الجلسة بمصدر «مساعدة رقمية» مع نوعها (promptSource / digitalPromptCue)، ويعيد الخادم اشتقاق المستوى منها.');
+w('- **لا تُطابَق أي مساعدة رقمية** (مصفوفة مخفّضة أو إبراز بصري مباشر) مع «تلقين بالإشارة» أو «نموذج» أو أي مستوى تلقين استجابة. المحاولة التي تلقّت دعماً رقمياً فقط تُسجَّل «مستقل» على بُعد الاستجابة و«مدعومة» على بُعد المثير.');
+w('- **المحاولة المستقلة الصالحة** = استجابة مستقلة **و**مصفوفة كاملة غير معدّلة (بلا تقليل ولا إبراز). محاولات المصفوفة المخفّضة تُسجَّل تحت دعم المثير ولا تُحتسب في نسبة الاستقلالية.');
+w(
+  `- **إتقان المجس البارد (${coldProbe.label_ar}):** استقلالية استجابة ${coldProbe.mastery_threshold_pct}% **و**مصفوفة كاملة غير معدّلة في ${coldProbe.consecutive_sessions_required} جلسات متتالية، مع محاولة أولى (Cold probe) مستقلة على مصفوفة كاملة. جلسة واحدة بدعم للمثير تكسر السلسلة.`
+);
+w('- في أنواع المهارات ذات العتبة الأقل من 100% تبقى المحاولة الأولى مشروطة بالاستقلال على مصفوفة كاملة.');
+w('- مستوى الجلسة على كل بُعد = **الأكثر تدخلاً** بين محاولاتها.');
+w('- نموذج الجلسة يرفض: مساعدة رقمية مُدخلة كمستوى تلقين، واستقلالية 100% مع مصفوفة معدّلة.');
 w('- وصف ما يحدث على الشاشة مأخوذ من محرك «ابحث عن الهدف» (lib/training/findTheTargetEngine.ts)، وقد يختلف شكل الإبراز بين الألعاب.');
 w();
-w('> **مطلوب اعتماد علمي صريح:** هل التلميح البصري وتقليل الخيارات يكافئان «تلقين بالإشارة»، والمساعدة البصرية المباشرة تكافئ «نموذج»؟ أم أن تقليل الخيارات تعديل للمثير (stimulus prompt) يجب أن يُصنف منفصلاً؟');
+w('> **مطلوب اعتماد علمي:** تصنيف كل مساعدة رقمية على مستويات المصفوفة الثلاثة (العمود «بُعد مصفوفة المثيرات» أعلاه).');
 w();
-signOff('مطابقة المساعدات الرقمية');
+signOff('تلقين الاستجابة ودعم مصفوفة المثيرات');
 
 w('## التوقيع النهائي');
 w();

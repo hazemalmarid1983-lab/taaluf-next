@@ -2,10 +2,10 @@ import type { LearningScreeningQuestion } from '@/lib/learningScreeningQuestions
 import type { Language } from '@/lib/i18n/translations';
 
 const DOMAIN_EN: Record<string, string> = {
-  dyslexia: 'Reading and decoding',
-  dysgraphia: 'Writing and written expression',
-  dyscalculia: 'Numeracy and number concepts',
-  executive_adhd: 'Attention and classroom organization',
+  reading_decoding: 'Reading and decoding',
+  written_expression: 'Writing and written expression',
+  numeracy_processing: 'Numeracy and number concepts',
+  attention_focus: 'Attention and classroom organization',
 };
 
 const QUESTIONS_EN: Record<

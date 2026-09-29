@@ -3,6 +3,12 @@ import {
   type AcademicFullDomain,
   type ComprehensiveQuestion,
 } from './academicFullQuestions';
+import {
+  FUNCTIONAL_INDICATOR_DISCLAIMER_AR,
+  FUNCTIONAL_INDICATOR_DISCLAIMER_EN,
+  FUNCTIONAL_INDICATOR_LABELS,
+  normalizeDomainKeyedRecord,
+} from './functionalIndicators';
 
 export type AcademicDomainKey = AcademicFullDomain;
 
@@ -12,6 +18,9 @@ export type ComprehensiveDomainReport = {
   domain: AcademicDomainKey;
   label: string;
   labelEn: string;
+  /** الوصف الوظيفي للمؤشر (بدل التسمية التشخيصية) */
+  indicatorLabelAr: string;
+  indicatorLabelEn: string;
   score: number;
   maxScore: number;
   percentage: number;
@@ -29,8 +38,11 @@ export type ComprehensiveAssessmentReport = {
   totalScore: number;
   maxTotalScore: number;
   overallPercentage: number;
-  primaryDiagnosisAr: string;
-  primaryDiagnosisEn: string;
+  /** خلاصة المؤشرات الوظيفية — ليست تشخيصاً */
+  primaryIndicatorSummaryAr: string;
+  primaryIndicatorSummaryEn: string;
+  disclaimerAr: string;
+  disclaimerEn: string;
   domains: Record<AcademicDomainKey, ComprehensiveDomainReport>;
   individualEducationPlan: {
     targetTerm: string;
@@ -41,10 +53,10 @@ export type ComprehensiveAssessmentReport = {
 };
 
 const DOMAIN_KEYS: AcademicDomainKey[] = [
-  'dyslexia',
-  'dysgraphia',
-  'dyscalculia',
-  'executive_adhd',
+  'reading_decoding',
+  'written_expression',
+  'numeracy_processing',
+  'attention_focus',
 ];
 
 const DOMAIN_DATA: Record<
@@ -56,7 +68,7 @@ const DOMAIN_DATA: Record<
     accommodations: string[];
   }
 > = {
-  dyslexia: {
+  reading_decoding: {
     label: 'القراءة والوعي الفونيمي',
     labelEn: 'Reading & Phonemic Awareness',
     goals: [
@@ -70,7 +82,7 @@ const DOMAIN_DATA: Record<
       'استخدام مسطرة القراءة لتظليل الأسطر وتقليل التشتت البصري.',
     ],
   },
-  dysgraphia: {
+  written_expression: {
     label: 'الكتابة والتعبير التحريري',
     labelEn: 'Writing & Written Expression',
     goals: [
@@ -84,7 +96,7 @@ const DOMAIN_DATA: Record<
       'عدم الخصم على أخطاء سوء الخط في اختبارات المواد العلمية.',
     ],
   },
-  dyscalculia: {
+  numeracy_processing: {
     label: 'الحساب والمفاهيم الرياضية',
     labelEn: 'Numeracy & Mathematical Concepts',
     goals: [
@@ -98,7 +110,7 @@ const DOMAIN_DATA: Record<
       'تفكيك المسائل اللفظية الطويلة إلى خطوات بصرية ملونة.',
     ],
   },
-  executive_adhd: {
+  attention_focus: {
     label: 'الانتباه والوظائف التنفيذية',
     labelEn: 'Attention & Executive Functions',
     goals: [
@@ -161,24 +173,24 @@ export function evaluateComprehensiveAssessment(
   studentName = 'الطالب / الطالبة'
 ): ComprehensiveAssessmentReport {
   const domainScores: Record<AcademicDomainKey, number> = {
-    dyslexia: 0,
-    dysgraphia: 0,
-    dyscalculia: 0,
-    executive_adhd: 0,
+    reading_decoding: 0,
+    written_expression: 0,
+    numeracy_processing: 0,
+    attention_focus: 0,
   };
 
   const domainWeaknesses: Record<AcademicDomainKey, string[]> = {
-    dyslexia: [],
-    dysgraphia: [],
-    dyscalculia: [],
-    executive_adhd: [],
+    reading_decoding: [],
+    written_expression: [],
+    numeracy_processing: [],
+    attention_focus: [],
   };
 
   const domainCounts: Record<AcademicDomainKey, number> = {
-    dyslexia: 0,
-    dysgraphia: 0,
-    dyscalculia: 0,
-    executive_adhd: 0,
+    reading_decoding: 0,
+    written_expression: 0,
+    numeracy_processing: 0,
+    attention_focus: 0,
   };
 
   ACADEMIC_FULL_QUESTIONS.forEach((q: ComprehensiveQuestion) => {
@@ -202,6 +214,8 @@ export function evaluateComprehensiveAssessment(
       domain: dKey,
       label: DOMAIN_DATA[dKey].label,
       labelEn: DOMAIN_DATA[dKey].labelEn,
+      indicatorLabelAr: FUNCTIONAL_INDICATOR_LABELS[dKey].ar,
+      indicatorLabelEn: FUNCTIONAL_INDICATOR_LABELS[dKey].en,
       score,
       maxScore,
       percentage,
@@ -222,15 +236,15 @@ export function evaluateComprehensiveAssessment(
   const severeDomains = ranked.filter((d) => d.severity === 'severe');
   const moderateDomains = ranked.filter((d) => d.severity === 'moderate');
 
-  let primaryDiagnosisAr = 'ملف نمائي وأكاديمي متوازن ومستقر';
-  let primaryDiagnosisEn = 'Balanced Developmental & Academic Profile';
+  let primaryIndicatorSummaryAr = 'ملف نمائي وأكاديمي متوازن ومستقر';
+  let primaryIndicatorSummaryEn = 'Balanced Developmental & Academic Profile';
 
   if (severeDomains.length > 0 || moderateDomains.length >= 2) {
-    primaryDiagnosisAr = `مؤشرات تربوية مرتفعة في محور ${priorityDomainObj.label} تستوجب خطة دعم فردية ومتابعة صفية`;
-    primaryDiagnosisEn = `Elevated educational indicators in ${priorityDomainObj.labelEn} requiring an individual support plan`;
+    primaryIndicatorSummaryAr = `${priorityDomainObj.indicatorLabelAr} (مستوى مرتفع) تستوجب خطة دعم فردية ومتابعة صفية`;
+    primaryIndicatorSummaryEn = `${priorityDomainObj.indicatorLabelEn} (elevated) requiring an individual support plan`;
   } else if (moderateDomains.length === 1 || ranked.some((d) => d.severity === 'mild')) {
-    primaryDiagnosisAr = `احتياج مساندة تربوية في محور ${priorityDomainObj.label} مع متابعة دورية`;
-    primaryDiagnosisEn = `Educational support need in ${priorityDomainObj.labelEn} with ongoing monitoring`;
+    primaryIndicatorSummaryAr = `احتياج مساندة تربوية — ${priorityDomainObj.indicatorLabelAr} مع متابعة دورية`;
+    primaryIndicatorSummaryEn = `Educational support need — ${priorityDomainObj.indicatorLabelEn} with ongoing monitoring`;
   }
 
   const allAccommodations = Object.values(domainsReport)
@@ -243,8 +257,10 @@ export function evaluateComprehensiveAssessment(
     totalScore,
     maxTotalScore,
     overallPercentage,
-    primaryDiagnosisAr,
-    primaryDiagnosisEn,
+    primaryIndicatorSummaryAr,
+    primaryIndicatorSummaryEn,
+    disclaimerAr: FUNCTIONAL_INDICATOR_DISCLAIMER_AR,
+    disclaimerEn: FUNCTIONAL_INDICATOR_DISCLAIMER_EN,
     domains: domainsReport,
     individualEducationPlan: {
       targetTerm: 'الفصل الدراسي القادم',
@@ -255,5 +271,38 @@ export function evaluateComprehensiveAssessment(
           ? allAccommodations
           : ['تطبيق إجراءات الاختبار الصفية المعتادة.'],
     },
+  };
+}
+
+type LegacyComprehensiveReport = Partial<ComprehensiveAssessmentReport> & {
+  primaryDiagnosisAr?: string;
+  primaryDiagnosisEn?: string;
+};
+
+/** تقرير محفوظ قبل إعادة التسمية الوظيفية: مفاتيح المحاور والخلاصة والتنبيه */
+export function normalizeComprehensiveReport(
+  raw: unknown
+): ComprehensiveAssessmentReport | null {
+  const report = raw as LegacyComprehensiveReport | null;
+  if (!report || typeof report !== 'object' || !report.domains) return null;
+  const { primaryDiagnosisAr, primaryDiagnosisEn, ...rest } = report;
+  const domains = normalizeDomainKeyedRecord(report.domains) as Record<
+    AcademicDomainKey,
+    ComprehensiveDomainReport
+  >;
+  for (const d of Object.values(domains)) {
+    const labels = FUNCTIONAL_INDICATOR_LABELS[d.domain];
+    if (labels) {
+      d.indicatorLabelAr = labels.ar;
+      d.indicatorLabelEn = labels.en;
+    }
+  }
+  return {
+    ...(rest as ComprehensiveAssessmentReport),
+    domains,
+    primaryIndicatorSummaryAr: report.primaryIndicatorSummaryAr ?? primaryDiagnosisAr ?? '',
+    primaryIndicatorSummaryEn: report.primaryIndicatorSummaryEn ?? primaryDiagnosisEn ?? '',
+    disclaimerAr: FUNCTIONAL_INDICATOR_DISCLAIMER_AR,
+    disclaimerEn: FUNCTIONAL_INDICATOR_DISCLAIMER_EN,
   };
 }

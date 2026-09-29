@@ -1,8 +1,8 @@
 export type AcademicFullDomain =
-  | 'dyslexia'
-  | 'dysgraphia'
-  | 'dyscalculia'
-  | 'executive_adhd';
+  | 'reading_decoding'
+  | 'written_expression'
+  | 'numeracy_processing'
+  | 'attention_focus';
 
 export type ComprehensiveOption = {
   score: number;
@@ -27,7 +27,7 @@ export type ComprehensiveQuestion = {
 export const ACADEMIC_FULL_QUESTIONS: ComprehensiveQuestion[] = [
   {
     id: 'full_dys_1',
-    domain: 'dyslexia',
+    domain: 'reading_decoding',
     domainLabel: 'القراءة والوعي الفونيمي',
     skillName: 'الوعي الصوتي والفونيمي',
     question:
@@ -41,7 +41,7 @@ export const ACADEMIC_FULL_QUESTIONS: ComprehensiveQuestion[] = [
   },
   {
     id: 'full_dys_2',
-    domain: 'dyslexia',
+    domain: 'reading_decoding',
     domainLabel: 'القراءة والوعي الفونيمي',
     skillName: 'التمييز بين الحروف المتشابهة صوتاً',
     question:
@@ -55,7 +55,7 @@ export const ACADEMIC_FULL_QUESTIONS: ComprehensiveQuestion[] = [
   },
   {
     id: 'full_dys_3',
-    domain: 'dyslexia',
+    domain: 'reading_decoding',
     domainLabel: 'القراءة والوعي الفونيمي',
     skillName: 'فك ترميز الكلمات الجديدة',
     question: 'كيف يتعامل الطفل عند مواجهة كلمة جديدة لم يرها من قبل في النص؟',
@@ -68,7 +68,7 @@ export const ACADEMIC_FULL_QUESTIONS: ComprehensiveQuestion[] = [
   },
   {
     id: 'full_dys_4',
-    domain: 'dyslexia',
+    domain: 'reading_decoding',
     domainLabel: 'القراءة والوعي الفونيمي',
     skillName: 'الطلاقة وسرعة القراءة الجهرية',
     question: 'ما مدى استرسال وسرعة قراءة الطفل للنصوص المناسبة لمستواه الصفي؟',
@@ -81,7 +81,7 @@ export const ACADEMIC_FULL_QUESTIONS: ComprehensiveQuestion[] = [
   },
   {
     id: 'full_dys_5',
-    domain: 'dyslexia',
+    domain: 'reading_decoding',
     domainLabel: 'القراءة والوعي الفونيمي',
     skillName: 'الحذف والإضافة والإبدال',
     question: 'هل يحذف أو يضيف الطفل حروفاً وكلمات لم ترد في النص الأصلي؟',
@@ -94,7 +94,7 @@ export const ACADEMIC_FULL_QUESTIONS: ComprehensiveQuestion[] = [
   },
   {
     id: 'full_dys_6',
-    domain: 'dyslexia',
+    domain: 'reading_decoding',
     domainLabel: 'القراءة والوعي الفونيمي',
     skillName: 'الفهم المباشر للنص',
     question: 'هل يستخرج الطفل الحقائق والمعلومات الصريحة المذكورة في الفقرة المقروءة؟',
@@ -107,7 +107,7 @@ export const ACADEMIC_FULL_QUESTIONS: ComprehensiveQuestion[] = [
   },
   {
     id: 'full_dys_7',
-    domain: 'dyslexia',
+    domain: 'reading_decoding',
     domainLabel: 'القراءة والوعي الفونيمي',
     skillName: 'الاستنتاج والربط القرائي',
     question: 'هل يستطيع استنتاج الأفكار الضمنية والربط بين أحداث القصة المقروءة؟',
@@ -120,7 +120,7 @@ export const ACADEMIC_FULL_QUESTIONS: ComprehensiveQuestion[] = [
   },
   {
     id: 'full_dys_8',
-    domain: 'dyslexia',
+    domain: 'reading_decoding',
     domainLabel: 'القراءة والوعي الفونيمي',
     skillName: 'قراءة الكلمات البصرية المتكررة',
     question: 'هل يتعرف الطفل فورياً على الكلمات الشائعة (مثل: هذا، في، على، قال)؟',
@@ -133,7 +133,7 @@ export const ACADEMIC_FULL_QUESTIONS: ComprehensiveQuestion[] = [
   },
   {
     id: 'full_dys_9',
-    domain: 'dyslexia',
+    domain: 'reading_decoding',
     domainLabel: 'القراءة والوعي الفونيمي',
     skillName: 'تتبع الأسطر والمجال البصري',
     question: 'هل يستخدم إصبعه لتتبع الكلمات أو يشكو من تداخل الحروف واهتزازها؟',
@@ -146,7 +146,7 @@ export const ACADEMIC_FULL_QUESTIONS: ComprehensiveQuestion[] = [
   },
   {
     id: 'full_gra_1',
-    domain: 'dysgraphia',
+    domain: 'written_expression',
     domainLabel: 'الكتابة والتعبير التحريري',
     skillName: 'مسكة القلم والضغط العصبي الحركي',
     question: 'كيف يمسك الطفل القلم أثناء الكتابة وما مقدار ضغطه على الورقة؟',
@@ -159,7 +159,7 @@ export const ACADEMIC_FULL_QUESTIONS: ComprehensiveQuestion[] = [
   },
   {
     id: 'full_gra_2',
-    domain: 'dysgraphia',
+    domain: 'written_expression',
     domainLabel: 'الكتابة والتعبير التحريري',
     skillName: 'الالتزام بالسطر والاتجاه',
     question: 'هل يلتزم بالكتابة على السطر المخصص مع الحفاظ على الاتجاه الصحيح من اليمين لليسار؟',
@@ -172,7 +172,7 @@ export const ACADEMIC_FULL_QUESTIONS: ComprehensiveQuestion[] = [
   },
   {
     id: 'full_gra_3',
-    domain: 'dysgraphia',
+    domain: 'written_expression',
     domainLabel: 'الكتابة والتعبير التحريري',
     skillName: 'تناسق أحجام الحروف والمسافات',
     question: 'ما مدى انتظام حجم الحروف وترك مسافات كافية ومنتظمة بين الكلمات؟',
@@ -185,7 +185,7 @@ export const ACADEMIC_FULL_QUESTIONS: ComprehensiveQuestion[] = [
   },
   {
     id: 'full_gra_4',
-    domain: 'dysgraphia',
+    domain: 'written_expression',
     domainLabel: 'الكتابة والتعبير التحريري',
     skillName: 'قلب الحروف والأرقام ورسمها معكوسة',
     question: 'هل يكتب الحروف أو الأرقام بالاتجاه المعكوس (مثل: 2 بدل 6، أو حرف معكوس)؟',
@@ -198,7 +198,7 @@ export const ACADEMIC_FULL_QUESTIONS: ComprehensiveQuestion[] = [
   },
   {
     id: 'full_gra_5',
-    domain: 'dysgraphia',
+    domain: 'written_expression',
     domainLabel: 'الكتابة والتعبير التحريري',
     skillName: 'الإملاء والظواهر الإملائية',
     question:
@@ -212,7 +212,7 @@ export const ACADEMIC_FULL_QUESTIONS: ComprehensiveQuestion[] = [
   },
   {
     id: 'full_gra_6',
-    domain: 'dysgraphia',
+    domain: 'written_expression',
     domainLabel: 'الكتابة والتعبير التحريري',
     skillName: 'السرعة والقدرة على النقل من السبورة',
     question: 'هل ينقل النصوص من السبورة أو الكتاب إلى دفتره في وقت مناسب وبدون نواقص؟',
@@ -225,7 +225,7 @@ export const ACADEMIC_FULL_QUESTIONS: ComprehensiveQuestion[] = [
   },
   {
     id: 'full_gra_7',
-    domain: 'dysgraphia',
+    domain: 'written_expression',
     domainLabel: 'الكتابة والتعبير التحريري',
     skillName: 'بناء الجمل والتراكيب اللغوية',
     question: 'هل يستطيع تكوين جملة اسمية أو فعلية تامة المعنى وصحيحة القواعد كتابياً؟',
@@ -238,7 +238,7 @@ export const ACADEMIC_FULL_QUESTIONS: ComprehensiveQuestion[] = [
   },
   {
     id: 'full_gra_8',
-    domain: 'dysgraphia',
+    domain: 'written_expression',
     domainLabel: 'الكتابة والتعبير التحريري',
     skillName: 'التعبير عن الأفكار تحريرياً',
     question: 'ما مدى قدرته على صياغة فقرة تعبيرية عن موضوع مألوف (مثل: يوم العيد، رحلة مدرسية)؟',
@@ -251,7 +251,7 @@ export const ACADEMIC_FULL_QUESTIONS: ComprehensiveQuestion[] = [
   },
   {
     id: 'full_gra_9',
-    domain: 'dysgraphia',
+    domain: 'written_expression',
     domainLabel: 'الكتابة والتعبير التحريري',
     skillName: 'استخدام علامات الترقيم والتنسيق',
     question: 'هل يوظف علامات الترقيم (النقطة، الفاصلة، علامة الاستفهام) ويراعي ترتيب الصفحة؟',
@@ -264,7 +264,7 @@ export const ACADEMIC_FULL_QUESTIONS: ComprehensiveQuestion[] = [
   },
   {
     id: 'full_num_1',
-    domain: 'dyscalculia',
+    domain: 'numeracy_processing',
     domainLabel: 'الحساب والمفاهيم الرياضية',
     skillName: 'الحس العددي وإدراك الكميات',
     question:
@@ -278,7 +278,7 @@ export const ACADEMIC_FULL_QUESTIONS: ComprehensiveQuestion[] = [
   },
   {
     id: 'full_num_2',
-    domain: 'dyscalculia',
+    domain: 'numeracy_processing',
     domainLabel: 'الحساب والمفاهيم الرياضية',
     skillName: 'ربط الرمز الرياضي بالمدلول',
     question: 'هل يربط الرمز المكتوب (مثل: 7) بمقداره ومعدوده الفعلي بسهولة؟',
@@ -291,7 +291,7 @@ export const ACADEMIC_FULL_QUESTIONS: ComprehensiveQuestion[] = [
   },
   {
     id: 'full_num_3',
-    domain: 'dyscalculia',
+    domain: 'numeracy_processing',
     domainLabel: 'الحساب والمفاهيم الرياضية',
     skillName: 'القيمة المنزلية والمكانية للأرقام',
     question: 'هل يميز موقع الرقم وقيمته (آحاد، عشرات، مئات) في الأعداد متعددة الخانات؟',
@@ -304,7 +304,7 @@ export const ACADEMIC_FULL_QUESTIONS: ComprehensiveQuestion[] = [
   },
   {
     id: 'full_num_4',
-    domain: 'dyscalculia',
+    domain: 'numeracy_processing',
     domainLabel: 'الحساب والمفاهيم الرياضية',
     skillName: 'استرجاع حقائق الجمع والطرح البسيطة',
     question: 'ما مدى اعتماده على الاسترجاع الذهني لحقائق الأرقام (مثل: 4+4=8، 10-3=7)؟',
@@ -317,7 +317,7 @@ export const ACADEMIC_FULL_QUESTIONS: ComprehensiveQuestion[] = [
   },
   {
     id: 'full_num_5',
-    domain: 'dyscalculia',
+    domain: 'numeracy_processing',
     domainLabel: 'الحساب والمفاهيم الرياضية',
     skillName: 'التمييز بين الإشارات والرموز الرياضية',
     question: 'هل يخلط بين إشارات العمليات الرياضية الأساسية (+، -، ×، ÷، >، <)؟',
@@ -330,7 +330,7 @@ export const ACADEMIC_FULL_QUESTIONS: ComprehensiveQuestion[] = [
   },
   {
     id: 'full_num_6',
-    domain: 'dyscalculia',
+    domain: 'numeracy_processing',
     domainLabel: 'الحساب والمفاهيم الرياضية',
     skillName: 'إجراء العمليات الحسابية المتسلسلة',
     question: 'كيف يؤدي العمليات التي تتطلب خطوات متعددة (مثل: الجمع مع الحمل، الطرح مع الاستلاف)؟',
@@ -343,7 +343,7 @@ export const ACADEMIC_FULL_QUESTIONS: ComprehensiveQuestion[] = [
   },
   {
     id: 'full_num_7',
-    domain: 'dyscalculia',
+    domain: 'numeracy_processing',
     domainLabel: 'الحساب والمفاهيم الرياضية',
     skillName: 'فهم وحل المسائل اللفظية',
     question: 'هل يستطيع تحويل المسألة الكلامية إلى معادلة رقمية؟',
@@ -356,7 +356,7 @@ export const ACADEMIC_FULL_QUESTIONS: ComprehensiveQuestion[] = [
   },
   {
     id: 'full_num_8',
-    domain: 'dyscalculia',
+    domain: 'numeracy_processing',
     domainLabel: 'الحساب والمفاهيم الرياضية',
     skillName: 'المفاهيم الزمنية وقراءة الساعة',
     question: 'ما مدى فهمه للزمن، تسلسل الأيام والشهور، وقراءة الوقت بالساعات والدقائق؟',
@@ -369,7 +369,7 @@ export const ACADEMIC_FULL_QUESTIONS: ComprehensiveQuestion[] = [
   },
   {
     id: 'full_num_9',
-    domain: 'dyscalculia',
+    domain: 'numeracy_processing',
     domainLabel: 'الحساب والمفاهيم الرياضية',
     skillName: 'التعامل مع النقود والعملات',
     question: 'هل يميز الفئات النقدية ويحسب الباقي عند الشراء في المعاملات اليومية؟',
@@ -382,7 +382,7 @@ export const ACADEMIC_FULL_QUESTIONS: ComprehensiveQuestion[] = [
   },
   {
     id: 'full_exe_1',
-    domain: 'executive_adhd',
+    domain: 'attention_focus',
     domainLabel: 'الانتباه والوظائف التنفيذية',
     skillName: 'الاستدامة والتركيز الصفي',
     question: 'ما هي المدة الزمنية التي يستطيع فيها الحفاظ على تركيزه في مهمة دراسية واحدة مستمرة؟',
@@ -395,7 +395,7 @@ export const ACADEMIC_FULL_QUESTIONS: ComprehensiveQuestion[] = [
   },
   {
     id: 'full_exe_2',
-    domain: 'executive_adhd',
+    domain: 'attention_focus',
     domainLabel: 'الانتباه والوظائف التنفيذية',
     skillName: 'تجنب المشتتات والضوضاء البيئية',
     question: 'كيف يتصرف عند وجود ضوضاء خفيفة أو حركة زملائه داخل غرفة الصف؟',
@@ -408,7 +408,7 @@ export const ACADEMIC_FULL_QUESTIONS: ComprehensiveQuestion[] = [
   },
   {
     id: 'full_exe_3',
-    domain: 'executive_adhd',
+    domain: 'attention_focus',
     domainLabel: 'الانتباه والوظائف التنفيذية',
     skillName: 'اتباع التعليمات المتسلسلة المركبة',
     question:
@@ -422,7 +422,7 @@ export const ACADEMIC_FULL_QUESTIONS: ComprehensiveQuestion[] = [
   },
   {
     id: 'full_exe_4',
-    domain: 'executive_adhd',
+    domain: 'attention_focus',
     domainLabel: 'الانتباه والوظائف التنفيذية',
     skillName: 'تنظيم الأدوات والحقيبة المدرسية',
     question: 'ما هي حالة دفاتره، كتبه، حقيبته، ومقعده الدراسي من حيث الترتيب والنظافة؟',
@@ -435,7 +435,7 @@ export const ACADEMIC_FULL_QUESTIONS: ComprehensiveQuestion[] = [
   },
   {
     id: 'full_exe_5',
-    domain: 'executive_adhd',
+    domain: 'attention_focus',
     domainLabel: 'الانتباه والوظائف التنفيذية',
     skillName: 'التحكم في الاندفاعية والتسرع',
     question: 'هل ينتظر اكتمال السؤال قبل الإجابة وينتظر دوره في الأنشطة الجماعية؟',
@@ -448,7 +448,7 @@ export const ACADEMIC_FULL_QUESTIONS: ComprehensiveQuestion[] = [
   },
   {
     id: 'full_exe_6',
-    domain: 'executive_adhd',
+    domain: 'attention_focus',
     domainLabel: 'الانتباه والوظائف التنفيذية',
     skillName: 'التململ والحركة في المقعد الصفي',
     question: 'هل يستقر جالساً في مقعده طوال الحصة الدراسية أم يتحرك ويتأرجح باستمرار؟',
@@ -461,7 +461,7 @@ export const ACADEMIC_FULL_QUESTIONS: ComprehensiveQuestion[] = [
   },
   {
     id: 'full_exe_7',
-    domain: 'executive_adhd',
+    domain: 'attention_focus',
     domainLabel: 'الانتباه والوظائف التنفيذية',
     skillName: 'المرونة المعرفية والانتقال بين الأنشطة',
     question: 'كيف يتصرف عند الانتقال المفاجئ من نشاط يحبه (مثل الرسم) إلى حصة الرياضيات؟',
@@ -474,7 +474,7 @@ export const ACADEMIC_FULL_QUESTIONS: ComprehensiveQuestion[] = [
   },
   {
     id: 'full_exe_8',
-    domain: 'executive_adhd',
+    domain: 'attention_focus',
     domainLabel: 'الانتباه والوظائف التنفيذية',
     skillName: 'المبادرة وبدء المهام الدراسية',
     question: 'هل يبدأ في حل الواجب أو التدريب الصفي بمجرد أن يُطلب منه ذلك؟',
@@ -487,7 +487,7 @@ export const ACADEMIC_FULL_QUESTIONS: ComprehensiveQuestion[] = [
   },
   {
     id: 'full_exe_9',
-    domain: 'executive_adhd',
+    domain: 'attention_focus',
     domainLabel: 'الانتباه والوظائف التنفيذية',
     skillName: 'المراقبة الذاتية وتصحيح الأخطاء',
     question: 'هل يراجع إجاباته ويكتشف أخطاءه السهو بنفسه قبل تسليم ورقة العمل؟',

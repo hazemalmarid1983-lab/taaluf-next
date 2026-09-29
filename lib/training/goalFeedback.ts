@@ -6,7 +6,11 @@ import { isFullyIndependentSession } from '@/lib/clinicalMastery';
 import { pushSessionEntry } from '@/lib/clinicalRecordClient';
 import type { GoalSession, TrackedGoal } from '@/lib/goalsEngine';
 import { loadGoalsLocal, upsertGoalLocal } from '@/lib/goalsStore';
-import { resolveSessionPromptEvidence, toClinicalPromptLevel } from '@/lib/skillMastery';
+import {
+  resolveSessionPromptEvidence,
+  trialResponsePromptLevel,
+  trialStimulusSupport,
+} from '@/lib/skillMastery';
 import type { TrainingSessionMetrics } from '@/lib/training/engine/types';
 import type { TrainingSessionRuntime } from '@/lib/training/engine/types';
 
@@ -33,9 +37,25 @@ function buildTrainingGoalSessionEntry(
     independencePct: metrics.independence,
     firstTrialIndependent: session.trials[0]?.promptLevel === 'independent',
     ...resolveSessionPromptEvidence(session.trials.map((t) => t.promptLevel)),
-    trialScores: session.trials
-      .map((t) => toClinicalPromptLevel(t.promptLevel))
-      .filter((l): l is NonNullable<typeof l> => Boolean(l)),
+    ...trialDimensions(session.trials),
+  };
+}
+
+/** البُعدان لكل محاولة بالترتيب نفسه — تُسقط المحاولات بمستوى غير معروف من كليهما */
+function trialDimensions(
+  trials: TrainingSessionRuntime['trials']
+): Pick<GoalSession, 'trialScores' | 'trialStimulus'> {
+  const trialScores: NonNullable<GoalSession['trialScores']> = [];
+  const trialStimulus: NonNullable<GoalSession['trialStimulus']> = [];
+  for (const t of trials) {
+    const response = trialResponsePromptLevel(t.promptLevel);
+    if (!response) continue;
+    trialScores.push(response);
+    trialStimulus.push(trialStimulusSupport(t.promptLevel) ?? null);
+  }
+  return {
+    trialScores,
+    trialStimulus: trialStimulus.some(Boolean) ? trialStimulus : undefined,
   };
 }
 

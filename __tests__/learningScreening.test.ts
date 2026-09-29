@@ -28,12 +28,12 @@ describe('learning screening engine', () => {
     const answers = Object.fromEntries(
       LEARNING_SCREENING_QUESTIONS.map((q) => [
         q.id,
-        q.domain === 'dyslexia' ? 2 : 0,
+        q.domain === 'reading_decoding' ? 2 : 0,
       ])
     );
     const result = evaluateLearningScreening(answers);
-    expect(result.domainResults.dyslexia.level).toBe('high');
+    expect(result.domainResults.reading_decoding.level).toBe('high');
     expect(result.overallRiskLevel).toBe('high');
-    expect(result.screeningType).toBe('academic_sld');
+    expect(result.screeningType).toBe('academic_functional_indicators');
   });
 });

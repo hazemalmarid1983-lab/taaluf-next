@@ -9,6 +9,7 @@ import {
   type PathwayLevel,
   type PathwaySnapshot,
 } from '@/lib/childPathwayRecord';
+import { FUNCTIONAL_INDICATOR_DISCLAIMER_EN } from '@/lib/functionalIndicators';
 import { localizeLabel } from '@/lib/i18n/pathwayLabels';
 import { parentScreeningEntryHref } from '@/lib/parentJourney';
 import { isLearningDifficultiesEnabled } from '@/lib/featureFlags';
@@ -73,6 +74,11 @@ function PathwayCard({
           ))}
         </ul>
       )}
+      {snapshot.available && snapshot.disclaimer ? (
+        <p className="text-[11px] leading-5 text-slate-500">
+          {lang === 'en' ? FUNCTIONAL_INDICATOR_DISCLAIMER_EN : snapshot.disclaimer}
+        </p>
+      ) : null}
       <Link
         href={snapshot.href}
         className={`inline-block text-xs font-bold ${

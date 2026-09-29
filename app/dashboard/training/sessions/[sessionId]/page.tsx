@@ -2,7 +2,7 @@
 
 import { useParams } from 'next/navigation';
 import { useMemo } from 'react';
-import DigitalPromptMappingPanel from '@/components/training/DigitalPromptMappingPanel';
+import StimulusSupportPanel from '@/components/training/StimulusSupportPanel';
 import { getTrainingProgress, getTrainingSession } from '@/lib/training/storage';
 import { loadGoalsLocal } from '@/lib/goalsStore';
 import {
@@ -182,7 +182,7 @@ export default function TrainingSessionDetailPage() {
             ))}
           </ul>
         )}
-        <DigitalPromptMappingPanel trials={session.trials} />
+        <StimulusSupportPanel trials={session.trials} />
       </section>
 
       <section className="mx-auto mt-6 max-w-3xl rounded-3xl border border-slate-100 bg-white p-6">

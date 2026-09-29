@@ -1,4 +1,8 @@
 import screeningData from '@/data/taalof_screening.json';
+import {
+  FUNCTIONAL_INDICATOR_DISCLAIMER_AR,
+  FUNCTIONAL_INDICATOR_DISCLAIMER_EN,
+} from '@/lib/functionalIndicators';
 
 export type ScreeningAnswer = { id: string; value: number };
 
@@ -23,6 +27,9 @@ export type ScreeningResult = {
   /** بنود الإنذار المبكر التي بلغت عتبتها (غائبة في نتائج محفوظة قبل v2.1) */
   redFlags?: string[];
   referralReasons?: ScreeningReferralReason[];
+  /** غائب في نتائج محفوظة قبل إضافته — normalizeScreeningResult يكمله */
+  disclaimerAr?: string;
+  disclaimerEn?: string;
 };
 
 export const SCREENING_ITEMS = screeningData.items;
@@ -92,6 +99,8 @@ export function canonicalScreeningDomainLabel(name?: string | null): string {
 export function normalizeScreeningResult(result: ScreeningResult): ScreeningResult {
   return {
     ...result,
+    disclaimerAr: FUNCTIONAL_INDICATOR_DISCLAIMER_AR,
+    disclaimerEn: FUNCTIONAL_INDICATOR_DISCLAIMER_EN,
     domainScores: result.domainScores.map((d) => ({
       ...d,
       label_ar: canonicalScreeningDomainLabel(d.label_ar || d.dimension),
@@ -207,6 +216,8 @@ export function calculateScreening(answers: ScreeningAnswer[]): ScreeningResult 
     recommendFullAssessment: referralReasons.length > 0,
     redFlags: redFlags.map((f) => f.itemId),
     referralReasons,
+    disclaimerAr: FUNCTIONAL_INDICATOR_DISCLAIMER_AR,
+    disclaimerEn: FUNCTIONAL_INDICATOR_DISCLAIMER_EN,
   };
 }
 

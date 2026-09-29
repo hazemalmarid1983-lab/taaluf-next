@@ -13,7 +13,7 @@ import {
   type GeneralizationProbeInput,
 } from '@/lib/generalizationProbeStore';
 import {
-  DIGITAL_PROMPT_MAPPING_SUMMARY_AR,
+  DIGITAL_STIMULUS_SUPPORT_SUMMARY_AR,
   SESSION_SETTING_LABELS_AR,
   type SessionSetting,
 } from '@/lib/skillMastery';
@@ -172,8 +172,8 @@ export default function GeneralizationProbeDialog({
           </label>
         </div>
         <p className="rounded-xl bg-blue-50/70 px-3 py-2 text-xs leading-5 text-slate-700">
-          إذا قدّمت أداة أو لعبة رقمية المساعدة، اختر المستوى المطابق: {DIGITAL_PROMPT_MAPPING_SUMMARY_AR}{' '}
-          (بانتظار الاعتماد العلمي)
+          مستوى المساعدة هنا تلقين بشري للاستجابة فقط. المساعدات الرقمية ({DIGITAL_STIMULUS_SUPPORT_SUMMARY_AR})
+          تعديل لمصفوفة المثيرات وليست «إشارة» أو «نموذجاً» — المجس الذي عُدّلت فيه المصفوفة لا يُعدّ مستقلاً.
         </p>
         <label className="flex items-center gap-2 text-sm">
           <input

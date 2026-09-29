@@ -1,6 +1,7 @@
 'use client';
 
 import type { ComprehensiveAssessmentReport } from '@/lib/academicAssessmentEngine';
+import { functionalIndicatorDisclaimer } from '@/lib/functionalIndicators';
 import { useLanguage } from '@/components/LanguageProvider';
 import PdfExportButton from '@/components/reports/PdfExportButton';
 
@@ -13,7 +14,7 @@ export default function IepReportSheet({
   const domains = Object.values(report.domains);
   const plan = report.individualEducationPlan;
   const summary =
-    lang === 'en' ? report.primaryDiagnosisEn : report.primaryDiagnosisAr;
+    lang === 'en' ? report.primaryIndicatorSummaryEn : report.primaryIndicatorSummaryAr;
 
   return (
     <article className="print-document space-y-5 rounded-3xl border border-white bg-white p-8 text-start text-slate-900 shadow-xl print:border-none print:bg-white print:p-0 print:shadow-none">
@@ -32,6 +33,9 @@ export default function IepReportSheet({
       </div>
 
       <p className="text-sm leading-7 text-slate-600">{summary}</p>
+      <p className="rounded-xl bg-amber-50 px-3 py-2 text-xs font-semibold leading-6 text-amber-900">
+        {functionalIndicatorDisclaimer(lang === 'en' ? 'en' : 'ar')}
+      </p>
       <p className="text-xs text-slate-400">
         {t('scoreOf', {
           score: report.totalScore,
@@ -47,7 +51,7 @@ export default function IepReportSheet({
             className="rounded-2xl border border-slate-200 bg-slate-50 p-4"
           >
             <p className="text-sm font-bold text-slate-900">
-              {lang === 'en' ? d.labelEn : d.label}
+              {lang === 'en' ? d.indicatorLabelEn : d.indicatorLabelAr}
             </p>
             <p className="mt-1 text-xs text-slate-500">
               {d.score}/{d.maxScore} ·{' '}

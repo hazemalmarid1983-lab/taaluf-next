@@ -8,16 +8,17 @@ import type { GoalSession, TrackedGoal } from '@/lib/goalsEngine';
 import type { PromptHierarchyLevel } from '@/lib/promptHierarchy';
 import {
   DIGITAL_ASSISTANCE_CUES,
-  DIGITAL_PROMPT_MAPPING,
+  DIGITAL_STIMULUS_SUPPORT,
+  STIMULUS_ARRAY_LABELS_AR,
   type ClinicalPromptLevel,
   type DigitalAssistanceCue,
-  type PromptSource,
   type SkillCategoryId,
   type SkillTypeConfig,
+  type StimulusArrayLevel,
 } from '@/types/clinical';
 import { getCriterionById, type DevelopmentalDomainId } from '@/types/taalof';
 
-export type { ClinicalPromptLevel, DigitalAssistanceCue, PromptSource, SkillCategoryId, SkillTypeConfig };
+export type { ClinicalPromptLevel, DigitalAssistanceCue, SkillCategoryId, SkillTypeConfig, StimulusArrayLevel };
 
 export type SessionPromptLevel = ClinicalPromptLevel;
 
@@ -62,64 +63,94 @@ const LEGACY_PROMPT_ALIASES: Record<string, ClinicalPromptLevel> = {
 };
 
 export function isDigitalAssistanceCue(value: unknown): value is DigitalAssistanceCue {
-  return typeof value === 'string' && Object.prototype.hasOwnProperty.call(DIGITAL_PROMPT_MAPPING, value);
+  return typeof value === 'string' && Object.prototype.hasOwnProperty.call(DIGITAL_STIMULUS_SUPPORT, value);
 }
 
-/** يطابق مستوى بشري أو رقمي أو قديم مع المقياس الموحّد — المساعدات الرقمية عبر DIGITAL_PROMPT_MAPPING */
+/**
+ * يطابق مستوى تلقين بشري أو قديم مع المقياس الموحّد.
+ * المساعدات الرقمية ليست تلقين استجابة فتُعاد undefined — استخدم trialResponsePromptLevel للمحاولة.
+ */
 export function toClinicalPromptLevel(level: string | undefined | null): ClinicalPromptLevel | undefined {
-  if (!level) return undefined;
+  if (!level || isDigitalAssistanceCue(level)) return undefined;
   if ((CLINICAL_PROMPT_LEVELS as readonly string[]).includes(level)) {
     return level as ClinicalPromptLevel;
   }
-  if (isDigitalAssistanceCue(level)) return DIGITAL_PROMPT_MAPPING[level].clinical_level;
   return CLINICAL_PROMPT_BY_HIERARCHY[level as PromptHierarchyLevel] ?? LEGACY_PROMPT_ALIASES[level];
 }
 
+/** بُعد الاستجابة لمحاولة مسجّلة: المساعدة الرقمية وحدها لا تمثّل تلقيناً بشرياً ← «مستقل» */
+export function trialResponsePromptLevel(level: string | undefined | null): ClinicalPromptLevel | undefined {
+  return isDigitalAssistanceCue(level) ? 'Independent' : toClinicalPromptLevel(level);
+}
+
+/** بُعد المثير لمحاولة مسجّلة: المساعدة الرقمية التي عدّلت المصفوفة، أو undefined للمصفوفة الكاملة غير المعدّلة */
+export function trialStimulusSupport(level: string | undefined | null): DigitalAssistanceCue | undefined {
+  return isDigitalAssistanceCue(level) ? level : undefined;
+}
+
+export function stimulusArrayLevelOf(cue: DigitalAssistanceCue | undefined | null): StimulusArrayLevel {
+  return cue ? DIGITAL_STIMULUS_SUPPORT[cue].array_level : 'full_array';
+}
+
+/** أكثر تعديل للمصفوفة تدخلاً بين المحاولات */
+export function mostIntrusiveStimulusSupport(
+  cues: ReadonlyArray<string | undefined | null>
+): DigitalAssistanceCue | undefined {
+  let worst = -1;
+  for (const cue of cues) {
+    if (isDigitalAssistanceCue(cue)) worst = Math.max(worst, DIGITAL_ASSISTANCE_CUES.indexOf(cue));
+  }
+  return worst >= 0 ? DIGITAL_ASSISTANCE_CUES[worst] : undefined;
+}
+
+/** المحاولة صالحة للإتقان: استجابة مستقلة ومصفوفة كاملة غير معدّلة */
+export function isValidIndependentTrial(
+  responseLevel: ClinicalPromptLevel | undefined,
+  stimulusSupport: DigitalAssistanceCue | undefined | null
+): boolean {
+  return responseLevel === 'Independent' && !stimulusSupport;
+}
+
 export type SessionPromptEvidence = {
+  /** بُعد الاستجابة: أعلى تلقين بشري */
   promptLevel?: ClinicalPromptLevel;
-  promptSource?: PromptSource;
-  digitalPromptCue?: DigitalAssistanceCue;
+  /** بُعد المثير: أكثر تعديل رقمي للمصفوفة — غائب = مصفوفة كاملة غير معدّلة */
+  stimulusSupport?: DigitalAssistanceCue;
 };
 
-/**
- * أعلى مساعدة في الجلسة مع مصدرها (قاعدة DIGITAL_PROMPT_MAPPING رقم 3):
- * رقمية فقط إذا لم يبلغ أي تلقين بشري المستوى نفسه.
- */
+/** مستوى الجلسة على البُعدين من محاولاتها المسجّلة */
 export function resolveSessionPromptEvidence(levels: ReadonlyArray<string | undefined>): SessionPromptEvidence {
-  const promptLevel = mostIntrusivePromptLevel(levels);
-  if (!promptLevel || promptLevel === 'Independent' || promptLevel === 'No Response') {
-    return { promptLevel };
-  }
-  let digitalPromptCue: DigitalAssistanceCue | undefined;
-  for (const raw of levels) {
-    if (toClinicalPromptLevel(raw) !== promptLevel) continue;
-    if (!isDigitalAssistanceCue(raw)) return { promptLevel, promptSource: 'human' };
-    if (!digitalPromptCue || DIGITAL_ASSISTANCE_CUES.indexOf(raw) > DIGITAL_ASSISTANCE_CUES.indexOf(digitalPromptCue)) {
-      digitalPromptCue = raw;
-    }
-  }
-  return digitalPromptCue
-    ? { promptLevel, promptSource: 'digital_assistance', digitalPromptCue }
-    : { promptLevel, promptSource: 'human' };
+  const promptLevel = mostIntrusivePromptLevel(levels.map((l) => trialResponsePromptLevel(l)));
+  const stimulusSupport = mostIntrusiveStimulusSupport(levels);
+  return stimulusSupport ? { promptLevel, stimulusSupport } : { promptLevel };
 }
 
-/** «تلميح بصري (رقمي) ← تلقين بالإشارة» */
-export function digitalPromptMappingLabelAr(cue: DigitalAssistanceCue): string {
-  const rule = DIGITAL_PROMPT_MAPPING[cue];
-  return `${rule.cue_label_ar} (رقمي) ← ${CLINICAL_PROMPT_LABELS_AR[rule.clinical_level]}`;
+/** «مصفوفة المثيرات: مخفّضة جزئياً» مع الإبراز إن وُجد */
+export function stimulusSupportLabelAr(cue: DigitalAssistanceCue | undefined | null): string {
+  const level = stimulusArrayLevelOf(cue);
+  const highlighted = cue ? DIGITAL_STIMULUS_SUPPORT[cue].target_highlighted : false;
+  return `مصفوفة المثيرات: ${STIMULUS_ARRAY_LABELS_AR[level]}${highlighted ? ' مع إبراز الهدف' : ''}`;
 }
 
-/** «تلميح بصري (رقمي) ← تلقين بالإشارة · …» لكل المساعدات الرقمية */
-export const DIGITAL_PROMPT_MAPPING_SUMMARY_AR = DIGITAL_ASSISTANCE_CUES.map(digitalPromptMappingLabelAr).join(' · ');
+/** «تقليل الخيارات (رقمي) ← مصفوفة المثيرات: مخفّضة جزئياً» */
+export function digitalStimulusSupportLabelAr(cue: DigitalAssistanceCue): string {
+  return `${DIGITAL_STIMULUS_SUPPORT[cue].cue_label_ar} (رقمي) ← ${stimulusSupportLabelAr(cue)}`;
+}
 
-/** مستوى المساعدة المسجّل في الجلسة مع مصدره الرقمي إن وُجد */
+/** تصنيف كل المساعدات الرقمية على بُعد المثير */
+export const DIGITAL_STIMULUS_SUPPORT_SUMMARY_AR = DIGITAL_ASSISTANCE_CUES.map(digitalStimulusSupportLabelAr).join(' · ');
+
+/** مستوى الجلسة على البُعدين: «مستقل · مصفوفة المثيرات: مخفّضة جزئياً (تقليل الخيارات)» */
 export function sessionPromptLabelAr(evidence: SessionPromptEvidence): string | undefined {
-  if (!evidence.promptLevel) return undefined;
-  const label = CLINICAL_PROMPT_LABELS_AR[evidence.promptLevel];
-  if (evidence.promptSource === 'digital_assistance' && evidence.digitalPromptCue) {
-    return `${label} — مطابَق من مساعدة رقمية: ${DIGITAL_PROMPT_MAPPING[evidence.digitalPromptCue].cue_label_ar}`;
+  if (!evidence.promptLevel && !evidence.stimulusSupport) return undefined;
+  const parts: string[] = [];
+  if (evidence.promptLevel) parts.push(CLINICAL_PROMPT_LABELS_AR[evidence.promptLevel]);
+  if (evidence.stimulusSupport) {
+    parts.push(
+      `${stimulusSupportLabelAr(evidence.stimulusSupport)} (${DIGITAL_STIMULUS_SUPPORT[evidence.stimulusSupport].cue_label_ar})`
+    );
   }
-  return label;
+  return parts.join(' · ');
 }
 
 /** أعلى مستوى مساعدة في مجموعة محاولات (الأكثر تدخلاً) */
@@ -141,9 +172,13 @@ export interface MasterySessionRecord {
   session_id: string;
   goal_id: string;
   date: string;
+  /** نسبة المحاولات المستقلة الصالحة (استجابة مستقلة + مصفوفة كاملة غير معدّلة) */
   independence_pct: number;
+  /** بُعد الاستجابة: أعلى تلقين بشري */
   prompt_level: SessionPromptLevel;
-  /** المحاولة الأولى في الجلسة (Cold probe) أُدّيت باستقلال */
+  /** بُعد المثير: أكثر تعديل رقمي للمصفوفة في الجلسة — غائب = مصفوفة كاملة غير معدّلة */
+  stimulus_support?: DigitalAssistanceCue;
+  /** المحاولة الأولى في الجلسة (Cold probe) أُدّيت باستقلال وعلى مصفوفة كاملة غير معدّلة */
   first_trial_independent?: boolean;
   /** الاستجابة جاءت على المثير الطبيعي في البيئة دون تلقين من المدرّب */
   natural_cue_only?: boolean;
@@ -272,12 +307,15 @@ export interface SkillMasteryResult {
   mastered_at?: string;
 }
 
+/** الاستقلال يتطلب البُعدين معاً: لا تلقين بشري، ومصفوفة كاملة غير معدّلة */
 function effectivelyIndependent(
   config: SkillTypeConfig,
   session: MasterySessionRecord
 ): boolean {
-  if (session.prompt_level === 'Independent') return true;
-  return Boolean(config.allow_natural_cue_as_independent && session.natural_cue_only);
+  if (isValidIndependentTrial(session.prompt_level, session.stimulus_support)) return true;
+  return Boolean(
+    !session.stimulus_support && config.allow_natural_cue_as_independent && session.natural_cue_only
+  );
 }
 
 /** هل تُحتسب الجلسة ضمن سلسلة الإتقان لهذا النوع؟ */
@@ -291,6 +329,7 @@ export function sessionQualifies(
   const threshold = config.mastery_threshold_pct ?? 100;
   if (!(Number(session.independence_pct) >= threshold)) return false;
   if (threshold >= 100 && !effectivelyIndependent(config, session)) return false;
+  if (threshold >= 100 && session.stimulus_support) return false;
   if (config.require_cold_probe_first_trial && session.first_trial_independent !== true) {
     return false;
   }
@@ -331,13 +370,14 @@ export function goalSessionToMasteryRecord(
   session: GoalSession,
   index: number
 ): MasterySessionRecord {
-  const fully = session.fullyIndependent === true;
+  const fully = session.fullyIndependent === true && !session.stimulusSupport;
   return {
     session_id: `${goalId}#${index}`,
     goal_id: goalId,
     date: session.at,
     independence_pct: session.independencePct ?? (fully ? 100 : 0),
     prompt_level: session.promptLevel ?? (fully ? 'Independent' : 'Verbal'),
+    stimulus_support: session.stimulusSupport,
     first_trial_independent: session.firstTrialIndependent ?? fully,
     natural_cue_only: session.naturalCueOnly,
     trainer_id: session.trainerId,

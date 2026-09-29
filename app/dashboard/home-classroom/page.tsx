@@ -16,6 +16,8 @@ import VisualScheduleBoard, {
   type ScheduleReward,
 } from '@/components/classroom/VisualScheduleBoard';
 import SensoryFocusOverlay from '@/components/classroom/SensoryFocusOverlay';
+import PhysicalObservationTracker from '@/components/classroom/PhysicalObservationTracker';
+import { isPhysicalObservationActivity } from '@/lib/activityGenerator';
 import PromptHierarchyChart from '@/components/classroom/PromptHierarchyChart';
 import PromptRecordingBar from '@/components/classroom/PromptRecordingBar';
 import PromptSelectionOverlay from '@/components/classroom/PromptSelectionOverlay';
@@ -248,6 +250,7 @@ export default function HomeClassroomPage() {
     () => generated || findHomeGoal(selection) || HOME_CLASSROOM_GOALS[0],
     [generated, selection]
   );
+  const physicalObservation = isPhysicalObservationActivity(goal);
   const { level, recordSession } = useActivityLevelGate({
     childId: child?.id ?? null,
     mediaId: `home-classroom:${goal.id}`,
@@ -354,7 +357,11 @@ export default function HomeClassroomPage() {
   };
 
   /** يرسل نص هدف الخطة الفردية لمحرك التوليد ويشغّل الوسيلة الناتجة فوراً */
-  const generateActivity = async (goalText: string, iepGoalId?: string) => {
+  const generateActivity = async (
+    goalText: string,
+    iepGoalId?: string,
+    developmentalDomain?: string
+  ) => {
     const text = goalText.trim();
     if (!text || generating) return;
 
@@ -367,7 +374,7 @@ export default function HomeClassroomPage() {
       const res = await fetch('/api/home-classroom/generate-activity', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ goalText: text, iepGoalId }),
+        body: JSON.stringify({ goalText: text, iepGoalId, developmentalDomain }),
       });
       const data = await res.json();
       if (!res.ok || !data?.activity) {
@@ -458,7 +465,7 @@ export default function HomeClassroomPage() {
           return;
         }
         const text = (tracked.smartText || tracked.title).slice(0, 300);
-        void generateActivity(text, tracked.id);
+        void generateActivity(text, tracked.id, tracked.developmentalDomain);
         return;
       }
     }
@@ -543,12 +550,12 @@ export default function HomeClassroomPage() {
       autoFocusArmed.current = true;
       return;
     }
-    if (!autoFocusArmed.current) return;
+    if (!autoFocusArmed.current || physicalObservation) return;
     autoFocusArmed.current = false;
     setFocusMode(true);
     document.body.classList.add(SENSORY_FOCUS_BODY_CLASS);
     void document.documentElement.requestFullscreen?.().catch(() => undefined);
-  }, [inTrainingActivity]);
+  }, [inTrainingActivity, physicalObservation]);
 
   const clinicalStep = deriveClinicalFlowStep({
     checkInComplete,
@@ -579,6 +586,7 @@ export default function HomeClassroomPage() {
 
   const showPromptBar =
     inTrainingActivity &&
+    !physicalObservation &&
     trials.length < HOME_SESSION_TARGET_TRIALS &&
     (awaitingPrompt || goal.toolType === 'functional_naming');
 
@@ -695,7 +703,7 @@ export default function HomeClassroomPage() {
                 300
               );
               setBridgeGoal(null);
-              void generateActivity(text, bridgeGoal.id);
+              void generateActivity(text, bridgeGoal.id, bridgeGoal.developmentalDomain);
             }}
             onDismiss={dismissTrainingBridge}
           />
@@ -1152,6 +1160,17 @@ export default function HomeClassroomPage() {
               startLabelEn="Start the goal trials ➔"
             />
           </div>
+        ) : physicalObservation ? (
+          <PhysicalObservationTracker
+            goal={goal}
+            coach={coach}
+            isAr={isAr}
+            trials={trials}
+            currentTrial={currentTrial}
+            totalTrials={HOME_SESSION_TARGET_TRIALS}
+            onRecord={(promptLevel) => void recordTrial(promptLevel)}
+            onUndo={undoLastTrial}
+          />
         ) : (
           <>
             {!focusMode && (
@@ -1379,7 +1398,7 @@ export default function HomeClassroomPage() {
           </>
         )}
 
-        {focusMode && inTrainingActivity && (
+        {focusMode && inTrainingActivity && !physicalObservation && (
           <SensoryFocusOverlay
             goal={goal}
             target={target}

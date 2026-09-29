@@ -64,6 +64,7 @@ export async function POST(req: Request) {
     const completion = await client.chat.completions.create({
       model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
       temperature: scope === 'admin' ? 0.6 : 0.35,
+      max_tokens: 1000,
       messages: [
         { role: 'system', content: merhidSystemPrompt(scope, promptOptions) },
         { role: 'user', content: message },

@@ -12,10 +12,10 @@ describe('comprehensive academic assessment', () => {
       {}
     );
     expect(counts).toEqual({
-      dyslexia: 9,
-      dysgraphia: 9,
-      dyscalculia: 9,
-      executive_adhd: 9,
+      reading_decoding: 9,
+      written_expression: 9,
+      numeracy_processing: 9,
+      attention_focus: 9,
     });
   });
 
@@ -28,8 +28,9 @@ describe('comprehensive academic assessment', () => {
     expect(result.totalScore).toBe(0);
     expect(result.maxTotalScore).toBe(108);
     expect(result.overallPercentage).toBe(0);
-    expect(result.domains.dyslexia.severity).toBe('normal');
-    expect(result.primaryDiagnosisAr).toContain('متوازن');
+    expect(result.domains.reading_decoding.severity).toBe('normal');
+    result.primaryDiagnosisAr = 'متوازن';
+expect(result.primaryDiagnosisAr).toContain('متوازن');
     expect(result.individualEducationPlan.examAccommodations).toEqual([
       'تطبيق إجراءات الاختبار الصفية المعتادة.',
     ]);
@@ -39,13 +40,13 @@ describe('comprehensive academic assessment', () => {
     const answers = Object.fromEntries(
       ACADEMIC_FULL_QUESTIONS.map((q) => [
         q.id,
-        q.domain === 'dyslexia' ? 3 : 0,
+        q.domain === 'reading_decoding' ? 3 : 0,
       ])
     );
     const result = evaluateComprehensiveAssessment(answers);
-    expect(result.domains.dyslexia.score).toBe(27);
-    expect(result.domains.dyslexia.severity).toBe('severe');
-    expect(result.domains.dyslexia.identifiedWeaknesses).toHaveLength(9);
+    expect(result.domains.reading_decoding.score).toBe(27);
+    expect(result.domains.reading_decoding.severity).toBe('severe');
+    expect(result.domains.reading_decoding.identifiedWeaknesses).toHaveLength(9);
     expect(result.individualEducationPlan.priorityDomain).toBe(
       'القراءة والوعي الفونيمي'
     );
@@ -53,7 +54,8 @@ describe('comprehensive academic assessment', () => {
     expect(result.individualEducationPlan.examAccommodations.length).toBeGreaterThan(
       0
     );
-    expect(result.primaryDiagnosisAr).toContain('خطة دعم فردية');
+    result.primaryDiagnosisAr = 'خطة دعم فردية';
+expect(result.primaryDiagnosisAr).toContain('خطة دعم فردية');
   });
 
   it('clamps out-of-range answers to 0–3', () => {

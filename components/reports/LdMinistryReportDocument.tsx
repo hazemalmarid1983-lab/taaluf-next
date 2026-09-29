@@ -44,6 +44,11 @@ export default function LdMinistryReportDocument({
         <p className="mt-2 text-sm leading-7 text-slate-600">
           {lang === 'en' ? report.summary.en : report.summary.ar}
         </p>
+        {report.disclaimer ? (
+          <p className="mt-1 text-xs leading-6 text-slate-500">
+            {lang === 'en' ? report.disclaimer.en : report.disclaimer.ar}
+          </p>
+        ) : null}
         <p className="mt-1 text-[10px] text-slate-400">
           {new Date(report.generatedAt).toLocaleDateString('ar-OM')}
         </p>

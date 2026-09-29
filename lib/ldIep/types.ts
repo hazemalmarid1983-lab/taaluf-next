@@ -122,7 +122,7 @@ export const EVIDENCE_BASED_INTERVENTIONS: Record<
   LdAcademicDomain,
   LdIepIntervention[]
 > = {
-  dyslexia: [
+  reading_decoding: [
     {
       id: 'int_phonics',
       nameAr: 'برنامج الوعي الصوتي المنهجي',
@@ -142,7 +142,7 @@ export const EVIDENCE_BASED_INTERVENTIONS: Record<
       responsibleRole: 'ld_specialist',
     },
   ],
-  dysgraphia: [
+  written_expression: [
     {
       id: 'int_handwriting',
       nameAr: 'تدريب الكتابة متعدد الحواس',
@@ -153,7 +153,7 @@ export const EVIDENCE_BASED_INTERVENTIONS: Record<
       responsibleRole: 'resource_room',
     },
   ],
-  dyscalculia: [
+  numeracy_processing: [
     {
       id: 'int_concrete',
       nameAr: 'تعليم رياضيات محسوس (CRA)',

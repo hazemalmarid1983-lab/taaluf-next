@@ -1,8 +1,8 @@
 export type LearningScreeningDomain =
-  | 'dyslexia'
-  | 'dysgraphia'
-  | 'dyscalculia'
-  | 'executive_adhd';
+  | 'reading_decoding'
+  | 'written_expression'
+  | 'numeracy_processing'
+  | 'attention_focus';
 
 export type LearningScreeningOption = {
   score: number;
@@ -27,17 +27,17 @@ export const LEARNING_SCREENING_DOMAINS: Array<{
   id: LearningScreeningDomain;
   label_ar: string;
 }> = [
-  { id: 'dyslexia', label_ar: 'القراءة وفك الرموز' },
-  { id: 'dysgraphia', label_ar: 'الكتابة والتعبير الكتابي' },
-  { id: 'dyscalculia', label_ar: 'الحساب والمفاهيم الرقمية' },
-  { id: 'executive_adhd', label_ar: 'الانتباه والتنظيم الصفي' },
+  { id: 'reading_decoding', label_ar: 'القراءة وفك الرموز' },
+  { id: 'written_expression', label_ar: 'الكتابة والتعبير الكتابي' },
+  { id: 'numeracy_processing', label_ar: 'الحساب والمفاهيم الرقمية' },
+  { id: 'attention_focus', label_ar: 'الانتباه والتنظيم الصفي' },
 ];
 
 export const LEARNING_SCREENING_QUESTIONS: LearningScreeningQuestion[] = [
   {
     id: 'sld_1',
-    domain: 'dyslexia',
-    domainLabel: 'عسر القراءة وفك الرموز',
+    domain: 'reading_decoding',
+    domainLabel: 'التمييز الصوتي وفك الرموز',
     question: 'هل يواجه الطفل صعوبة في ربط أصوات الحروف بأشكالها أو تهجئة الكلمات البسيطة؟',
     text: 'هل يواجه الطفل صعوبة في ربط أصوات الحروف بأشكالها أو تهجئة الكلمات البسيطة؟',
     options: [
@@ -63,7 +63,7 @@ export const LEARNING_SCREENING_QUESTIONS: LearningScreeningQuestion[] = [
   },
   {
     id: 'sld_2',
-    domain: 'dyslexia',
+    domain: 'reading_decoding',
     domainLabel: 'الطلاقة والاسترسال القرائي',
     question: 'هل يقرأ ببطء ملحوظ مع تكرار أو حذف أو إبدال بعض الحروف والكلمات؟',
     text: 'هل يقرأ ببطء ملحوظ مع تكرار أو حذف أو إبدال بعض الحروف والكلمات؟',
@@ -89,7 +89,7 @@ export const LEARNING_SCREENING_QUESTIONS: LearningScreeningQuestion[] = [
   },
   {
     id: 'sld_3',
-    domain: 'dyslexia',
+    domain: 'reading_decoding',
     domainLabel: 'الفهم والاستيعاب القرائي',
     question:
       'هل يجد صعوبة في فهم المعنى العام للفقرة التي قرأها أو استخراج إجابة منها؟',
@@ -116,7 +116,7 @@ export const LEARNING_SCREENING_QUESTIONS: LearningScreeningQuestion[] = [
   },
   {
     id: 'sld_4',
-    domain: 'dysgraphia',
+    domain: 'written_expression',
     domainLabel: 'رسم الحروف والمساحات الخطية',
     question:
       'هل يعاني من صعوبة واضحة في ضبط حجم الحروف أو الكتابة على السطر مع ميلان مفرط؟',
@@ -143,7 +143,7 @@ export const LEARNING_SCREENING_QUESTIONS: LearningScreeningQuestion[] = [
   },
   {
     id: 'sld_5',
-    domain: 'dysgraphia',
+    domain: 'written_expression',
     domainLabel: 'الإملاء ونقل النصوص',
     question:
       'هل يرتكب أخطاء إملائية متكررة (مثل قلب ترتيب الحروف أو نسيان النقاط والمدود)؟',
@@ -169,7 +169,7 @@ export const LEARNING_SCREENING_QUESTIONS: LearningScreeningQuestion[] = [
   },
   {
     id: 'sld_6',
-    domain: 'dysgraphia',
+    domain: 'written_expression',
     domainLabel: 'التعبير الكتابي والتنظيم',
     question:
       'هل يتجنب التعبير بجمل كاملة ويواجه صعوبة بالغة في ترتيب أفكاره كتابياً؟',
@@ -194,7 +194,7 @@ export const LEARNING_SCREENING_QUESTIONS: LearningScreeningQuestion[] = [
   },
   {
     id: 'sld_7',
-    domain: 'dyscalculia',
+    domain: 'numeracy_processing',
     domainLabel: 'المفاهيم والرموز الرقمية',
     question:
       'هل يخلط بين الأرقام المتشابهة أو يجد صعوبة في فهم مدلول الأكبر والأصغر وقيمة الخانات؟',
@@ -221,7 +221,7 @@ export const LEARNING_SCREENING_QUESTIONS: LearningScreeningQuestion[] = [
   },
   {
     id: 'sld_8',
-    domain: 'dyscalculia',
+    domain: 'numeracy_processing',
     domainLabel: 'الحقائق الرياضية التلقائية',
     question:
       'هل يعتمد بشكل مفرط على العد بالأصابع في العمليات الحسابية البسيطة جداً لعمره؟',
@@ -247,7 +247,7 @@ export const LEARNING_SCREENING_QUESTIONS: LearningScreeningQuestion[] = [
   },
   {
     id: 'sld_9',
-    domain: 'dyscalculia',
+    domain: 'numeracy_processing',
     domainLabel: 'المسائل والتسلسل الرياضي',
     question:
       'هل يجد صعوبة في تذكر خطوات العمليات المتسلسلة (كالجمع مع إعادة التجميع أو الطرح)؟',
@@ -274,7 +274,7 @@ export const LEARNING_SCREENING_QUESTIONS: LearningScreeningQuestion[] = [
   },
   {
     id: 'sld_10',
-    domain: 'executive_adhd',
+    domain: 'attention_focus',
     domainLabel: 'الاستمرارية والتركيز الصفي',
     question:
       'هل يفقد تركيزه سريعاً مع أي مشتت خارجي، ويترك المهام الدراسية دون إكمالها؟',
@@ -300,7 +300,7 @@ export const LEARNING_SCREENING_QUESTIONS: LearningScreeningQuestion[] = [
   },
   {
     id: 'sld_11',
-    domain: 'executive_adhd',
+    domain: 'attention_focus',
     domainLabel: 'التنظيم والنسيان المدرسي',
     question:
       'هل ينسى واجباته اليومية أو يضيع أدواته المدرسية وممتلكاته بشكل متكرر ومستمر؟',
@@ -326,7 +326,7 @@ export const LEARNING_SCREENING_QUESTIONS: LearningScreeningQuestion[] = [
   },
   {
     id: 'sld_12',
-    domain: 'executive_adhd',
+    domain: 'attention_focus',
     domainLabel: 'الاندفاعية والحركة المفرطة',
     question: 'هل يجد صعوبة في البقاء جالساً، ويتسرع في إعطاء الإجابات قبل اكتمال السؤال؟',
     text: 'هل يجد صعوبة في البقاء جالساً، ويتسرع في إعطاء الإجابات قبل اكتمال السؤال؟',

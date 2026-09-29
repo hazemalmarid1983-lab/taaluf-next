@@ -4,6 +4,9 @@
 
 import {
   buildLocalActivity,
+  buildPhysicalObservationActivity,
+  isPhysicalMotorGoal,
+  PHYSICAL_OBSERVATION_MEDIA_ID,
   trainingMediaForGoal,
 } from '@/lib/activityGenerator';
 import type { HomeClassroomGoal } from '@/lib/homeClassroomEngine';
@@ -34,15 +37,22 @@ export function parseCustomActivities(raw: string | null): RoomCustomActivity[] 
       const goalText = String(item.goalText || '').trim();
       const childId = String(item.childId || '').trim();
       if (!goalText || !childId) return [];
-      const activity = isRecord(item.activity)
+      const physical = isPhysicalMotorGoal(goalText);
+      const stored = isRecord(item.activity)
         ? (item.activity as unknown as HomeClassroomGoal)
-        : buildLocalActivity(goalText);
+        : null;
+      const activity =
+        physical && stored?.executionMode !== 'physical_observation'
+          ? buildPhysicalObservationActivity(goalText, stored?.iepGoalId)
+          : stored || buildLocalActivity(goalText);
       return [
         {
           id: String(item.id || activity.id),
           childId,
           goalText,
-          mediaId: String(item.mediaId || trainingMediaForGoal(goalText)),
+          mediaId: physical
+            ? PHYSICAL_OBSERVATION_MEDIA_ID
+            : String(item.mediaId || trainingMediaForGoal(goalText)),
           activity,
           createdAt: String(item.createdAt || new Date().toISOString()),
         },
@@ -77,7 +87,10 @@ export function addCustomActivity(
   if (!childId) return { ok: false, error: 'CHILD_REQUIRED' };
   if (goalText.length < 5) return { ok: false, error: 'GOAL_TEXT_REQUIRED' };
   if (goalText.length > 300) return { ok: false, error: 'GOAL_TEXT_TOO_LONG' };
-  const generated = input.activity || buildLocalActivity(goalText);
+  let generated = input.activity || buildLocalActivity(goalText);
+  if (isPhysicalMotorGoal(goalText) && generated.executionMode !== 'physical_observation') {
+    generated = buildPhysicalObservationActivity(goalText, generated.iepGoalId);
+  }
   const row: RoomCustomActivity = {
     id: generated.id || `custom_${Date.now().toString(36)}`,
     childId,

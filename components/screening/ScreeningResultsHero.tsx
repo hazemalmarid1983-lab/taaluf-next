@@ -10,6 +10,7 @@ import {
 } from '@/lib/screeningEngine';
 import { LEGAL_DISCLAIMERS } from '@/lib/legalContent';
 import { PRICING_PATH } from '@/lib/subscriptionTiers';
+import FunctionalIndicatorDisclaimer from '@/components/reports/FunctionalIndicatorDisclaimer';
 import PdfExportButton from '@/components/reports/PdfExportButton';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -95,6 +96,7 @@ export default function ScreeningResultsHero({
         <strong className="block text-slate-900">ليس تشخيصاً</strong>
         {LEGAL_DISCLAIMERS.screeningResults}
       </div>
+      <FunctionalIndicatorDisclaimer />
 
       {result.recommendFullAssessment ? (
         <div className="rounded-2xl border-2 border-red-200 bg-[#FEF2F2] p-5">

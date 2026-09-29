@@ -4,7 +4,10 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import IepReportSheet from '@/components/reports/IepReportSheet';
 import { useLanguage } from '@/components/LanguageProvider';
-import type { ComprehensiveAssessmentReport } from '@/lib/academicAssessmentEngine';
+import {
+  normalizeComprehensiveReport,
+  type ComprehensiveAssessmentReport,
+} from '@/lib/academicAssessmentEngine';
 import { PARENT_ROUTES } from '@/lib/parentJourney';
 
 export default function AssessmentResultsPage() {
@@ -16,7 +19,7 @@ export default function AssessmentResultsPage() {
   useEffect(() => {
     try {
       const raw = localStorage.getItem('taaluf_comprehensive_academic_report');
-      if (raw) setReport(JSON.parse(raw) as ComprehensiveAssessmentReport);
+      if (raw) setReport(normalizeComprehensiveReport(JSON.parse(raw)));
     } catch {
       /* ignore */
     }

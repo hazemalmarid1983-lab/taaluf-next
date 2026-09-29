@@ -26,6 +26,7 @@ import {
   goalTokens,
   normalizeArabic,
   toolMatchesLevel,
+  wordKey,
 } from '@/lib/toolsBank';
 
 /** أسماء أنواع الأنشطة على مستوى الـ API (أوضح للمزوّد الذكي من الأسماء الداخلية) */
@@ -181,7 +182,6 @@ export const VOCABULARY_GROUPS: VocabGroup[] = [
       'وسائل النقل',
       'وسائل المواصلات',
       'مواصلات',
-      'نقل',
       'مركبة',
       'مركبات',
       'vehicle',
@@ -487,6 +487,108 @@ function itemCountFor(type: HomeToolType) {
   return { min: 3, max: 6 };
 }
 
+// ─────────────── الأهداف الحركية: رصد مباشر بلا بطاقات ───────────────
+
+const PHYSICAL_MOTOR_DOMAINS = new Set(['fine_motor', 'gross_motor']);
+
+/** كلمات كاملة فقط: «كرة» لا يجب أن تطابق «ذاكرة»، و«قص» لا تطابق «قصة» */
+const PHYSICAL_MOTOR_TERMS_AR = new Set(
+  [
+    'لضم', 'يلضم', 'تلضم', 'خرز', 'خرزة', 'خرزات',
+    'كرة', 'كرات', 'الكرات', 'يرمي', 'رمي', 'يلتقط', 'التقاط', 'يركل', 'ركل',
+    'يقفز', 'قفز', 'يحجل', 'يتسلق', 'تسلق', 'الدرج', 'يصعد', 'توازن', 'يمشي',
+    'يقص', 'قص', 'مقص', 'يلون', 'تلوين', 'يرسم',
+    'مكعب', 'مكعبات', 'برج', 'أزرار', 'يزرر', 'سحاب', 'رباط', 'ملقط',
+    'صلصال', 'عجين', 'يعجن', 'يمسك', 'إمساك', 'قبضة',
+    'حركي', 'حركية', 'الحركات',
+  ].map(wordKey)
+);
+
+const PHYSICAL_MOTOR_PATTERN_EN =
+  /\b(beads?|string(ing)?|lacing|balls?|throw\w*|catch\w*|kick\w*|jump\w*|hop(ping)?|climb\w*|stairs|balance|scissors|cut(ting)?|colou?ring|draw(ing)?|grasp\w*|grip\w*|pinch\w*|tweezers?|stack\w*|blocks?|tower|button(s|ing)?|zip\w*|play-?dough|clay|fine motor|gross motor)\b/i;
+
+/**
+ * هدف حركي دقيق/كبير (لضم الخرز، نقل الكرات…) يُنفَّذ بأدوات حقيقية.
+ * لا يُحوَّل أبداً لبطاقات اختيار بصرية حتى لو ذكر نصه فئة مفردات.
+ */
+export function isPhysicalMotorGoal(
+  goalText: string | undefined | null,
+  developmentalDomain?: string | null
+): boolean {
+  if (developmentalDomain && PHYSICAL_MOTOR_DOMAINS.has(developmentalDomain)) return true;
+  const text = String(goalText || '');
+  if (!text.trim()) return false;
+  if (PHYSICAL_MOTOR_PATTERN_EN.test(text)) return true;
+  return normalizeArabic(text)
+    .split(/[^\p{L}\p{N}]+/u)
+    .some((word) => word && PHYSICAL_MOTOR_TERMS_AR.has(wordKey(word)));
+}
+
+export function isPhysicalObservationActivity(goal: HomeClassroomGoal): boolean {
+  if (goal.executionMode === 'physical_observation') return true;
+  // وسائل مولّدة قبل إضافة وضع الرصد الحركي
+  return goal.origin === 'generated' && isPhysicalMotorGoal(goal.sourceGoalText);
+}
+
+function physicalTaskGlyph(text: string) {
+  if (/خرز|لضم|bead|lacing|string/i.test(text)) return '🧵';
+  if (/كر[ةه]|كرات|ball/i.test(text)) return '⚽';
+  if (/مقص|يقص|scissors|cut/i.test(text)) return '✂️';
+  if (/مكعب|برج|block|tower|stack/i.test(text)) return '🧱';
+  if (/يلون|تلوين|يرسم|colou?r|draw/i.test(text)) return '🖍️';
+  return '🤲';
+}
+
+export function buildPhysicalObservationActivity(
+  goalText: string,
+  iepGoalId?: string
+): HomeClassroomGoal {
+  const text = goalText.trim();
+  return {
+    id: `physical_${slugify(text, 'goal')}`.slice(0, 60),
+    origin: 'generated',
+    executionMode: 'physical_observation',
+    iepGoalId,
+    sourceGoalText: text,
+    targetSkill: 'مهارة حركية — رصد مباشر',
+    targetSkillEn: 'Motor skill — live observation',
+    toolType: detectToolType(text),
+    titleAr: text,
+    titleEn: 'Motor task — live observation',
+    descriptionAr:
+      'مهمة حركية بأدوات حقيقية أمام الطفل. لا تُعرض بطاقات على الشاشة؛ الأخصائي يسجّل مستوى التلقين الفعلي بعد كل محاولة.',
+    descriptionEn:
+      'A hands-on motor task with real materials. No cards are shown on screen; the specialist records the actual prompt level after each trial.',
+    coachInstructions: {
+      setupAr:
+        'جهّز الأدوات الحقيقية للمهمة على الطاولة أمام {child}، وأبعد الشاشة عن مجال نظره.',
+      setupEn:
+        'Place the real materials for the task in front of {child} and keep the screen out of their view.',
+      parentVerbalCueAr:
+        'أعطِ {child} تعليمة قصيرة واحدة للمهمة، مثل: «يلا نبدأ»، ثم راقب التنفيذ الفعلي.',
+      parentVerbalCueEn:
+        'Give {child} one short instruction for the task, e.g. "Let\'s start", then watch the actual performance.',
+      supportGuidanceAr:
+        'انتظر 4–5 ثوانٍ. إن لم يبدأ، قدّم أقل مساعدة لازمة (إشارة ← نموذج ← جسدية جزئية ← جسدية كاملة) وسجّل المستوى الذي قدّمته فعلاً.',
+      supportGuidanceEn:
+        'Wait 4–5 seconds. If there is no start, give the least help needed (gesture → model → partial physical → full physical) and record the level you actually gave.',
+    },
+    sampleItems: [
+      {
+        id: 'physical_task',
+        nameAr: 'المهمة الحركية',
+        nameEn: 'Motor task',
+        category: 'daily_objects',
+        imageUrl: physicalTaskGlyph(text),
+      },
+    ],
+  };
+}
+
+export type ActivityGoalContext = {
+  developmentalDomain?: string | null;
+};
+
 // ─────────────────── التوليد المحلي (بلا ذكاء اصطناعي) ───────────────────
 
 function groupById(id: string) {
@@ -533,9 +635,13 @@ function toToolItems(
  */
 export function buildLocalActivity(
   goalText: string,
-  iepGoalId?: string
+  iepGoalId?: string,
+  context: ActivityGoalContext = {}
 ): HomeClassroomGoal {
   const text = goalText.trim();
+  if (isPhysicalMotorGoal(text, context.developmentalDomain)) {
+    return buildPhysicalObservationActivity(text, iepGoalId);
+  }
   const toolType = detectToolType(text);
   const detected = detectVocabularyGroups(text);
   const explicit = extractExplicitItems(text);
@@ -694,9 +800,11 @@ function normalizeItems(
 export function normalizeGeneratedActivity(
   payload: GeneratedActivityPayload,
   goalText: string,
-  iepGoalId?: string
+  iepGoalId?: string,
+  context: ActivityGoalContext = {}
 ): HomeClassroomGoal {
-  const local = buildLocalActivity(goalText, iepGoalId);
+  const local = buildLocalActivity(goalText, iepGoalId, context);
+  if (local.executionMode === 'physical_observation') return local;
   const toolType = toInternalToolType(payload.activityType) || local.toolType;
   const { min, max } = itemCountFor(toolType);
   const category = local.sampleItems[0]?.category || 'daily_objects';
@@ -882,9 +990,21 @@ export const ROOM_MEDIA_FOR_TOOL_TYPE: Record<HomeToolType, string> = {
   functional_naming: 'find-the-target',
 };
 
-export function trainingMediaForGoal(goalText: string): string {
+/** ليس وسيلة في أي فصل تدريبي — يمنع توجيه الهدف الحركي إلى لعبة اختيار بصري */
+export const PHYSICAL_OBSERVATION_MEDIA_ID = 'physical-observation';
+
+export function trainingMediaForGoal(
+  goalText: string,
+  context: ActivityGoalContext = {}
+): string {
+  if (isPhysicalMotorGoal(goalText, context.developmentalDomain)) {
+    return PHYSICAL_OBSERVATION_MEDIA_ID;
+  }
   return ROOM_MEDIA_FOR_TOOL_TYPE[detectToolType(goalText)];
 }
+
+/** وسيلة JSON كاملة (6 عناصر + سلتان + توجيه ثنائي اللغة) أقل من ~1000 رمز؛ السقف يمنع ردوداً مبتورة أو معلّقة */
+export const ACTIVITY_GENERATION_MAX_TOKENS = 1500;
 
 /** تعليمات المزوّد الذكي — مبنية على نفس مفاهيم المحرك حتى يطابق ناتجه شكله */
 export function activityGenerationPrompt() {

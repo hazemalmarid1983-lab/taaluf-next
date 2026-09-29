@@ -1,4 +1,5 @@
 import { ACADEMIC_DOMAIN_LABEL } from '@/lib/academicFullI18n';
+import { FUNCTIONAL_INDICATOR_LABELS } from '@/lib/functionalIndicators';
 import type { Language } from '@/lib/i18n/translations';
 
 const LABEL_EN: Record<string, string> = {
@@ -16,10 +17,13 @@ const LABEL_EN: Record<string, string> = {
   'جلسة مكتملة': 'Session completed',
   دقة: 'accuracy',
   'انتباه مشترك': 'joint attention',
-  'القراءة والوعي الفونيمي': ACADEMIC_DOMAIN_LABEL.dyslexia.en,
-  'الكتابة والتعبير التحريري': ACADEMIC_DOMAIN_LABEL.dysgraphia.en,
-  'الحساب والمفاهيم الرياضية': ACADEMIC_DOMAIN_LABEL.dyscalculia.en,
-  'الانتباه والوظائف التنفيذية': ACADEMIC_DOMAIN_LABEL.executive_adhd.en,
+  'القراءة والوعي الفونيمي': ACADEMIC_DOMAIN_LABEL.reading_decoding.en,
+  'الكتابة والتعبير التحريري': ACADEMIC_DOMAIN_LABEL.written_expression.en,
+  'الحساب والمفاهيم الرياضية': ACADEMIC_DOMAIN_LABEL.numeracy_processing.en,
+  'الانتباه والوظائف التنفيذية': ACADEMIC_DOMAIN_LABEL.attention_focus.en,
+  ...Object.fromEntries(
+    Object.values(FUNCTIONAL_INDICATOR_LABELS).map((l) => [l.ar, l.en])
+  ),
   'التواصل الاستجابي والتعبيري': 'Receptive and expressive communication',
   'التفاعل والاندماج الاجتماعي واللعب': 'Social interaction, inclusion, and play',
   'النمو المعرفي والحلول الإدراكية': 'Cognitive growth and problem-solving',

@@ -10,7 +10,6 @@ import type {
   FbaPlan,
   MaintenanceProbe,
   MasteryWithdrawal,
-  PromptSource,
 } from '@/types/clinical';
 import {
   CRITERIA_LIST,
@@ -47,12 +46,10 @@ export type GoalSession = {
   firstTrialIndependent?: boolean;
   /** استجابة على المثير الطبيعي دون تلقين */
   naturalCueOnly?: boolean;
-  /** أعلى مستوى مساعدة استُخدم في الجلسة */
+  /** بُعد الاستجابة: أعلى تلقين بشري استُخدم في الجلسة */
   promptLevel?: ClinicalPromptLevel;
-  /** من قدّم أعلى مساعدة: مدرّب أو أداة رقمية */
-  promptSource?: PromptSource;
-  /** المساعدة الرقمية التي طوبق منها promptLevel (DIGITAL_PROMPT_MAPPING) */
-  digitalPromptCue?: DigitalAssistanceCue;
+  /** بُعد المثير: أكثر تعديل رقمي لمصفوفة المثيرات — غائب = مصفوفة كاملة غير معدّلة */
+  stimulusSupport?: DigitalAssistanceCue;
   trainerId?: string;
   setting?: 'clinic' | 'home' | 'school' | 'public_place';
   /** أهداف التكرار/المدة: تحقق معيار الهدف في الجلسة */
@@ -63,8 +60,10 @@ export type GoalSession = {
   abcIncidents?: AbcIncident[];
   /** مرات استخدام السلوك البديل في الجلسة */
   replacementBehaviorCount?: number;
-  /** مستوى المساعدة لكل محاولة بالترتيب — أساس اتفاق الملاحظين محاولةً بمحاولة */
+  /** بُعد الاستجابة لكل محاولة بالترتيب — أساس اتفاق الملاحظين محاولةً بمحاولة */
   trialScores?: ClinicalPromptLevel[];
+  /** بُعد المثير لكل محاولة (بطول trialScores) — null = مصفوفة كاملة غير معدّلة */
+  trialStimulus?: Array<DigitalAssistanceCue | null>;
 };
 
 /** معيار أهداف التكرار/المدة: مثلاً «نوبات غضب ≤ 2 في الجلسة» */

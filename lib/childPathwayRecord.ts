@@ -1,6 +1,10 @@
-import { evaluateComprehensiveAssessment } from '@/lib/academicAssessmentEngine';
+import {
+  evaluateComprehensiveAssessment,
+  normalizeComprehensiveReport,
+} from '@/lib/academicAssessmentEngine';
 import {
   evaluateLearningScreening,
+  normalizeLearningScreeningResult,
   type LearningScreeningResult,
 } from '@/lib/learningScreeningEngine';
 import { getPreviousAssessment } from '@/lib/assessmentHelpers';
@@ -44,6 +48,8 @@ export type PathwaySnapshot = {
   href: string;
   domains: PathwayDomainChip[];
   savedAt?: string;
+  /** تنبيه «مؤشرات وظيفية وليست تشخيصاً» للمخرجات الأكاديمية */
+  disclaimer?: string;
 };
 
 export type PathwayGameChip = {
@@ -210,9 +216,7 @@ export function readAcademicPathway(childId?: string): PathwaySnapshot {
   };
 
   const fullAnswers = readJson<Record<string, number>>(ACADEMIC_FULL_ANSWERS_KEY);
-  const fullReport = readJson<ComprehensiveAssessmentReport>(
-    ACADEMIC_FULL_REPORT_KEY
-  );
+  const fullReport = normalizeComprehensiveReport(readJson<unknown>(ACADEMIC_FULL_REPORT_KEY));
   const computedFull =
     fullReport?.domains || (fullAnswers && Object.keys(fullAnswers).length)
       ? fullReport ||
@@ -225,15 +229,16 @@ export function readAcademicPathway(childId?: string): PathwaySnapshot {
       kind: 'academic',
       source: 'comprehensive',
       title: 'المسار الأكاديمي والدعم المدرسي',
-      summary: computedFull.primaryDiagnosisAr,
+      summary: computedFull.primaryIndicatorSummaryAr,
       scoreText: `${computedFull.overallPercentage}%`,
       level: comprehensiveLevel(computedFull),
       href: PARENT_ROUTES.academicAssessment,
       domains: Object.values(computedFull.domains).map((d) => ({
-        label: d.label,
+        label: d.indicatorLabelAr,
         value: `${d.score}/${d.maxScore}`,
       })),
       savedAt: computedFull.assessmentDate,
+      disclaimer: computedFull.disclaimerAr,
     };
   }
 
@@ -251,7 +256,7 @@ export function readAcademicPathway(childId?: string): PathwaySnapshot {
     (screeningPayload.result?.domainResults || screeningPayload.answers)
   ) {
     const result =
-      screeningPayload.result ||
+      normalizeLearningScreeningResult(screeningPayload.result) ||
       evaluateLearningScreening(screeningPayload.answers || {});
     return {
       available: true,
@@ -263,10 +268,11 @@ export function readAcademicPathway(childId?: string): PathwaySnapshot {
       level: academicLevel(result.overallRiskLevel),
       href: PARENT_ROUTES.learningScreening,
       domains: Object.values(result.domainResults).map((d) => ({
-        label: d.label,
+        label: d.indicatorLabelAr,
         value: `${d.score}/${d.maxScore}`,
       })),
       savedAt: screeningPayload.savedAt || result.completedAt,
+      disclaimer: result.disclaimerAr,
     };
   }
 
@@ -282,10 +288,11 @@ export function readAcademicPathway(childId?: string): PathwaySnapshot {
       level: academicLevel(result.overallRiskLevel),
       href: PARENT_ROUTES.learningScreening,
       domains: Object.values(result.domainResults).map((d) => ({
-        label: d.label,
+        label: d.indicatorLabelAr,
         value: `${d.score}/${d.maxScore}`,
       })),
       savedAt: result.completedAt,
+      disclaimer: result.disclaimerAr,
     };
   }
 

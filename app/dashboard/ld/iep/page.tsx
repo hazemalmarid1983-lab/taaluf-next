@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import LdIepGoalTracker from '@/components/ld/LdIepGoalTracker';
 import { useLanguage } from '@/components/LanguageProvider';
-import type { ComprehensiveAssessmentReport } from '@/lib/academicAssessmentEngine';
+import { normalizeComprehensiveReport } from '@/lib/academicAssessmentEngine';
 import { buildIepFromAssessment } from '@/lib/ldIep/engine';
 import { getActiveLdIep, saveLdIep } from '@/lib/ldIep/store';
 import type { LdIndividualEducationPlan } from '@/lib/ldIep/types';
@@ -30,8 +30,8 @@ export default function LdIepPage() {
     try {
       const raw = localStorage.getItem(LD_STORAGE.assessmentReport) ||
         localStorage.getItem('taaluf_comprehensive_academic_report');
-      if (!raw) return;
-      const report = JSON.parse(raw) as ComprehensiveAssessmentReport;
+      const report = raw ? normalizeComprehensiveReport(JSON.parse(raw)) : null;
+      if (!report) return;
       const generated = buildIepFromAssessment(report, child.id);
       generated.childName = child.name;
       const saved = saveLdIep(generated);
@@ -51,11 +51,11 @@ export default function LdIepPage() {
       const raw =
         localStorage.getItem(LD_STORAGE.assessmentReport) ||
         localStorage.getItem('taaluf_comprehensive_academic_report');
-      if (!raw) {
+      const report = raw ? normalizeComprehensiveReport(JSON.parse(raw)) : null;
+      if (!report) {
         setMsg(t('ldNoAssessmentForIep'));
         return;
       }
-      const report = JSON.parse(raw) as ComprehensiveAssessmentReport;
       const generated = buildIepFromAssessment(report, child.id);
       generated.childName = child.name;
       const saved = saveLdIep(generated);

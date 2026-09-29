@@ -36,12 +36,12 @@ describe('8-level prompt alignment', () => {
     expect(CLINICAL_PROMPT_LEVELS).toEqual(expect.arrayContaining(['Model', 'Partial Verbal']));
   });
 
-  it('normalizes hierarchy ids, legacy and digital assistance levels', () => {
+  it('normalizes hierarchy ids and legacy levels, but never digital stimulus support', () => {
     expect(toClinicalPromptLevel('model')).toBe('Model');
     expect(toClinicalPromptLevel('verbal_partial')).toBe('Partial Verbal');
     expect(toClinicalPromptLevel('Partial Verbal')).toBe('Partial Verbal');
     expect(toClinicalPromptLevel('physical_prompt')).toBe('Full Physical');
-    expect(toClinicalPromptLevel('direct_visual_assistance')).toBe('Model');
+    expect(toClinicalPromptLevel('direct_visual_assistance')).toBeUndefined();
     expect(toClinicalPromptLevel('unknown')).toBeUndefined();
   });
 

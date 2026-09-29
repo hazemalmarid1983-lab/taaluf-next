@@ -162,7 +162,7 @@ export const translations = {
     totalScoreOf: 'المجموع {score} من {max}',
     scoreOf: '{score} من {max}',
     academicDisclaimer:
-      'هذا فرز تربوي مساعد وليس تشخيصاً طبياً. النتائج مؤشرات للملاحظة والدعم المدرسي لحين التقييم التربوي الأشمل.',
+      'نتائج مؤشرات وظيفية لأغراض التخطيط التربوي وليست تشخيصاً طبياً أو نفسياً معتمداً. تُستخدم للملاحظة والدعم المدرسي لحين التقييم التربوي الأشمل.',
     openSupportPlan: 'فتح خطة الدعم والتسهيلات المدرسية',
     completeFullAssessment: 'إكمال التقييم التربوي الشامل',
     retakeScreening: 'إعادة الفرز',
@@ -660,7 +660,7 @@ export const translations = {
     totalScoreOf: 'Total {score} of {max}',
     scoreOf: '{score} of {max}',
     academicDisclaimer:
-      'This is an educational screening, not a medical diagnosis. Results are observation indicators until a fuller educational assessment.',
+      'Functional indicator results for educational planning only — not an accredited medical or psychological diagnosis. Use them for observation and school support until a fuller educational assessment.',
     openSupportPlan: 'Open the school support and accommodations plan',
     completeFullAssessment: 'Complete the comprehensive educational assessment',
     retakeScreening: 'Retake screening',

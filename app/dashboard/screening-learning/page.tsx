@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useStepNav } from '@/hooks/useStepNav';
 import {
   evaluateLearningScreening,
+  normalizeLearningScreeningResult,
   type LearningScreeningResult,
 } from '@/lib/learningScreeningEngine';
 import AcademicAccommodationsCard from '@/components/reports/AcademicAccommodationsCard';
@@ -61,7 +62,7 @@ export default function LearningScreeningPage() {
       ) as StoredPayload | null;
       if (payloadMatchesChild(payload, childId)) {
         const computed =
-          payload?.result ||
+          normalizeLearningScreeningResult(payload?.result) ||
           (payload?.answers ? evaluateLearningScreening(payload.answers) : null);
         if (computed) {
           setAnswers(payload?.answers || {});
@@ -211,7 +212,7 @@ export default function LearningScreeningPage() {
                     }`}
                   >
                     <span className="block text-xs text-slate-500">
-                      {domain.label}
+                      {lang === 'en' ? domain.indicatorLabelEn : domain.indicatorLabelAr}
                     </span>
                     <strong className="text-base text-slate-800">
                       {t('scoreOf', {

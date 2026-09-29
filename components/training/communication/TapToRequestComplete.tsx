@@ -1,8 +1,8 @@
-'use client';
+﻿'use client';
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import DigitalPromptMappingPanel from '@/components/training/DigitalPromptMappingPanel';
+import StimulusSupportPanel from '@/components/training/StimulusSupportPanel';
 import type { TrainingSessionMetrics } from '@/lib/training/engine/types';
 import type { TrainingPromptLevel } from '@/lib/training/types';
 import { resolveTapToRequestSessionDetailHref } from '@/lib/training/tapToRequestCompletion';
@@ -104,7 +104,7 @@ export default function TapToRequestComplete({
             </ul>
           </div>
         ) : null}
-        {trials ? <DigitalPromptMappingPanel trials={trials} compact /> : null}
+        {trials ? <StimulusSupportPanel trials={trials} compact /> : null}
       </section>
 
       <div className="mx-auto mb-3 w-full max-w-lg">
