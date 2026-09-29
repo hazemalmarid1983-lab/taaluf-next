@@ -60,34 +60,60 @@ export default function RainRoom() {
     }
   };
 
+  const settingsRef = useRef(session.settings);
+  settingsRef.current = session.settings;
+  const micOnRef = useRef(micOn);
+  micOnRef.current = micOn;
+  const audioRef = session.audio;
+
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return undefined;
     const ctx = canvas.getContext('2d');
     if (!ctx) return undefined;
 
+    let w = 0;
+    let h = 0;
     const resize = () => {
-      canvas.width = window.innerWidth;
-      canvas.height = window.innerHeight;
+      const rect = canvas.getBoundingClientRect();
+      const nextW = Math.max(1, Math.round(rect.width || window.innerWidth));
+      const nextH = Math.max(1, Math.round(rect.height || window.innerHeight));
+      if (nextW === w && nextH === h) return;
+      const prevW = w;
+      w = nextW;
+      h = nextH;
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.floor(w * dpr);
+      canvas.height = Math.floor(h * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.fillStyle = 'rgb(15, 23, 42)';
+      ctx.fillRect(0, 0, w, h);
+      if (prevW > 0 && prevW < w) {
+        for (const d of dropsRef.current) d.x = (d.x / prevW) * w;
+      }
+      dropsRef.current = dropsRef.current.filter((d) => d.x <= w + 4);
     };
     resize();
     window.addEventListener('resize', resize);
+    window.visualViewport?.addEventListener('resize', resize);
+    document.addEventListener('fullscreenchange', resize);
+    const observer = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(resize) : null;
+    observer?.observe(canvas);
 
-    const spawnDrop = (w: number, intensity: number) => {
+    const spawnDrop = (intensity: number) => {
       dropsRef.current.push({
         x: Math.random() * w,
-        y: -10,
-        speed: 4 + Math.random() * 4 + intensity * 4,
-        len: 8 + Math.random() * 10,
+        y: -10 - Math.random() * 20,
+        speed: 5 + Math.random() * 4 + intensity * 4,
+        len: 10 + Math.random() * 12,
       });
     };
 
     let frame = 0;
+    let raf = 0;
     const draw = () => {
       frame += 1;
-      const w = canvas.width;
-      const h = canvas.height;
-      const bright = effectiveBrightness(session.settings);
+      const bright = effectiveBrightness(settingsRef.current);
 
       if (analyserRef.current) {
         const buf = new Uint8Array(analyserRef.current.frequencyBinCount);
@@ -103,20 +129,21 @@ export default function RainRoom() {
 
       const intensity = Math.min(
         1,
-        (micOn ? micIntensityRef.current : 0) + touchIntensityRef.current * 0.6 + 0.15,
+        (micOnRef.current ? micIntensityRef.current : 0) + touchIntensityRef.current * 0.6 + 0.15,
       );
 
       const spawnRate = Math.floor(4 - intensity * 2);
       if (frame % Math.max(1, spawnRate) === 0) {
-        const count = 1 + Math.floor(intensity * 3);
-        for (let i = 0; i < count; i += 1) spawnDrop(w, intensity);
+        const widthFactor = Math.max(1, w / 420);
+        const count = Math.round((1 + intensity * 3) * widthFactor);
+        for (let i = 0; i < count; i += 1) spawnDrop(intensity);
       }
 
-      ctx.fillStyle = `rgba(15, 23, 42, ${0.35 * bright})`;
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.4)';
       ctx.fillRect(0, 0, w, h);
 
-      ctx.strokeStyle = `rgba(147, 197, 253, ${0.35 * bright})`;
-      ctx.lineWidth = 1;
+      ctx.strokeStyle = `rgba(147, 197, 253, ${0.55 * bright})`;
+      ctx.lineWidth = 1.2;
       for (const d of dropsRef.current) {
         d.y += d.speed;
         ctx.beginPath();
@@ -139,17 +166,20 @@ export default function RainRoom() {
       const now = Date.now();
       if (now - lastDropSoundRef.current > 250) {
         lastDropSoundRef.current = now;
-        session.audio.current?.setAmbientIntensity(0.45 + intensity * 0.85);
+        audioRef.current?.setAmbientIntensity(0.45 + intensity * 0.85);
       }
 
-      requestAnimationFrame(draw);
+      raf = requestAnimationFrame(draw);
     };
-    const id = requestAnimationFrame(draw);
+    raf = requestAnimationFrame(draw);
     return () => {
       window.removeEventListener('resize', resize);
-      cancelAnimationFrame(id);
+      window.visualViewport?.removeEventListener('resize', resize);
+      document.removeEventListener('fullscreenchange', resize);
+      observer?.disconnect();
+      cancelAnimationFrame(raf);
     };
-  }, [session.settings, micOn]);
+  }, [audioRef]);
 
   const lastRippleSoundRef = useRef(0);
 

@@ -8,7 +8,15 @@ import {
   SENSORY_FOCUS_EXIT_HOLD_MS,
 } from '@/lib/sensoryFocusMode';
 import type { SensorySessionEndReason } from '@/lib/sensorySessionEnd';
-import { burstVx, randomCruise, relaxVx } from '@/lib/sensoryFish';
+import {
+  burstVx,
+  fishCatchScale,
+  fishRespawnPoint,
+  isFishCatchable,
+  randomCruise,
+  relaxVx,
+  shouldRespawnFish,
+} from '@/lib/sensoryFish';
 import {
   persistSensorySanctuaryResult,
   sensoryAccuracyRate,
@@ -55,6 +63,7 @@ interface Fish {
   hue: number;
   phase: number;
   dart: number;
+  caughtFrames: number;
 }
 
 interface Spark {
@@ -92,13 +101,15 @@ function sceneToMode(scene: Scene, bubbleMode: 'calm' | 'stimulate'): SensoryMod
 function drawFish(
   ctx: CanvasRenderingContext2D,
   fish: Fish,
-  glowHue: number
+  glowHue: number,
+  scale = 1
 ) {
   const facing = fish.vx >= 0 ? 1 : -1;
   const size = Math.max(8, fish.size);
   ctx.save();
   ctx.translate(fish.x, fish.y);
-  ctx.scale(facing, 1);
+  ctx.globalAlpha = scale;
+  ctx.scale(facing * scale, scale);
   ctx.rotate(Math.sin(fish.phase) * 0.12);
 
   const glow = ctx.createRadialGradient(0, 0, 2, 0, 0, size * 2.2);
@@ -378,6 +389,7 @@ export default function SensorySanctuary({
         hue: 25 + Math.random() * 50,
         phase: Math.random() * Math.PI * 2,
         dart: Math.random() * 240,
+        caughtFrames: 0,
       });
     }
 
@@ -503,6 +515,26 @@ export default function SensorySanctuary({
       ctx.globalAlpha = 1;
 
       fish.forEach((f) => {
+        if (f.caughtFrames > 0) {
+          f.caughtFrames += 1;
+          if (shouldRespawnFish(f.caughtFrames)) {
+            const spot = fishRespawnPoint(width, height);
+            f.caughtFrames = 0;
+            f.x = spot.x;
+            f.y = spot.y;
+            f.cruise = randomCruise();
+            f.vx = spot.dir * f.cruise;
+            f.vy = 0;
+            f.dart = 180 + Math.random() * 240;
+          } else {
+            const scale = fishCatchScale(f.caughtFrames);
+            if (scale > 0) {
+              f.y -= 0.6;
+              drawFish(ctx, f, activeHue, scale);
+            }
+            return;
+          }
+        }
         f.dart -= 1;
         if (f.dart < 0 && !reducedMotion) {
           f.vy = -2.8 - Math.random() * 1.6;
@@ -613,13 +645,12 @@ export default function SensorySanctuary({
           addRipple(x, y, 190);
           let hit = false;
           for (const f of fish) {
+            if (!isFishCatchable(f)) continue;
             const dx = f.x - x;
             const dy = f.y - y;
             if (Math.hypot(dx, dy) < f.size * 1.8) {
               hit = true;
-              f.vx = burstVx(f.vx, f.cruise, dx >= 0 ? 1 : -1);
-              f.vy = -3.2;
-              f.dart = 90 + Math.random() * 160;
+              f.caughtFrames = 1;
               burstSparks(f.x, f.y, f.hue);
               audioRef.current?.playFishChime();
               bumpHit();

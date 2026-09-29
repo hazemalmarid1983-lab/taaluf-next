@@ -2,11 +2,17 @@ import { BREATHING_PHASES, BREATH_RESTING_SCALE, breathScaleAt } from '@/lib/reg
 import { ANIMAL_SOUND_IDS, animalSoundUrl } from '@/lib/sensoryHubAudio';
 import {
   burstVx,
+  FISH_CATCH_FADE_FRAMES,
   FISH_MAX_BURST,
   FISH_MAX_CRUISE,
   FISH_MIN_CRUISE,
+  FISH_RESPAWN_FRAMES,
+  fishCatchScale,
+  fishRespawnPoint,
+  isFishCatchable,
   randomCruise,
   relaxVx,
+  shouldRespawnFish,
 } from '@/lib/sensoryFish';
 import {
   createSwell,
@@ -78,6 +84,54 @@ describe('fish speed stays calm (no runaway acceleration)', () => {
   it('a tap burst flees in the given direction', () => {
     expect(burstVx(1, 1, -1)).toBeLessThan(0);
     expect(relaxVx(-3, 1)).toBeLessThan(0);
+  });
+});
+
+describe('tapped fish is caught: disappears, then returns from an edge', () => {
+  it('only free fish can be caught', () => {
+    expect(isFishCatchable({ caughtFrames: 0 })).toBe(true);
+    expect(isFishCatchable({ caughtFrames: 1 })).toBe(false);
+  });
+
+  it('shrinks to nothing and stays hidden until respawn', () => {
+    expect(fishCatchScale(0)).toBe(1);
+    let prev = 1;
+    for (let f = 1; f <= FISH_CATCH_FADE_FRAMES; f += 1) {
+      const s = fishCatchScale(f);
+      expect(s).toBeLessThan(prev);
+      prev = s;
+    }
+    expect(fishCatchScale(FISH_CATCH_FADE_FRAMES)).toBe(0);
+    expect(fishCatchScale(FISH_CATCH_FADE_FRAMES + 50)).toBe(0);
+    expect(shouldRespawnFish(FISH_CATCH_FADE_FRAMES + FISH_RESPAWN_FRAMES - 1)).toBe(false);
+    expect(shouldRespawnFish(FISH_CATCH_FADE_FRAMES + FISH_RESPAWN_FRAMES)).toBe(true);
+  });
+
+  it('respawns off-screen and swims inward', () => {
+    const left = fishRespawnPoint(800, 600, () => 0.1);
+    expect(left.x).toBeLessThan(0);
+    expect(left.dir).toBe(1);
+    const right = fishRespawnPoint(800, 600, () => 0.9);
+    expect(right.x).toBeGreaterThan(800);
+    expect(right.dir).toBe(-1);
+  });
+});
+
+describe('rain room fills the real layer size', () => {
+  const src = fs.readFileSync(
+    path.join(process.cwd(), 'components/sensory-hub/RainRoom.tsx'),
+    'utf8',
+  );
+
+  it('sizes the canvas from its rendered box and follows viewport changes', () => {
+    expect(src).toContain('getBoundingClientRect');
+    expect(src).toContain('ResizeObserver');
+    expect(src).toContain('fullscreenchange');
+  });
+
+  it('keeps a single animation loop', () => {
+    expect(src).toContain('raf = requestAnimationFrame(draw)');
+    expect(src).not.toContain('const id = requestAnimationFrame');
   });
 });
 

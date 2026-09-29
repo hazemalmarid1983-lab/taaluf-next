@@ -16,7 +16,7 @@ export const ANIMAL_CARDS: AnimalCard[] = [
   {
     id: 'cat',
     emoji: '🐱',
-    nameAr: 'قطة',
+    nameAr: 'قطةْ',
     nameEn: 'Cat',
     soundAr: 'مواء',
     soundEn: 'Meow',
@@ -25,7 +25,7 @@ export const ANIMAL_CARDS: AnimalCard[] = [
   {
     id: 'dog',
     emoji: '🐶',
-    nameAr: 'كلب',
+    nameAr: 'كلبْ',
     nameEn: 'Dog',
     soundAr: 'نباح',
     soundEn: 'Woof',
@@ -34,7 +34,7 @@ export const ANIMAL_CARDS: AnimalCard[] = [
   {
     id: 'bird',
     emoji: '🐦',
-    nameAr: 'عصفور',
+    nameAr: 'عصفورْ',
     nameEn: 'Bird',
     soundAr: 'زقزقة',
     soundEn: 'Tweet',
@@ -43,7 +43,7 @@ export const ANIMAL_CARDS: AnimalCard[] = [
   {
     id: 'cow',
     emoji: '🐮',
-    nameAr: 'بقرة',
+    nameAr: 'بقرةْ',
     nameEn: 'Cow',
     soundAr: 'خوار',
     soundEn: 'Moo',
@@ -52,7 +52,7 @@ export const ANIMAL_CARDS: AnimalCard[] = [
   {
     id: 'sheep',
     emoji: '🐑',
-    nameAr: 'خروف',
+    nameAr: 'خروفْ',
     nameEn: 'Sheep',
     soundAr: 'ثغاء',
     soundEn: 'Baa',
@@ -61,7 +61,7 @@ export const ANIMAL_CARDS: AnimalCard[] = [
   {
     id: 'lion',
     emoji: '🦁',
-    nameAr: 'أسد',
+    nameAr: 'أسدْ',
     nameEn: 'Lion',
     soundAr: 'زئير',
     soundEn: 'Roar',

@@ -8,7 +8,7 @@ describe('sensory hub animals', () => {
 
   it('builds speech label as animal name only', () => {
     const cat = ANIMAL_CARDS[0];
-    expect(animalPhrase(cat, true)).toBe('قطة');
+    expect(animalPhrase(cat, true)).toBe('قطةْ');
     expect(animalPhrase(cat, false)).toBe('Cat');
     expect(animalPhrase(cat, true)).not.toContain('مواء');
   });
