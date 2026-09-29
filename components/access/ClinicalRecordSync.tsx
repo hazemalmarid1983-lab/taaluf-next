@@ -3,6 +3,7 @@
 import { useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useSession } from 'next-auth/react';
+import { browserOwnerKey, ensureBrowserDataOwner } from '@/lib/browserDataOwner';
 import { JOURNEY_HYDRATED_EVENT } from '@/lib/childRoom/journeyClient';
 import { isServerChildId, syncChildClinicalRecord } from '@/lib/clinicalRecordClient';
 import { ACTIVE_CHILD_CHANGED_EVENT, readActiveChild } from '@/lib/parentJourney';
@@ -16,12 +17,14 @@ export default function ClinicalRecordSync() {
   const { data: session, update } = useSession();
   const isParent = session?.user?.role === 'parent';
   const stage = session?.user?.parentStage;
+  const owner = browserOwnerKey(session?.user);
   const synced = useRef(new Set<string>());
 
   useEffect(() => {
-    if (!isParent) return;
+    if (!isParent || !owner) return;
     let cancelled = false;
     const sync = async () => {
+      if (ensureBrowserDataOwner(owner)) return;
       const child = readActiveChild();
       if (!child || !isServerChildId(child.id) || synced.current.has(child.id)) return;
       synced.current.add(child.id);
@@ -43,7 +46,7 @@ export default function ClinicalRecordSync() {
       window.removeEventListener(JOURNEY_HYDRATED_EVENT, onChange);
       window.removeEventListener('storage', onChange);
     };
-  }, [isParent, stage, update, router]);
+  }, [isParent, owner, stage, update, router]);
 
   return null;
 }

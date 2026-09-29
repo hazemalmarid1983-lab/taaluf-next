@@ -19,7 +19,7 @@ function canRead(
 ) {
   if (role === 'admin' || role === 'scientific_advisor' || role === 'specialist') return true;
   if (role === 'teacher') return teacherChildIds.includes(record.childId);
-  return !record.parentUserId || record.parentUserId === userId;
+  return record.parentUserId === userId;
 }
 
 export async function GET(req: Request) {

@@ -11,6 +11,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { homePathForRole } from '@/lib/access';
+import { browserOwnerKey, ensureBrowserDataOwner } from '@/lib/browserDataOwner';
 import type { TranslationKey } from '@/lib/i18n/translations';
 import { resolvePostLoginDestination } from '@/lib/nextBestActionFlow';
 import {
@@ -262,12 +263,13 @@ function LoginForm() {
     }
     const session = (await fetch('/api/auth/session')
       .then((r) => r.json())
-      .catch(() => null)) as { user?: { role?: string } } | null;
+      .catch(() => null)) as { user?: { role?: string; email?: string | null; id?: string } } | null;
     if (!session?.user) {
       setLoading(false);
       setError(isAr ? SESSION_REJECTED_AR : SESSION_REJECTED_EN);
       return;
     }
+    ensureBrowserDataOwner(browserOwnerKey(session.user));
     window.location.assign(
       resolvePostLoginDestination(session.user.role || roleGuess, params.get('callbackUrl'))
     );
