@@ -76,6 +76,21 @@ export function portalMatchesEmail(portal: PortalId, email: string) {
   return expected != null && expected === portal;
 }
 
+/** بوابات تقبل حسابات مسجّلة ذاتياً بأي بريد */
+export function isSelfSignupPortal(portal: PortalId) {
+  return portal === 'parent' || portal === 'specialist';
+}
+
+/**
+ * يسمح بالدخول من البوابة: الحسابات الداخلية يجب أن تطابق بوابتها،
+ * وأي بريد آخر مقبول في بوابتي ولي الأمر والمختص فقط.
+ */
+export function portalAllowsEmail(portal: PortalId, email: string) {
+  const expected = portalFromEmail(email);
+  if (expected) return expected === portal;
+  return isSelfSignupPortal(portal);
+}
+
 export function isKnownPortal(value: string): value is PortalId {
   return PORTALS.includes(value as PortalId);
 }

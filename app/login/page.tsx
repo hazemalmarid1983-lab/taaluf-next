@@ -16,12 +16,38 @@ import { resolvePostLoginDestination } from '@/lib/nextBestActionFlow';
 import {
   demoEmailForPortal,
   isPrivilegedPasswordPortal,
+  isSelfSignupPortal,
   parsePortalParam,
+  portalAllowsEmail,
   portalFromEmail,
   portalMatchesEmail,
   safePostLoginPath,
   type PortalId,
 } from '@/lib/loginPortal';
+
+const IS_DEV = process.env.NODE_ENV !== 'production';
+
+const SIGNUP_ERRORS_AR: Record<string, string> = {
+  NAME_REQUIRED: 'اكتب اسمك (حرفان على الأقل).',
+  EMAIL_INVALID: 'البريد الإلكتروني غير صحيح.',
+  EMAIL_RESERVED: 'هذا النطاق محجوز لحسابات المنصة الداخلية.',
+  PASSWORD_TOO_SHORT: 'كلمة المرور يجب أن تكون 8 أحرف على الأقل.',
+  PASSWORD_MISMATCH: 'كلمتا المرور غير متطابقتين.',
+  ROLE_NOT_ALLOWED: 'لا يمكن إنشاء حساب لهذه البوابة.',
+  EMAIL_TAKEN: 'هذا البريد مسجّل مسبقاً — سجّل الدخول بدلاً من ذلك.',
+  TOO_MANY_ATTEMPTS: 'محاولات كثيرة. انتظر قليلاً ثم أعد المحاولة.',
+};
+
+const SIGNUP_ERRORS_EN: Record<string, string> = {
+  NAME_REQUIRED: 'Enter your name (at least 2 characters).',
+  EMAIL_INVALID: 'The email address is not valid.',
+  EMAIL_RESERVED: 'This domain is reserved for internal platform accounts.',
+  PASSWORD_TOO_SHORT: 'The password must be at least 8 characters.',
+  PASSWORD_MISMATCH: 'The passwords do not match.',
+  ROLE_NOT_ALLOWED: 'Accounts cannot be created for this portal.',
+  EMAIL_TAKEN: 'This email is already registered — sign in instead.',
+  TOO_MANY_ATTEMPTS: 'Too many attempts. Please wait and try again.',
+};
 
 const PORTALS: {
   id: PortalId;
@@ -56,11 +82,17 @@ const PORTALS: {
 ];
 
 function LoginForm() {
-  const { t, dir } = useLanguage();
+  const { t, dir, lang } = useLanguage();
+  const isAr = lang === 'ar';
   const params = useSearchParams();
   const initial = parsePortalParam(params);
   const [portal, setPortal] = useState<PortalId>(initial);
-  const [email, setEmail] = useState(demoEmailForPortal(initial));
+  const [email, setEmail] = useState(IS_DEV ? demoEmailForPortal(initial) : '');
+  const [mode, setMode] = useState<'login' | 'signup'>(
+    params.get('mode') === 'signup' && isSelfSignupPortal(initial) ? 'signup' : 'login'
+  );
+  const [fullName, setFullName] = useState('');
+  const [signupConfirm, setSignupConfirm] = useState('');
   const paymentsOff =
     process.env.NEXT_PUBLIC_PAYMENTS_DISABLED === 'true' ||
     process.env.NEXT_PUBLIC_TAALUF_PILOT_MODE === 'true';
@@ -86,7 +118,9 @@ function LoginForm() {
 
   const selectPortal = (id: PortalId) => {
     setPortal(id);
-    setEmail(demoEmailForPortal(id));
+    if (!isSelfSignupPortal(id)) setMode('login');
+    if (IS_DEV) setEmail(demoEmailForPortal(id));
+    else if (portalFromEmail(email)) setEmail('');
     setError('');
     setPasswordMsg('');
     if (showDevDemoPassword && !isPrivilegedPasswordPortal(id)) {
@@ -141,12 +175,41 @@ function LoginForm() {
     }
     setLoading(true);
     setError('');
-    const inferred = portalFromEmail(email) || portal;
-    if (!portalMatchesEmail(portal, email)) {
+    if (!portalAllowsEmail(portal, email)) {
       setLoading(false);
       setError(t('portalMismatchError'));
       return;
     }
+
+    if (mode === 'signup') {
+      const res = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: fullName,
+          email,
+          password,
+          confirmPassword: signupConfirm,
+          role: portal,
+        }),
+      }).catch(() => null);
+      const data = (await res?.json().catch(() => null)) as { error?: string } | null;
+      if (!res?.ok) {
+        setLoading(false);
+        const code = data?.error || '';
+        setError(
+          (isAr ? SIGNUP_ERRORS_AR : SIGNUP_ERRORS_EN)[code] ||
+            (isAr ? 'تعذّر إنشاء الحساب. أعد المحاولة.' : 'Could not create the account. Try again.')
+        );
+        return;
+      }
+    }
+
+    await signInAndGo();
+  };
+
+  const signInAndGo = async () => {
+    const inferred = portalFromEmail(email) || portal;
     const roleGuess =
       inferred === 'admin'
         ? 'admin'
@@ -217,7 +280,45 @@ function LoginForm() {
         </div>
         <p className="mt-3 text-xs text-slate-400">{t(meta.blurb)}</p>
 
+        {isSelfSignupPortal(portal) && (
+          <div className="mt-5 grid grid-cols-2 gap-1 rounded-2xl bg-slate-100 p-1" role="tablist">
+            {(['login', 'signup'] as const).map((value) => (
+              <button
+                key={value}
+                type="button"
+                role="tab"
+                aria-selected={mode === value}
+                onClick={() => {
+                  setMode(value);
+                  setError('');
+                }}
+                className={`rounded-xl py-2 text-sm font-bold transition ${
+                  mode === value ? 'bg-white text-[#2E7D8E] shadow-sm' : 'text-slate-500'
+                }`}
+              >
+                {value === 'login'
+                  ? isAr ? 'تسجيل الدخول' : 'Sign in'
+                  : isAr ? 'إنشاء حساب جديد' : 'Create account'}
+              </button>
+            ))}
+          </div>
+        )}
+
         <form onSubmit={onSubmit} className="mt-6 space-y-4">
+          {mode === 'signup' && (
+            <div className="space-y-2">
+              <Label htmlFor="fullName">{isAr ? 'الاسم الكامل' : 'Full name'}</Label>
+              <Input
+                id="fullName"
+                value={fullName}
+                onChange={(e) => setFullName(e.target.value)}
+                autoComplete="name"
+                minLength={2}
+                maxLength={80}
+                required
+              />
+            </div>
+          )}
           <div className="space-y-2">
             <Label htmlFor="email">{t('email')}</Label>
             <Input
@@ -240,9 +341,25 @@ function LoginForm() {
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              autoComplete={mode === 'signup' ? 'new-password' : 'current-password'}
+              minLength={mode === 'signup' ? 8 : undefined}
               required
             />
           </div>
+          {mode === 'signup' && (
+            <div className="space-y-2">
+              <Label htmlFor="signupConfirm">{t('confirmPassword')}</Label>
+              <Input
+                id="signupConfirm"
+                type="password"
+                value={signupConfirm}
+                onChange={(e) => setSignupConfirm(e.target.value)}
+                autoComplete="new-password"
+                minLength={8}
+                required
+              />
+            </div>
+          )}
 
           <div className="rounded-2xl border border-emerald-100 bg-[#F0F9F4] p-4">
             <p className="text-sm font-semibold text-[#0b1f14]">{t('termsCheckboxTitle')}</p>
@@ -270,7 +387,11 @@ function LoginForm() {
 
           {error && <p className="text-sm text-rose-600">{error}</p>}
           <Button type="submit" className="w-full" disabled={loading}>
-            {loading ? t('signingIn') : t('enterPortal', { portal: t(meta.title) })}
+            {loading
+              ? t('signingIn')
+              : mode === 'signup'
+                ? isAr ? 'إنشاء الحساب والدخول' : 'Create account & sign in'
+                : t('enterPortal', { portal: t(meta.title) })}
           </Button>
         </form>
 
@@ -360,7 +481,7 @@ function LoginForm() {
           </p>
         )}
 
-        <p className="mt-4 text-xs leading-6 text-slate-400">{meta.hint}</p>
+        {IS_DEV && <p className="mt-4 text-xs leading-6 text-slate-400">{meta.hint}</p>}
       </div>
       <SubscriberGate />
     </main>

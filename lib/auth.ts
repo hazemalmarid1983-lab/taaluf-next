@@ -16,6 +16,7 @@ import { verifyPassword } from '@/lib/password';
 import { normalizeSessionRole } from '@/lib/permissions';
 import { verifyPrivilegedLogin } from '@/lib/privilegedCredentials';
 import { parentStageForUser } from '@/lib/server/clinicalRecordService';
+import { authorizeUserAccount } from '@/lib/userAccounts';
 
 ensureAuthUrl();
 
@@ -107,6 +108,9 @@ export const authOptions: NextAuthOptions = {
             role: dev.role,
           };
         }
+
+        const selfRegistered = await authorizeUserAccount(email, password).catch(() => null);
+        if (selfRegistered) return selfRegistered;
 
         if (isAirtableConfigured()) {
           try {
